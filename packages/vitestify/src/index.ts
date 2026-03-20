@@ -1,1 +1,1 @@
-export * from './lib/vitestify.js';
+export * from './lib/vitestify';
