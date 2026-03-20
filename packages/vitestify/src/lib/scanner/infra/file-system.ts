@@ -1,4 +1,4 @@
-import type { RelativePath } from '../core.js';
+import type { RelativePath } from '../../core/core';
 
 /**
  * File system abstraction used by the scanner.

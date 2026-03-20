@@ -1,11 +1,11 @@
-import type { FileSystem } from './infra/file-system.js';
-import type { WorkspaceInfo } from './core.js';
+import type { FileSystem } from './infra/file-system';
+import type { WorkspaceInfo } from '../core/core';
 
 /**
  * @deprecated 🚧 work in progress
  */
 export class Scanner {
-  constructor(private readonly fileSystem: FileSystem) {}
+  constructor(private readonly _fileSystem: FileSystem) {}
 
   /**
    * @deprecated 🚧 work in progress

@@ -22,6 +22,9 @@ export type ProjectFileTag =
   | 'test'
   | 'tsconfig';
 
-  /** Path relative to the workspace root. */
+/** Path relative to the workspace root. */
 export type RelativePath = string & { readonly [__relativePathBrand]: true };
 
+export function relativePath(path: string): RelativePath {
+  return path as RelativePath;
+}

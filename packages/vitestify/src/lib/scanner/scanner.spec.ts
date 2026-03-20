@@ -1,11 +1,31 @@
-import { describe, it } from 'vitest';
-import { Scanner } from './scanner.js';
+import { describe, expect, it } from 'vitest';
+import { angularJsonMother } from '../core/angular-json.mother';
+import { relativePath, type Project } from '../core/core';
+import { FileSystemFake } from './infra/file-system.fake';
+import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {
-  it.todo('detects angular cli project', () => {
-    // Arrange: create a temp workspace with `angular.json` and a `jest.config.ts`.
-    // Act: run scanner on the workspace path.
-    // Assert: returns project type `angular-cli` with the jest config path.
+  it.todo('detects angular cli project', async () => {
+    const { fileSystem, scanner } = setUp();
+
+    fileSystem.configure({
+      [relativePath('angular.json')]: angularJsonMother
+        .withProject({
+          name: 'my-app',
+          root: 'apps/my-app',
+        })
+        .buildString(),
+    });
+
+    const { projects, workspaceType } = await scanner.scanWorkspace();
+
+    expect.soft(workspaceType).toBe('angular-cli');
+    expect.soft(projects).toMatchObject([
+      {
+        name: 'my-app',
+        path: relativePath('apps/my-app'),
+      } satisfies Partial<Project>,
+    ]);
   });
 
   it.todo('detects nx project', () => {
@@ -14,3 +34,12 @@ describe(Scanner.name, () => {
     // Assert: returns project type `nx` with the jest config path.
   });
 });
+
+function setUp() {
+  const fileSystem = new FileSystemFake();
+
+  return {
+    fileSystem,
+    scanner: new Scanner(fileSystem),
+  };
+}

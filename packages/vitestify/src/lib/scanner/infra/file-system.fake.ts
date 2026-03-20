@@ -1,4 +1,4 @@
-import type { RelativePath } from '../core.js';
+import type { RelativePath } from '../../core/core';
 
 export class FileSystemFake {
   private readonly _files = new Map<RelativePath, string>();

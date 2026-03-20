@@ -6,4 +6,4 @@ export type {
   ProjectFileTag,
   RelativePath,
   WorkspaceInfo,
-} from './core';
+} from '../core/core';
