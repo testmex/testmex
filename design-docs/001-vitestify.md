@@ -82,14 +82,10 @@ sequenceDiagram
 class Scanner {
   constructor(private readonly fileSystem: FileSystem) {}
 
-  async scanWorkspace(): Promise<WorkspaceScanResult[]> {}
+  async scanWorkspace(): Promise<WorkspaceInfo> {}
 }
 
-type WorkspaceScanResult =
-  | AngularCliWorkspaceScanResult
-  | NxWorkspaceScanResult;
-
-interface AngularCliWorkspaceScanResult {
+interface WorkspaceInfo {
   workspaceType: 'angular-cli' | 'nx';
   projects: Project[];
 }
