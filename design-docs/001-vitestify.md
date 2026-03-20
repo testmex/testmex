@@ -76,6 +76,40 @@ sequenceDiagram
 - **Config parsing**: only `jest.config.ts` is supported for now. Other formats (`jest.config.js`, `package.json` inline) are out of scope for v1.
 - **Finding tags**: each `Finding` carries a `tags` property — a union of known tags (e.g. `"jest"`, `"testing-library"`). Transforms declare which tags they handle, allowing the pipeline to include or skip transforms based on the tags present in findings.
 
+### Scanner
+
+```typescript
+class Scanner {
+  constructor(private readonly fileSystem: FileSystem) {}
+
+  async scanWorkspace(): Promise<WorkspaceScanResult[]> {}
+}
+
+type WorkspaceScanResult =
+  | AngularCliWorkspaceScanResult
+  | NxWorkspaceScanResult;
+
+interface AngularCliWorkspaceScanResult {
+  workspaceType: 'angular-cli' | 'nx';
+  projects: Project[];
+}
+
+interface Project {
+  name: string;
+  path: RelativePath;
+  files: ProjectFile[];
+}
+
+interface ProjectFile {
+  path: RelativePath;
+  tags: ProjectFileTag[];
+}
+
+type ProjectFileTag = 'jest-config' | 'nx-project-json' | 'test' | 'tsconfig';
+```
+
+RelativePath is a branded string type that represents a path relative to the workspace root.
+
 # Testing Strategy
 
 ## Scanner
