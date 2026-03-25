@@ -14,8 +14,9 @@ export class AngularCliEnricher implements Enricher {
     const angularJson = await this._fileSystem.maybeReadFile(
       relativePath('angular.json'),
     );
-    if (angularJson == null) {
-      throw new Error('Unsupported workspace');
+
+    if (angularJson === null) {
+      return workspaceInfo;
     }
 
     const config: AngularJson = JSON.parse(angularJson);

@@ -11,7 +11,7 @@ export class FileSystemFake implements FileSystem {
     }
   }
 
-  async maybeReadFile(path: RelativePath): Promise<string | undefined> {
+  async maybeReadFile(path: RelativePath): Promise<string | null> {
     return this._files.get(path);
   }
 
