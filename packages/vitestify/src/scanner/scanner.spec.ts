@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { angularJsonMother } from '../core/angular-json.mother';
 import { relativePath, type Project } from '../core/core';
-import { FileSystemFake } from './infra/file-system.fake';
+import { FileSystemFake } from '../infra/file-system.fake';
 import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {

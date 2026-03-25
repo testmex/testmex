@@ -52,7 +52,7 @@ sequenceDiagram
 
     User->>CLI: npx @testmex/vitestify [--dry-run] [--path]
     CLI->>Pipeline: run(options)
-    Pipeline->>Scanner: detectProjects()
+    Pipeline->>Scanner: scanWorkspace()
     Scanner-->>Pipeline: projects, jestConfigs, testFiles
     Pipeline->>CLI: prompt(questions)
     CLI->>User: interactive prompts (inquirer.js)
