@@ -5,7 +5,7 @@ import { FileSystemFake } from './infra/file-system.fake';
 import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {
-  it.todo('detects angular cli project', async () => {
+  it('detects angular cli project', async () => {
     const { fileSystem, scanner } = setUp();
 
     fileSystem.configure({

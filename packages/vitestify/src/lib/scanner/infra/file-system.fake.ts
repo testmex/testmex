@@ -1,6 +1,7 @@
 import type { RelativePath } from '../../core/core';
+import { FileSystem } from './file-system';
 
-export class FileSystemFake {
+export class FileSystemFake implements FileSystem {
   private readonly _files = new Map<RelativePath, string>();
 
   configure(entries: Record<RelativePath, string>): void {
@@ -8,6 +9,10 @@ export class FileSystemFake {
     for (const [path, content] of Object.entries(entries)) {
       this._files.set(path as RelativePath, content);
     }
+  }
+
+  async maybeReadFile(path: RelativePath): Promise<string | undefined> {
+    return this._files.get(path);
   }
 
   async scanDirectory(path: RelativePath): Promise<RelativePath[]> {
