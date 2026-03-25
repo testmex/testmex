@@ -1,38 +1,25 @@
-import type { FileSystem } from './infra/file-system';
-import { relativePath, type Project, type WorkspaceInfo } from '../core/core';
+import { createWorkspaceInfo, WorkspaceInfo } from '../core/workspace-info';
+import type { FileSystem } from '../infra/file-system';
+import { AngularCliEnricher } from './angular-cli-enricher';
+import { Enricher } from './enricher';
 
 /**
  * @deprecated 🚧 work in progress
  */
 export class Scanner {
-  constructor(private readonly _fileSystem: FileSystem) {}
+  private _enrichers: Enricher[];
+  constructor(private readonly _fileSystem: FileSystem) {
+    this._enrichers = [new AngularCliEnricher(this._fileSystem)];
+  }
 
   /**
    * @deprecated 🚧 work in progress
    */
   async scanWorkspace(): Promise<WorkspaceInfo> {
-    const angularJson = await this._fileSystem.maybeReadFile(
-      relativePath('angular.json'),
-    );
-    if (angularJson == null) {
-      throw new Error('Unsupported workspace');
+    let workspaceInfo = createWorkspaceInfo();
+    for (const enricher of this._enrichers ){
+      workspaceInfo = await enricher.enrich(workspaceInfo)
     }
-
-    const config = JSON.parse(angularJson) as {
-      projects?: Record<string, { root: string }>;
-    };
-
-    const projects: Project[] = Object.entries(config.projects ?? {}).map(
-      ([name, meta]) => ({
-        name,
-        path: relativePath(meta.root),
-        files: [],
-      }),
-    );
-
-    return {
-      workspaceType: 'angular-cli',
-      projects,
-    };
+    return workspaceInfo;
   }
 }
