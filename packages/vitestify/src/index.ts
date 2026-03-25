@@ -1,1 +1,1 @@
-export * from './lib/vitestify';
+export * from './vitestify';
