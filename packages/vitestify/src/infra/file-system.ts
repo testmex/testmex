@@ -11,6 +11,10 @@ export class FileSystem {
     throw new Error('🚧 Work in progress!');
   }
 
+  async readFile(path: RelativePath): Promise<string> {
+    throw new Error('🚧 work in progress');
+  }
+
   async scanDirectory(path: RelativePath): Promise<RelativePath[]> {
     throw new Error('🚧 Work in progress!');
   }

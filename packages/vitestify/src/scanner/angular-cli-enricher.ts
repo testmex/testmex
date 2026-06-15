@@ -8,7 +8,11 @@ import { FileSystem } from '../infra/file-system';
 import { Enricher } from './enricher';
 
 export class AngularCliEnricher implements Enricher {
-  constructor(private _fileSystem: FileSystem) {}
+  private readonly _fileSystem: FileSystem;
+
+  constructor({ fileSystem }: { fileSystem: FileSystem }) {
+    this._fileSystem = fileSystem;
+  }
 
   async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
     const angularJson = await this._fileSystem.maybeReadFile(
