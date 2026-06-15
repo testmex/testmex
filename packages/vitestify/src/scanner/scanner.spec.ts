@@ -30,10 +30,29 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('detects nx project', async () => {
-    const { fileSystem, scanner } = setUp();
+  it('detects nx project', async () => {
+    const { commandRunner, fileSystem, scanner } = setUp();
+
+    commandRunner.configure({
+      ['npx nx show projects --json']: JSON.stringify({
+        projects: [
+          {
+            name: 'my-app',
+          },
+        ],
+      }),
+      ['npx nx show project my-app --json']: JSON.stringify({
+        name: 'my-app',
+        root: 'apps/my-app',
+      }),
+    });
 
     fileSystem.configure({
+      [relativePath('package.json')]: JSON.stringify({
+        dependencies: {
+          nx: '23.0.0',
+        },
+      }),
       [relativePath('nx.json')]: '{}',
       [relativePath('apps/my-app/project.json')]: JSON.stringify({
         name: 'my-app',

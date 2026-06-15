@@ -9,7 +9,7 @@ export class CommandRunnerFake {
   }
 
   async run(args: readonly string[]): Promise<string> {
-    const output = this._responses.get(JSON.stringify(args));
+    const output = this._responses.get(args.join(' '));
     if (output === undefined) {
       throw new Error(
         `CommandRunnerFake: Unexpected command: ${JSON.stringify(args)}`,
