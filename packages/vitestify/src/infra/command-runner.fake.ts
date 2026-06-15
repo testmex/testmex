@@ -8,11 +8,11 @@ export class CommandRunnerFake {
     }
   }
 
-  async run(command: string): Promise<string> {
-    const output = this._responses.get(command);
+  async run(args: readonly string[]): Promise<string> {
+    const output = this._responses.get(JSON.stringify(args));
     if (output === undefined) {
       throw new Error(
-        `CommandRunnerFake: Unexpected command: ${JSON.stringify(command)}`,
+        `CommandRunnerFake: Unexpected command: ${JSON.stringify(args)}`,
       );
     }
     return output;

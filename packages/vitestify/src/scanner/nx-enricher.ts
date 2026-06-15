@@ -76,11 +76,15 @@ export class NxEnricher implements Enricher {
   }>;
   private async _runNxJsonCommand(
     command: string,
-    ...args: unknown[]
+    ...args: string[]
   ): Promise<unknown> {
-    const raw = await this._commandRunner.run(
-      `npx nx ${command} ${args.join(' ')} --json`,
-    );
+    const raw = await this._commandRunner.run([
+      'npx',
+      'nx',
+      ...command.split(' '),
+      ...args,
+      '--json',
+    ]);
     return JSON.parse(raw);
   }
 }
