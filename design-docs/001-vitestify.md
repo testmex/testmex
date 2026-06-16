@@ -30,14 +30,33 @@
 1. **CLI** — entry point. Parses `--dry-run` and `--path` flags. Uses **inquirer.js** for interactive prompts. Bootstraps the pipeline.
 2. **Scanner** — discovers workspace structure: project type (Angular CLI vs Nx), Jest config files, test files, `package.json` entries.
 3. **Analyzer** — the engine. Runs registered heuristics over the `Workspace` and collects findings.
-4. **Heuristics** — small, composable rules registered in a simple array. Each **Heuristic** receives the full `Workspace` (`WorkspaceInfo` + `Tree`) and can inspect individual files, cross-file relationships, or whole projects (e.g. "file uses `jest.mock`", "per-project `jest.config.ts` extends the Nx `jest.preset.js`"). They produce **Findings**. Easy to add new ones.
-5. **Transforms** — each transform is constructed with the shared `Tree`, receives a list of findings, reads source from the `Tree`, and writes edits back to it. Registered in a simple array. The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
+4. **Heuristics** — small, composable rules registered in a simple array.
+   - Each **Heuristic** receives the full `Workspace` (`WorkspaceInfo` + `Tree`).
+   - It can inspect individual files, cross-file relationships, or whole projects.
+   - Examples: "file uses `jest.mock`", "per-project `jest.config.ts` extends the Nx `jest.preset.js`".
+   - They produce **Findings**. Easy to add new ones.
+5. **Transforms** — each transform is constructed with the shared `Tree`.
+   - It receives a list of findings, reads source from the `Tree`, and writes edits back to it.
+   - Registered in a simple array.
+   - The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
 6. **Reporter** — summarizes all staged changes and writes a Markdown summary report.
 7. **Pipeline** — wires it all together: CLI → Scanner → Analyzer → Transforms → Reporter, all sharing one `Tree`. Respects `--dry-run` by skipping the `Tree` commit.
 
 ## Mental Model
 
-**detect → act → report.** The scanner maps the workspace (`WorkspaceInfo`). The pipeline bundles that with a shared `Tree` into a **`Workspace`**. Heuristics inspect the `Workspace` and produce **findings** — observations about what needs changing — with full access to file content and cross-file context via the `Tree`. **Transforms** act on findings by reading and writing through the same `Tree` — an in-memory overlay over the file system that reads lazily, caches edits, and flushes them on `commit()`. Because all transforms edit the same `Tree`, several of them can touch the same file in sequence without clobbering each other. A **change** is the `Tree`'s record of a staged create, update (optionally with a rename), or delete. The agent-instruction transform is just another transform — it stages Markdown files for findings flagged as needing manual help. The reporter summarizes all staged changes.
+**detect → act → report.**
+
+- The scanner maps the workspace (`WorkspaceInfo`).
+- The pipeline bundles that with a shared `Tree` into a **`Workspace`**.
+- Heuristics inspect the `Workspace` and produce **findings** — observations about what needs changing.
+- Heuristics have full access to file content and cross-file context via the `Tree`.
+- **Transforms** act on findings by reading and writing through the same `Tree`.
+- The `Tree` is an in-memory overlay over the file system.
+- It reads lazily, caches edits, and flushes them on `commit()`.
+- Because all transforms edit the same `Tree`, several of them can touch the same file in sequence without clobbering each other.
+- A **change** is the `Tree`'s record of a staged create, update (optionally with a rename), or delete.
+- The agent-instruction transform is just another transform — it stages Markdown files for findings flagged as needing manual help.
+- The reporter summarizes all staged changes.
 
 ```mermaid
 flowchart LR
@@ -86,11 +105,30 @@ sequenceDiagram
 ## Implementation Details
 
 - **Heuristic & Transform registration**: hardcoded arrays — no auto-discovery or plugin system. Heuristics and transforms are registered as simple arrays. Transforms are registered as factories that receive the shared `Tree`.
-- **Tree**: an in-memory overlay over the `FileSystem`. Reads are lazy and cached; writes/deletes are staged in memory; `commit()` flushes staged changes to disk. It is the single channel through which the analyzer, transforms, and reporter touch file content, which is what makes multi-transform edits to the same file compose.
+- **Tree**:
+  - An in-memory overlay over the `FileSystem`.
+  - Reads are lazy and cached.
+  - Writes/deletes are staged in memory.
+  - `commit()` flushes staged changes to disk.
+  - It is the single channel through which the analyzer, transforms, and reporter touch file content.
+  - This is what makes multi-transform edits to the same file compose.
 - **Code transforms**: use **jscodeshift** for AST-based rewrites of test files (e.g. `jest.mock` → `vi.mock`).
-- **Config parsing**: support the Jest config in all its common forms — `jest.config.{ts,js,mjs,cjs}`, the Nx `jest.preset.js`, and an inline `jest` field in `package.json`. JS/TS configs are edited via AST; the `package.json` field via structured JSON edit. (Migrating from Karma/Jasmine configs remains out of scope.)
-- **Finding tags**: each `Finding` carries a `tags` property used for grouping and reporting. The type allows known tags (e.g. `"jest"`, `"testing-library"`, `"needs-agent"`) for autocomplete while staying open to new tags, so adding a heuristic never requires editing a central union.
-- **Test runner wiring**: changing config files is not enough — the runner has to invoke Vitest. A heuristic detects how tests are currently run and a transform rewrites it: for **Nx**, the `@nx/jest:jest` target in `project.json` is rewritten to a Vitest target (`@nx/vite:test`, or `@analogjs/vitest-angular:test` for Angular-in-Nx) with a generated `vite.config.ts`; for **Angular CLI**, the `test` target's Jest builder in `angular.json` is rewritten to the Vitest builder. Cases too gnarly to rewrite safely emit a `needs-agent` finding for the agent-instruction transform.
+- **Config parsing**:
+  - Support the Jest config in all its common forms — `jest.config.{ts,js,mjs,cjs}`, the Nx `jest.preset.js`, and an inline `jest` field in `package.json`.
+  - JS/TS configs are edited via AST.
+  - The `package.json` field is edited via structured JSON edit.
+  - Migrating from Karma/Jasmine configs remains out of scope.
+- **Finding tags**:
+  - Each `Finding` carries a `tags` property used for grouping and reporting.
+  - The type allows known tags (e.g. `"jest"`, `"testing-library"`, `"needs-agent"`) for autocomplete while staying open to new tags.
+  - Adding a heuristic never requires editing a central union.
+- **Test runner wiring**:
+  - Changing config files is not enough — the runner has to invoke Vitest.
+  - A heuristic detects how tests are currently run.
+  - A transform rewrites it.
+  - For **Nx**: the `@nx/jest:jest` target in `project.json` is rewritten to a Vitest target (`@nx/vite:test`, or `@analogjs/vitest-angular:test` for Angular-in-Nx) with a generated `vite.config.ts`.
+  - For **Angular CLI**: the `test` target's Jest builder in `angular.json` is rewritten to the Vitest builder.
+  - Cases too gnarly to rewrite safely emit a `needs-agent` finding for the agent-instruction transform.
 
 ### Core
 
@@ -98,7 +136,7 @@ sequenceDiagram
 type RelativePath = string & { readonly [__relativePathBrand]: true };
 ```
 
-`RelativePath` is a branded string type that represents a path relative to the workspace root.
+`RelativePath` is a branded string type. It represents a path relative to the workspace root.
 
 ```typescript
 class Tree {
@@ -113,7 +151,14 @@ class Tree {
 }
 ```
 
-The `Tree` is the shared mutation surface for the whole pipeline. The analyzer reads through it, transforms read and write through it, and the reporter stages its report file through it. Because edits live in one in-memory cache until `commit()`, multiple transforms can edit the same file in sequence and each sees the previous transform's output. `--dry-run` simply never calls `commit()`.
+The `Tree` is the shared mutation surface for the whole pipeline.
+
+- The analyzer reads through it.
+- Transforms read and write through it.
+- The reporter stages its report file through it.
+- Edits live in one in-memory cache until `commit()`.
+- Multiple transforms can edit the same file in sequence and each sees the previous transform's output.
+- `--dry-run` simply never calls `commit()`.
 
 ### Scanner
 
@@ -156,7 +201,13 @@ type ProjectFileTag =
   | 'tsconfig';
 ```
 
-`scanWorkspace` first detects `workspaceType` (presence of `nx.json` → `nx`, else `angular.json` → `angular-cli`), then runs each registered `Enricher` in order. Each `Enricher` (e.g. `AngularCliEnricher`, `NxEnricher`) checks whether it applies to the detected `workspaceType` and, if so, augments the `WorkspaceInfo` with the projects and files it discovers. Enrichers are passed into the `Scanner` constructor so the set is explicit and testable.
+`scanWorkspace` workflow:
+
+- First detects `workspaceType` (presence of `nx.json` → `nx`, else `angular.json` → `angular-cli`).
+- Then runs each registered `Enricher` in order.
+- Each `Enricher` (e.g. `AngularCliEnricher`, `NxEnricher`) checks whether it applies to the detected `workspaceType`.
+- If so, it augments the `WorkspaceInfo` with the projects and files it discovers.
+- Enrichers are passed into the `Scanner` constructor so the set is explicit and testable.
 
 The pipeline assembles a `Workspace` from the scanner output and the shared `Tree`:
 
@@ -175,7 +226,12 @@ class Analyzer {
 }
 ```
 
-The analyzer runs every registered `Heuristic` against the `Workspace`. Each heuristic decides what to inspect — a single file, a whole project, or cross-file relationships — using `workspace.info` and `workspace.tree`, and returns `HeuristicResult`s stamped with the relevant `project` (and optional `file`). The analyzer collects them as `Finding`s.
+The analyzer runs every registered `Heuristic` against the `Workspace`.
+
+- Each heuristic decides what to inspect — a single file, a whole project, or cross-file relationships.
+- It uses `workspace.info` and `workspace.tree`.
+- It returns `HeuristicResult`s stamped with the relevant `project` (and optional `file`).
+- The analyzer collects them as `Finding`s.
 
 ### Heuristics & Findings
 
@@ -199,7 +255,16 @@ type FindingType = string; // e.g. 'jest-mock-call', 'nx-jest-executor' — defi
 type FindingTag = 'jest' | 'testing-library' | 'needs-agent' | (string & {});
 ```
 
-Each heuristic receives the full `Workspace`, so it can inspect individual files (via `workspace.tree.read`), whole projects (via `workspace.info.projects`), or cross-file relationships — e.g. a per-project `jest.config.ts` that extends the Nx `jest.preset.js`, or imports that must be reconciled with `tsconfig` paths. Heuristics return `HeuristicResult`s stamped with the relevant `project` (and optional `file`); the analyzer passes them through as `Finding`s. `FindingType` identifies the specific pattern detected; `FindingTag` groups related findings for filtering and reporting and is open so new heuristics never edit a central union.
+Each heuristic receives the full `Workspace`.
+
+- It can inspect individual files (via `workspace.tree.read`).
+- It can inspect whole projects (via `workspace.info.projects`).
+- It can inspect cross-file relationships — e.g. a per-project `jest.config.ts` that extends the Nx `jest.preset.js`, or imports that must be reconciled with `tsconfig` paths.
+- Heuristics return `HeuristicResult`s stamped with the relevant `project` (and optional `file`).
+- The analyzer passes them through as `Finding`s.
+- `FindingType` identifies the specific pattern detected.
+- `FindingTag` groups related findings for filtering and reporting.
+- Tags are open so new heuristics never edit a central union.
 
 ### Transforms & Changes
 
@@ -222,7 +287,16 @@ type UpdateChange = {
 type Change = CreateChange | UpdateChange | DeleteChange;
 ```
 
-Each transform is constructed with the shared `Tree` (via its `TransformFactory`). `apply` reads source through the `Tree`, writes edited content back to it, and returns nothing — there is no per-transform `Change[]` to merge. The `Tree` is the single accumulator of edits, so a `jest.mock` rewrite and an import rewrite can both edit the same test file in sequence, each seeing the prior edit. `Change` is the `Tree`'s own derived record of what was staged: `create` for new paths, `delete` for removed paths, and `update` for in-place edits or renames (`path` is always the final path; pass `originalPath` to `Tree.write` when a transform renames a file, e.g. `jest.config.ts` → `vitest.config.ts`).
+Each transform is constructed with the shared `Tree` (via its `TransformFactory`).
+
+- `apply` reads source through the `Tree` and writes edited content back to it.
+- It returns nothing — there is no per-transform `Change[]` to merge.
+- The `Tree` is the single accumulator of edits.
+- A `jest.mock` rewrite and an import rewrite can both edit the same test file in sequence, each seeing the prior edit.
+- `Change` is the `Tree`'s own derived record of what was staged:
+  - `create` for new paths.
+  - `delete` for removed paths.
+  - `update` for in-place edits or renames (`path` is always the final path; pass `originalPath` to `Tree.write` when a transform renames a file, e.g. `jest.config.ts` → `vitest.config.ts`).
 
 ### Pipeline
 
@@ -241,7 +315,14 @@ class Pipeline {
 }
 ```
 
-The pipeline creates one `Tree` (over the real `FileSystem`), assembles a `Workspace` from the scanner's `WorkspaceInfo` and that `Tree`, and threads both into the analyzer, transforms, and reporter. After transforms run, `result.changes` is `tree.changes()`. When `dryRun` is false it calls `tree.commit()` to flush everything to disk (including renames); when `dryRun` is true it skips the commit, so nothing is written.
+The pipeline workflow:
+
+- Creates one `Tree` (over the real `FileSystem`).
+- Assembles a `Workspace` from the scanner's `WorkspaceInfo` and that `Tree`.
+- Threads both into the analyzer, transforms, and reporter.
+- After transforms run, `result.changes` is `tree.changes()`.
+- When `dryRun` is false it calls `tree.commit()` to flush everything to disk (including renames).
+- When `dryRun` is true it skips the commit, so nothing is written.
 
 ### Reporter
 
@@ -253,7 +334,12 @@ class Reporter {
 }
 ```
 
-The reporter always prints the summary to stdout, and stages `summary.md` into the `Tree`. Persisting it to disk therefore happens through the pipeline's `tree.commit()`, so under `--dry-run` the summary is shown but never written.
+The reporter behavior:
+
+- Always prints the summary to stdout.
+- Stages `summary.md` into the `Tree`.
+- Persisting it to disk happens through the pipeline's `tree.commit()`.
+- Under `--dry-run` the summary is shown but never written.
 
 # Testing Strategy
 
@@ -347,15 +433,39 @@ flowchart LR
     PR4 --> PR5
 ```
 
-1. [ ] **PR 0 — Core + Tree**: `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`). Everything downstream depends on it. Tests included.
-2. [ ] **PR 1 — Scanner**: workspace detection (Angular CLI vs Nx), `Enricher` interface + `AngularCliEnricher`/`NxEnricher`, Jest config discovery (all forms), test file discovery. Tests included.
-3. [ ] **PR 2 — Analyzer + heuristics**: analyzer engine, `Workspace`/`Finding`/`HeuristicResult`/`Heuristic` types, tag system. Ships with all v1 heuristics. Tests included.
-4. [ ] **PR 3 — Transform engine + transforms**: `Transform`/`TransformFactory`/`Change` union (including rename-on-update), transform runner over the `Tree`. Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift, Nx/Angular runner-wiring transform, agent-instruction transform). Tests included.
-5. [ ] **PR 4 — Pipeline + wide test**: CLI entry point with `--dry-run`, `--path`, inquirer.js prompts. Wires Scanner + Analyzer + Transforms over one `Tree`. Wide integration test.
-6. [ ] **PR 5 — Reporter**: builds the Markdown summary, prints to stdout, stages it into the `Tree`. Plugs into the pipeline. Tests included.
+1. [ ] **PR 0 — Core + Tree**:
+   - `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`).
+   - Everything downstream depends on it.
+   - Tests included.
+2. [ ] **PR 1 — Scanner**:
+   - Workspace detection (Angular CLI vs Nx).
+   - `Enricher` interface + `AngularCliEnricher`/`NxEnricher`.
+   - Jest config discovery (all forms), test file discovery.
+   - Tests included.
+3. [ ] **PR 2 — Analyzer + heuristics**:
+   - Analyzer engine, `Workspace`/`Finding`/`HeuristicResult`/`Heuristic` types, tag system.
+   - Ships with all v1 heuristics.
+   - Tests included.
+4. [ ] **PR 3 — Transform engine + transforms**:
+   - `Transform`/`TransformFactory`/`Change` union (including rename-on-update), transform runner over the `Tree`.
+   - Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift, Nx/Angular runner-wiring transform, agent-instruction transform).
+   - Tests included.
+5. [ ] **PR 4 — Pipeline + wide test**:
+   - CLI entry point with `--dry-run`, `--path`, inquirer.js prompts.
+   - Wires Scanner + Analyzer + Transforms over one `Tree`.
+   - Wide integration test.
+6. [ ] **PR 5 — Reporter**:
+   - Builds the Markdown summary, prints to stdout, stages it into the `Tree`.
+   - Plugs into the pipeline.
+   - Tests included.
 
 # Alternatives Considered
 
-- **Nx generator instead of standalone CLI** — would tie the tool to `@nx/devkit`, which is often coupled to specific Nx versions, making it harder to support across different workspaces. A standalone CLI avoids this dependency and works with both Angular CLI and Nx projects.
+- **Nx generator instead of standalone CLI**:
+  - Would tie the tool to `@nx/devkit`.
+  - `@nx/devkit` is often coupled to specific Nx versions.
+  - That makes it harder to support across different workspaces.
+  - A standalone CLI avoids this dependency.
+  - It works with both Angular CLI and Nx projects.
 
 # Kitchen Sink
