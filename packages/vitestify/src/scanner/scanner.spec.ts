@@ -9,11 +9,9 @@ import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {
   it('detects angular cli project', async () => {
-    const { fileSystem, scanner } = setUp();
+    const { configureWorkspace, scanner } = setUp();
 
-    fileSystem.configure(
-      angularCliWorkspaceMother.withApp('my-app').buildFiles(),
-    );
+    configureWorkspace(angularCliWorkspaceMother.withApp('my-app'));
 
     const { projects, workspaceType } = await scanner.scanWorkspace();
 
@@ -27,11 +25,9 @@ describe(Scanner.name, () => {
   });
 
   it('detects nx project', async () => {
-    const { commandRunner, fileSystem, scanner } = setUp();
+    const { configureWorkspace, scanner } = setUp();
 
-    const workspace = nxWorkspaceMother.withApp('my-app');
-    fileSystem.configure(workspace.buildFiles());
-    commandRunner.configure(workspace.buildCommands());
+    configureWorkspace(nxWorkspaceMother.withApp('my-app'));
 
     const { projects, workspaceType } = await scanner.scanWorkspace();
 
@@ -43,6 +39,29 @@ describe(Scanner.name, () => {
       },
     ]);
   });
+
+  it.todo('enriches nx project with jest config', async () => {
+    const { configureWorkspace, scanner } = setUp();
+
+    configureWorkspace(
+      nxWorkspaceMother
+        .withApp('my-app')
+        .withAppFile('my-app', 'jest.config.ts', 'export default {}'),
+    );
+
+    const { projects } = await scanner.scanWorkspace();
+
+    expect(projects).toMatchObject([
+      {
+        files: [
+          {
+            path: relativePath('apps/my-app/jest.config.ts'),
+            tags: ['jest-config'],
+          },
+        ],
+      },
+    ]);
+  });
 });
 
 function setUp() {
@@ -50,8 +69,14 @@ function setUp() {
   const fileSystem = new FileSystemFake();
 
   return {
-    commandRunner,
-    fileSystem,
+    configureWorkspace: (
+      workspaceMother:
+        | typeof angularCliWorkspaceMother
+        | typeof nxWorkspaceMother,
+    ) => {
+      commandRunner.configure(workspaceMother.buildCommands());
+      fileSystem.configure(workspaceMother.buildFiles());
+    },
     scanner: new Scanner({
       commandRunner,
       fileSystem,
