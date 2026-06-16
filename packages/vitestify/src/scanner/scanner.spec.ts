@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { angularJsonMother } from '../core/angular-json.mother';
 import { relativePath } from '../core/relative-path';
 import type { Project } from '../core/workspace-info';
+import { angularCliWorkspaceMother } from '../infra/angular-cli-workspace-infra.mother';
+import { nxWorkspaceMother } from '../infra/nx-workspace-infra.mother';
 import { CommandRunnerFake } from '../infra/command-runner.fake';
 import { FileSystemFake } from '../infra/file-system.fake';
 import { Scanner } from './scanner';
@@ -10,14 +11,9 @@ describe(Scanner.name, () => {
   it('detects angular cli project', async () => {
     const { fileSystem, scanner } = setUp();
 
-    fileSystem.configure({
-      [relativePath('angular.json')]: angularJsonMother
-        .withProject({
-          name: 'my-app',
-          root: 'apps/my-app',
-        })
-        .buildString(),
-    });
+    fileSystem.configure(
+      angularCliWorkspaceMother.withApp('my-app').buildFiles(),
+    );
 
     const { projects, workspaceType } = await scanner.scanWorkspace();
 
@@ -33,31 +29,9 @@ describe(Scanner.name, () => {
   it('detects nx project', async () => {
     const { commandRunner, fileSystem, scanner } = setUp();
 
-    commandRunner.configure({
-      ['npx nx show projects --json']: JSON.stringify({
-        projects: [
-          {
-            name: 'my-app',
-          },
-        ],
-      }),
-      ['npx nx show project my-app --json']: JSON.stringify({
-        name: 'my-app',
-        root: 'apps/my-app',
-      }),
-    });
-
-    fileSystem.configure({
-      [relativePath('package.json')]: JSON.stringify({
-        dependencies: {
-          nx: '23.0.0',
-        },
-      }),
-      [relativePath('nx.json')]: '{}',
-      [relativePath('apps/my-app/project.json')]: JSON.stringify({
-        name: 'my-app',
-      }),
-    });
+    const workspace = nxWorkspaceMother.withApp('my-app');
+    fileSystem.configure(workspace.buildFiles());
+    commandRunner.configure(workspace.buildCommands());
 
     const { projects, workspaceType } = await scanner.scanWorkspace();
 
