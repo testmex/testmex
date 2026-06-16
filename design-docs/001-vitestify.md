@@ -258,13 +258,13 @@ The reporter always prints the summary to stdout, and stages `summary.md` into t
 
 ## Scanner
 
-### Detects Angular CLI project:
+### [ ] Detects Angular CLI project:
 
 - Arrange: create a temp workspace with `angular.json` and a `jest.config.ts`.
 - Act: run scanner on the workspace path.
 - Assert: returns project type `angular-cli` with the jest config path.
 
-### Detects Nx project:
+### [ ] Detects Nx project:
 
 - Arrange: create a temp workspace with `nx.json`, `project.json`, and a `jest.config.ts`.
 - Act: run scanner on the workspace path.
@@ -272,7 +272,7 @@ The reporter always prints the summary to stdout, and stages `summary.md` into t
 
 ## Analyzer
 
-### Runs file and project heuristics and stamps context:
+### [ ] Runs file and project heuristics and stamps context:
 
 - Arrange: a workspace with one project and one file; one dummy `FileHeuristic` that returns a result and one that returns nothing; one dummy `ProjectHeuristic` that returns a result.
 - Act: run analyzer with a backing `Tree`.
@@ -280,13 +280,13 @@ The reporter always prints the summary to stdout, and stages `summary.md` into t
 
 ## Heuristics
 
-### File heuristic detects `jest.mock` usage:
+### [ ] File heuristic detects `jest.mock` usage:
 
 - Arrange: provide a file containing `jest.mock('./foo')`.
 - Act: run the heuristic.
 - Assert: returns a result of type `jest-mock-call` with tag `"jest"`.
 
-### Project heuristic detects config extending the Nx preset (cross-file):
+### [ ] Project heuristic detects config extending the Nx preset (cross-file):
 
 - Arrange: a `Tree` with a `jest.preset.js` and a per-project `jest.config.ts` that `require`s the preset.
 - Act: run the project heuristic against the project.
@@ -294,19 +294,19 @@ The reporter always prints the summary to stdout, and stages `summary.md` into t
 
 ## Transforms
 
-### Rewrites `jest.mock` to `vi.mock` via the Tree:
+### [ ] Rewrites `jest.mock` to `vi.mock` via the Tree:
 
 - Arrange: a `Tree` whose test file contains `jest.mock('./foo')`; a matching finding.
 - Act: construct the transform with the `Tree` and apply it.
 - Assert: `tree.read(path)` now contains `vi.mock('./foo')`.
 
-### Two transforms compose on the same file:
+### [ ] Two transforms compose on the same file:
 
 - Arrange: a `Tree` with a test file; findings for both a `jest.mock` rewrite and an import rewrite.
 - Act: apply both transforms in sequence against the same `Tree`.
 - Assert: the file reflects both edits (neither clobbers the other).
 
-### Agent instruction transform stages Markdown for `needs-agent` findings:
+### [ ] Agent instruction transform stages Markdown for `needs-agent` findings:
 
 - Arrange: a finding tagged `needs-agent`.
 - Act: apply the agent-instruction transform.
@@ -314,13 +314,13 @@ The reporter always prints the summary to stdout, and stages `summary.md` into t
 
 ## Pipeline
 
-### Dry-run does not write files:
+### [ ] Dry-run does not write files:
 
 - Arrange: set up a workspace with a jest config and test files.
 - Act: run the pipeline with `--dry-run`.
 - Assert: `tree.commit()` is never called and no files are modified; the summary is still printed to stdout and appears in `result.changes`.
 
-### Wide test — applies transforms and commits report:
+### [ ] Wide test — applies transforms and commits report:
 
 - Arrange: set up a workspace with a jest config and a test file using `jest.mock`.
 - Act: run the pipeline.
@@ -346,12 +346,12 @@ flowchart LR
     PR4 --> PR5
 ```
 
-1. **PR 0 — Core + Tree**: `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`). Everything downstream depends on it. Tests included.
-2. **PR 1 — Scanner**: workspace detection (Angular CLI vs Nx), `Enricher` interface + `AngularCliEnricher`/`NxEnricher`, Jest config discovery (all forms), test file discovery. Tests included.
-3. **PR 2 — Analyzer + heuristics**: analyzer engine, `Finding`/`HeuristicResult`/`FileHeuristic`/`ProjectHeuristic` types, tag system, two-phase run with context stamping. Ships with all v1 heuristics. Tests included.
-4. **PR 3 — Transform engine + transforms**: `Transform`/`TransformFactory`/`Change` types, transform runner over the `Tree`. Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift, Nx/Angular runner-wiring transform, agent-instruction transform). Tests included.
-5. **PR 4 — Pipeline + wide test**: CLI entry point with `--dry-run`, `--path`, inquirer.js prompts. Wires Scanner + Analyzer + Transforms over one `Tree`. Wide integration test.
-6. **PR 5 — Reporter**: builds the Markdown summary, prints to stdout, stages it into the `Tree`. Plugs into the pipeline. Tests included.
+1. [ ] **PR 0 — Core + Tree**: `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`). Everything downstream depends on it. Tests included.
+2. [ ] **PR 1 — Scanner**: workspace detection (Angular CLI vs Nx), `Enricher` interface + `AngularCliEnricher`/`NxEnricher`, Jest config discovery (all forms), test file discovery. Tests included.
+3. [ ] **PR 2 — Analyzer + heuristics**: analyzer engine, `Finding`/`HeuristicResult`/`FileHeuristic`/`ProjectHeuristic` types, tag system, two-phase run with context stamping. Ships with all v1 heuristics. Tests included.
+4. [ ] **PR 3 — Transform engine + transforms**: `Transform`/`TransformFactory`/`Change` types, transform runner over the `Tree`. Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift, Nx/Angular runner-wiring transform, agent-instruction transform). Tests included.
+5. [ ] **PR 4 — Pipeline + wide test**: CLI entry point with `--dry-run`, `--path`, inquirer.js prompts. Wires Scanner + Analyzer + Transforms over one `Tree`. Wide integration test.
+6. [ ] **PR 5 — Reporter**: builds the Markdown summary, prints to stdout, stages it into the `Tree`. Plugs into the pipeline. Tests included.
 
 # Alternatives Considered
 
