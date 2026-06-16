@@ -76,17 +76,29 @@ sequenceDiagram
 - **Config parsing**: only `jest.config.ts` is supported for now. Other formats (`jest.config.js`, `package.json` inline) are out of scope for v1.
 - **Finding tags**: each `Finding` carries a `tags` property — a union of known tags (e.g. `"jest"`, `"testing-library"`). Transforms declare which tags they handle, allowing the pipeline to include or skip transforms based on the tags present in findings.
 
+### Core
+
+```typescript
+type RelativePath = string & { readonly [__relativePathBrand]: true };
+```
+
+`RelativePath` is a branded string type that represents a path relative to the workspace root.
+
 ### Scanner
 
 ```typescript
 class Scanner {
-  constructor(private readonly fileSystem: FileSystem) {}
+  constructor(args: { commandRunner: CommandRunner; fileSystem: FileSystem }) {}
 
   async scanWorkspace(): Promise<WorkspaceInfo> {}
 }
 
+interface Enricher {
+  enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo>;
+}
+
 interface WorkspaceInfo {
-  workspaceType: 'angular-cli' | 'nx';
+  workspaceType: 'angular-cli' | 'nx' | null;
   projects: Project[];
 }
 
@@ -104,7 +116,90 @@ interface ProjectFile {
 type ProjectFileTag = 'jest-config' | 'nx-project-json' | 'test' | 'tsconfig';
 ```
 
-RelativePath is a branded string type that represents a path relative to the workspace root.
+Each `Enricher` (e.g. `AngularCliEnricher`, `NxEnricher`) augments a partial `WorkspaceInfo` with projects and files discovered for its workspace type.
+
+### Analyzer
+
+```typescript
+class Analyzer {
+  async analyze(
+    files: ProjectFile[],
+    heuristics: Heuristic[],
+    fileSystem: FileSystem
+  ): Promise<Finding[]> {}
+}
+```
+
+### Heuristics & Findings
+
+```typescript
+interface Heuristic {
+  inspect(file: ProjectFile, content: string): Promise<Finding[]>;
+}
+
+interface Finding {
+  type: FindingType;
+  tags: FindingTag[];
+  project: Project;
+  file: ProjectFile;
+  description: string;
+}
+
+type FindingType = 'jest-mock-call'; // extensible per heuristic
+
+type FindingTag = 'jest' | 'testing-library';
+```
+
+`FindingType` identifies the specific pattern detected (used by transforms and agent instructions). `FindingTag` groups related findings so the pipeline can include or skip transforms.
+
+### Transforms & Changes
+
+```typescript
+interface Transform {
+  apply(finding: Finding, content: string): Promise<Change | null>;
+}
+
+type Change = string;
+```
+
+### Agent Instruction Generator
+
+```typescript
+class AgentInstructionGenerator {
+  generate(findings: Finding[]): AgentInstruction[] {}
+}
+
+interface AgentInstruction {
+  markdown: string;
+}
+```
+
+### Pipeline
+
+```typescript
+interface PipelineOptions {
+  dryRun: boolean;
+  path?: RelativePath;
+}
+
+interface PipelineResult {
+  changes: Change[];
+  agentInstructions: AgentInstruction[];
+  unhandledFindings: Finding[];
+}
+
+class Pipeline {
+  async run(options: PipelineOptions): Promise<PipelineResult> {}
+}
+```
+
+### Reporter
+
+```typescript
+class Reporter {
+  write(result: PipelineResult, outputPath: RelativePath): Promise<void> {}
+}
+```
 
 # Testing Strategy
 
