@@ -144,7 +144,11 @@ class Tree {
 
   exists(path: RelativePath): Promise<boolean> {}
   read(path: RelativePath): Promise<string> {} // lazy, cached
-  write(path: RelativePath, content: string, options?: { originalPath?: RelativePath }): void {} // staged in memory; optional originalPath renames on commit
+  write(
+    path: RelativePath,
+    content: string,
+    options?: { originalPath?: RelativePath },
+  ): void {} // staged in memory; optional originalPath renames on commit
   delete(path: RelativePath): void {} // staged in memory
   changes(): Change[] {} // staged, uncommitted edits
   commit(): Promise<void> {} // flush staged changes to the FileSystem
@@ -345,17 +349,29 @@ The reporter behavior:
 
 ## Scanner
 
-### [ ] Detects Angular CLI project:
+### [x] Detects Angular CLI project:
 
-- Arrange: create a temp workspace with `angular.json` and a `jest.config.ts`.
+- Arrange: create a temp workspace with `angular.json`.
 - Act: run scanner on the workspace path.
-- Assert: returns project type `angular-cli` with the jest config path.
+- Assert: returns project type `angular-cli`
 
-### [ ] Detects Nx project:
+### [x] Detects Nx project:
 
-- Arrange: create a temp workspace with `nx.json`, `project.json`, and a `jest.config.ts`.
+- Arrange: create a temp workspace with `nx.json`, `project.json`.
 - Act: run scanner on the workspace path.
 - Assert: returns project type `nx` with the jest config path.
+
+### [ ] Enriches Nx project with jest config
+
+- Arrange: create an nx workspace with a `jest.config.ts` file.
+- Act: run scanner on the workspace path.
+- Assert: project has a file tagged `jest-config`.
+
+### [ ] Enriches Nx project with test files
+
+- Arrange: create an nx workspace with a test file : `....spec.ts`.
+- Act: run scanner on the workspace path.
+- Assert: project has a file tagged `test`.
 
 ## Analyzer
 
