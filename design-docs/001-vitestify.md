@@ -31,10 +31,23 @@
 2. **Scanner** — discovers workspace structure: project type (Angular CLI vs Nx), Jest config files, test files, `package.json` entries.
 3. **Analyzer** — the engine. Iterates over all discovered files, applies each registered **Heuristic**, and collects findings.
 4. **Heuristics** — small, composable rules registered in a simple array. Each heuristic inspects a file (or config) and produces **Findings** (e.g. "file uses `jest.mock`", "jest.config has `moduleNameMapper`"). Easy to add new ones.
-5. **Transforms** — each transform handles a type of finding and applies a concrete code/config change. Also registered in a simple array.
-6. **Agent Instruction Generator** — for findings no transform can handle, produces a Markdown file with AI-followable instructions.
-7. **Reporter** — collects all results (applied transforms, skipped findings, agent instructions) and writes a Markdown summary report.
-8. **Pipeline** — wires it all together: CLI → Scanner → Analyzer → Transforms → Agent Instructions → Reporter. Respects `--dry-run`.
+5. **Transforms** — each transform receives a list of findings and returns a list of changes (file rewrites, new files, or agent-instruction Markdown). Registered in a simple array — including the agent-instruction transform for unhandled findings.
+6. **Reporter** — collects all changes and writes a Markdown summary report.
+7. **Pipeline** — wires it all together: CLI → Scanner → Analyzer → Transforms → Reporter. Respects `--dry-run`.
+
+## Mental Model
+
+**detect → act → report.** The scanner maps the workspace (`WorkspaceInfo`). Heuristics produce **findings** — observations about what needs changing. **Transforms** turn findings into **changes**: each change has a target path, new content, and optionally an original path (omitted for file creations). The agent-instruction transform is just another transform — it writes Markdown files for findings nothing else handled. The reporter summarizes all changes.
+
+```mermaid
+flowchart LR
+    Scan["Scanner<br>WorkspaceInfo"]
+    Find["Analyzer<br>Finding[]"]
+    Change["Transforms<br>Change[]"]
+    Report["Reporter<br>summary.md"]
+
+    Scan --> Find --> Change --> Report
+```
 
 ## Diagram
 
@@ -47,7 +60,6 @@ sequenceDiagram
     participant Analyzer
     participant Heuristics
     participant Transforms
-    participant AgentGen as Agent Instruction Generator
     participant Reporter
 
     User->>CLI: npx @testmex/vitestify [--dry-run] [--path]
@@ -63,9 +75,7 @@ sequenceDiagram
     Analyzer-->>Pipeline: Finding[]
     Pipeline->>Transforms: apply(findings)
     Transforms-->>Pipeline: Change[]
-    Pipeline->>AgentGen: generate(unhandledFindings)
-    AgentGen-->>Pipeline: AgentInstruction[]
-    Pipeline->>Reporter: write(changes, instructions)
+    Pipeline->>Reporter: write(changes)
     Reporter-->>User: summary report (md file)
 ```
 
@@ -74,7 +84,7 @@ sequenceDiagram
 - **Heuristic & Transform registration**: hardcoded arrays — no auto-discovery or plugin system.
 - **Code transforms**: use **jscodeshift** for AST-based rewrites of test files (e.g. `jest.mock` → `vi.mock`).
 - **Config parsing**: only `jest.config.ts` is supported for now. Other formats (`jest.config.js`, `package.json` inline) are out of scope for v1.
-- **Finding tags**: each `Finding` carries a `tags` property — a union of known tags (e.g. `"jest"`, `"testing-library"`). Transforms declare which tags they handle, allowing the pipeline to include or skip transforms based on the tags present in findings.
+- **Finding tags**: each `Finding` carries a `tags` property — a union of known tags (e.g. `"jest"`, `"testing-library"`) for grouping and reporting.
 
 ### Core
 
@@ -150,29 +160,23 @@ type FindingType = 'jest-mock-call'; // extensible per heuristic
 type FindingTag = 'jest' | 'testing-library';
 ```
 
-`FindingType` identifies the specific pattern detected (used by transforms and agent instructions). `FindingTag` groups related findings so the pipeline can include or skip transforms.
+`FindingType` identifies the specific pattern detected. `FindingTag` groups related findings for filtering and reporting.
 
 ### Transforms & Changes
 
 ```typescript
 interface Transform {
-  apply(finding: Finding, content: string): Promise<Change | null>;
+  apply(findings: Finding[]): Promise<Change[]>;
 }
 
-type Change = string;
-```
-
-### Agent Instruction Generator
-
-```typescript
-class AgentInstructionGenerator {
-  generate(findings: Finding[]): AgentInstruction[] {}
-}
-
-interface AgentInstruction {
-  markdown: string;
+interface Change {
+  originalPath?: RelativePath;
+  path: RelativePath;
+  content: string;
 }
 ```
+
+`originalPath` is omitted for file creations. For in-place edits, `originalPath` and `path` are the same.
 
 ### Pipeline
 
@@ -184,7 +188,6 @@ interface PipelineOptions {
 
 interface PipelineResult {
   changes: Change[];
-  agentInstructions: AgentInstruction[];
   unhandledFindings: Finding[];
 }
 
@@ -237,23 +240,15 @@ class Reporter {
 
 ### Rewrites `jest.mock` to `vi.mock`:
 
-- Arrange: provide source code with `jest.mock('./foo')`.
+- Arrange: provide findings and source code with `jest.mock('./foo')`.
 - Act: apply the transform.
-- Assert: output contains `vi.mock('./foo')`.
+- Assert: returns a change whose content contains `vi.mock('./foo')`.
 
-### Skips transform when tags do not match:
+### Agent instruction transform writes Markdown for unhandled findings:
 
-- Arrange: provide a finding tagged `"testing-library"` and a transform that only handles `"jest"`.
-- Act: run the pipeline matching step.
-- Assert: the transform is not applied.
-
-## Agent Instruction Generator
-
-### Generates instructions for unhandled findings:
-
-- Arrange: provide a finding with no matching transform.
-- Act: run the generator.
-- Assert: output contains a Markdown string describing the manual step.
+- Arrange: provide findings no other transform handles.
+- Act: apply the agent-instruction transform.
+- Assert: returns a change with Markdown content and no `originalPath`.
 
 ## Pipeline
 
@@ -277,22 +272,19 @@ flowchart LR
     PR2["PR 2<br>Analyzer +<br>heuristics"]
     PR3["PR 3<br>Transform engine +<br>transforms"]
     PR4["PR 4<br>Pipeline +<br>wide test"]
-    PR5["PR 5<br>Agent Instruction<br>Generator"]
-    PR6["PR 6<br>Reporter"]
+    PR5["PR 5<br>Reporter"]
 
     PR1 --> PR4
     PR2 --> PR3
     PR3 --> PR4
     PR4 --> PR5
-    PR4 --> PR6
 ```
 
 1. **PR 1 — Scanner**: workspace detection (Angular CLI vs Nx), Jest config discovery, test file discovery. Introduces Scanner types and implementation. Tests included.
 2. **PR 2 — Analyzer + heuristics**: analyzer engine, `Finding`/`Heuristic` types, tag system. Ships with all v1 heuristics. Tests included.
-3. **PR 3 — Transform engine + transforms**: `Transform` type, transform runner matching findings by tag. Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift). Tests included.
+3. **PR 3 — Transform engine + transforms**: `Transform`/`Change` types, transform runner. Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift, agent-instruction transform). Tests included.
 4. **PR 4 — Pipeline + wide test**: CLI entry point with `--dry-run`, `--path`, inquirer.js prompts. Wires Scanner + Analyzer + Transforms. Wide integration test.
-5. **PR 5 — Agent Instruction Generator**: generates Markdown instructions for unhandled findings. Plugs into the pipeline. Tests included.
-6. **PR 6 — Reporter**: writes the Markdown summary report. Plugs into the pipeline. Tests included.
+5. **PR 5 — Reporter**: writes the Markdown summary report. Plugs into the pipeline. Tests included.
 
 # Alternatives Considered
 
