@@ -29,15 +29,15 @@
 
 1. **CLI** — entry point. Parses `--dry-run` and `--path` flags. Uses **inquirer.js** for interactive prompts. Bootstraps the pipeline.
 2. **Scanner** — discovers workspace structure: project type (Angular CLI vs Nx), Jest config files, test files, `package.json` entries.
-3. **Analyzer** — the engine. Runs two phases of registered heuristics and collects findings: per-file heuristics over each file, then project-level heuristics over each whole project.
-4. **Heuristics** — small, composable rules registered in simple arrays. A **FileHeuristic** inspects one file and its content (e.g. "file uses `jest.mock`"). A **ProjectHeuristic** inspects a whole `Project` with `Tree` access, so it can reason across multiple files (e.g. "per-project `jest.config.ts` extends the Nx `jest.preset.js`", "`moduleNameMapper` references a `tsconfig` path"). Both produce **Findings**. Easy to add new ones.
+3. **Analyzer** — the engine. Runs registered heuristics over the `Workspace` and collects findings.
+4. **Heuristics** — small, composable rules registered in a simple array. Each **Heuristic** receives the full `Workspace` (`WorkspaceInfo` + `Tree`) and can inspect individual files, cross-file relationships, or whole projects (e.g. "file uses `jest.mock`", "per-project `jest.config.ts` extends the Nx `jest.preset.js`"). They produce **Findings**. Easy to add new ones.
 5. **Transforms** — each transform is constructed with the shared `Tree`, receives a list of findings, reads source from the `Tree`, and writes edits back to it. Registered in a simple array. The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
 6. **Reporter** — summarizes all staged changes and writes a Markdown summary report.
 7. **Pipeline** — wires it all together: CLI → Scanner → Analyzer → Transforms → Reporter, all sharing one `Tree`. Respects `--dry-run` by skipping the `Tree` commit.
 
 ## Mental Model
 
-**detect → act → report.** The scanner maps the workspace (`WorkspaceInfo`). Heuristics produce **findings** — observations about what needs changing — in two phases: per-file and per-project (the latter can read across files via the `Tree`). **Transforms** act on findings by reading and writing through a shared **`Tree`** — an in-memory overlay over the file system that reads lazily, caches edits, and flushes them on `commit()`. Because all transforms edit the same `Tree`, several of them can touch the same file in sequence without clobbering each other. A **change** is the `Tree`'s record of a staged create/update/delete. The agent-instruction transform is just another transform — it stages Markdown files for findings flagged as needing manual help. The reporter summarizes all staged changes.
+**detect → act → report.** The scanner maps the workspace (`WorkspaceInfo`). The pipeline bundles that with a shared `Tree` into a **`Workspace`**. Heuristics inspect the `Workspace` and produce **findings** — observations about what needs changing — with full access to file content and cross-file context via the `Tree`. **Transforms** act on findings by reading and writing through the same `Tree` — an in-memory overlay over the file system that reads lazily, caches edits, and flushes them on `commit()`. Because all transforms edit the same `Tree`, several of them can touch the same file in sequence without clobbering each other. A **change** is the `Tree`'s record of a staged create, update (optionally with a rename), or delete. The agent-instruction transform is just another transform — it stages Markdown files for findings flagged as needing manual help. The reporter summarizes all staged changes.
 
 ```mermaid
 flowchart LR
@@ -71,8 +71,8 @@ sequenceDiagram
     Pipeline->>CLI: prompt(questions)
     CLI->>User: interactive prompts (inquirer.js)
     User-->>CLI: answers
-    Pipeline->>Analyzer: analyze(workspace, fileHeuristics, projectHeuristics)
-    Analyzer->>Heuristics: inspect(file, content) / inspect(project, tree)
+    Pipeline->>Analyzer: analyze(workspace, heuristics)
+    Analyzer->>Heuristics: inspect(workspace)
     Heuristics-->>Analyzer: HeuristicResult[]
     Analyzer-->>Pipeline: Finding[]
     Pipeline->>Transforms: apply(findings)
@@ -85,12 +85,12 @@ sequenceDiagram
 
 ## Implementation Details
 
-- **Heuristic & Transform registration**: hardcoded arrays — no auto-discovery or plugin system. There are two heuristic arrays (file-level and project-level). Transforms are registered as factories that receive the shared `Tree`.
+- **Heuristic & Transform registration**: hardcoded arrays — no auto-discovery or plugin system. Heuristics and transforms are registered as simple arrays. Transforms are registered as factories that receive the shared `Tree`.
 - **Tree**: an in-memory overlay over the `FileSystem`. Reads are lazy and cached; writes/deletes are staged in memory; `commit()` flushes staged changes to disk. It is the single channel through which the analyzer, transforms, and reporter touch file content, which is what makes multi-transform edits to the same file compose.
 - **Code transforms**: use **jscodeshift** for AST-based rewrites of test files (e.g. `jest.mock` → `vi.mock`).
 - **Config parsing**: support the Jest config in all its common forms — `jest.config.{ts,js,mjs,cjs}`, the Nx `jest.preset.js`, and an inline `jest` field in `package.json`. JS/TS configs are edited via AST; the `package.json` field via structured JSON edit. (Migrating from Karma/Jasmine configs remains out of scope.)
 - **Finding tags**: each `Finding` carries a `tags` property used for grouping and reporting. The type allows known tags (e.g. `"jest"`, `"testing-library"`, `"needs-agent"`) for autocomplete while staying open to new tags, so adding a heuristic never requires editing a central union.
-- **Test runner wiring**: changing config files is not enough — the runner has to invoke Vitest. A `ProjectHeuristic` detects how tests are currently run and a transform rewrites it: for **Nx**, the `@nx/jest:jest` target in `project.json` is rewritten to a Vitest target (`@nx/vite:test`, or `@analogjs/vitest-angular:test` for Angular-in-Nx) with a generated `vite.config.ts`; for **Angular CLI**, the `test` target's Jest builder in `angular.json` is rewritten to the Vitest builder. Cases too gnarly to rewrite safely emit a `needs-agent` finding for the agent-instruction transform.
+- **Test runner wiring**: changing config files is not enough — the runner has to invoke Vitest. A heuristic detects how tests are currently run and a transform rewrites it: for **Nx**, the `@nx/jest:jest` target in `project.json` is rewritten to a Vitest target (`@nx/vite:test`, or `@analogjs/vitest-angular:test` for Angular-in-Nx) with a generated `vite.config.ts`; for **Angular CLI**, the `test` target's Jest builder in `angular.json` is rewritten to the Vitest builder. Cases too gnarly to rewrite safely emit a `needs-agent` finding for the agent-instruction transform.
 
 ### Core
 
@@ -106,7 +106,7 @@ class Tree {
 
   exists(path: RelativePath): Promise<boolean> {}
   read(path: RelativePath): Promise<string> {} // lazy, cached
-  write(path: RelativePath, content: string): void {} // staged in memory
+  write(path: RelativePath, content: string, options?: { originalPath?: RelativePath }): void {} // staged in memory; optional originalPath renames on commit
   delete(path: RelativePath): void {} // staged in memory
   changes(): Change[] {} // staged, uncommitted edits
   commit(): Promise<void> {} // flush staged changes to the FileSystem
@@ -150,7 +150,6 @@ interface ProjectFile {
 
 type ProjectFileTag =
   | 'jest-config' // jest.config.{ts,js,mjs,cjs} or package.json jest field
-  | 'jest-preset' // Nx jest.preset.js
   | 'nx-project-json'
   | 'angular-json'
   | 'test'
@@ -159,51 +158,48 @@ type ProjectFileTag =
 
 `scanWorkspace` first detects `workspaceType` (presence of `nx.json` → `nx`, else `angular.json` → `angular-cli`), then runs each registered `Enricher` in order. Each `Enricher` (e.g. `AngularCliEnricher`, `NxEnricher`) checks whether it applies to the detected `workspaceType` and, if so, augments the `WorkspaceInfo` with the projects and files it discovers. Enrichers are passed into the `Scanner` constructor so the set is explicit and testable.
 
+The pipeline assembles a `Workspace` from the scanner output and the shared `Tree`:
+
+```typescript
+type Workspace = { info: WorkspaceInfo; tree: Tree };
+```
+
 ### Analyzer
 
 ```typescript
 class Analyzer {
-  constructor(args: { tree: Tree }) {}
-
   async analyze(
-    workspace: WorkspaceInfo,
-    fileHeuristics: FileHeuristic[],
-    projectHeuristics: ProjectHeuristic[]
+    workspace: Workspace,
+    heuristics: Heuristic[],
   ): Promise<Finding[]> {}
 }
 ```
 
-For each project, the analyzer reads each file's content via the `Tree` and runs every `FileHeuristic`, then runs every `ProjectHeuristic` against the whole project (with `Tree` access for cross-file reads). It stamps each `HeuristicResult` with its owning `project` (and, for file heuristics, the `file`) to produce a `Finding`. This is what populates `Finding.project` — heuristics never have to supply it.
+The analyzer runs every registered `Heuristic` against the `Workspace`. Each heuristic decides what to inspect — a single file, a whole project, or cross-file relationships — using `workspace.info` and `workspace.tree`, and returns `HeuristicResult`s stamped with the relevant `project` (and optional `file`). The analyzer collects them as `Finding`s.
 
 ### Heuristics & Findings
 
 ```typescript
-interface FileHeuristic {
-  inspect(file: ProjectFile, content: string): Promise<HeuristicResult[]>;
-}
-
-interface ProjectHeuristic {
-  inspect(project: Project, tree: Tree): Promise<HeuristicResult[]>;
+interface Heuristic {
+  inspect(workspace: Workspace): Promise<HeuristicResult[]>;
 }
 
 interface HeuristicResult {
   type: FindingType;
   tags: FindingTag[];
   description: string;
-  file?: ProjectFile; // a project heuristic may attach the file it relates to
+  project: Project; // the heuristic supplies the project context
+  file?: ProjectFile; // when the finding relates to a specific file
 }
 
-interface Finding extends HeuristicResult {
-  project: Project; // injected by the analyzer
-  file?: ProjectFile; // injected by the analyzer for file heuristics
-}
+interface Finding extends HeuristicResult {}
 
 type FindingType = string; // e.g. 'jest-mock-call', 'nx-jest-executor' — defined per heuristic
 
 type FindingTag = 'jest' | 'testing-library' | 'needs-agent' | (string & {});
 ```
 
-A `FileHeuristic` sees exactly one file and its content. A `ProjectHeuristic` sees the whole `Project` plus the `Tree`, so it can read sibling files — this is how cross-file rules are expressed (e.g. a per-project `jest.config.ts` that extends the Nx `jest.preset.js`, or imports that must be reconciled with `tsconfig` paths). Heuristics return lightweight `HeuristicResult`s; the analyzer enriches them with `project`/`file` to produce `Finding`s. `FindingType` identifies the specific pattern detected; `FindingTag` groups related findings for filtering and reporting and is open so new heuristics never edit a central union.
+Each heuristic receives the full `Workspace`, so it can inspect individual files (via `workspace.tree.read`), whole projects (via `workspace.info.projects`), or cross-file relationships — e.g. a per-project `jest.config.ts` that extends the Nx `jest.preset.js`, or imports that must be reconciled with `tsconfig` paths. Heuristics return `HeuristicResult`s stamped with the relevant `project` (and optional `file`); the analyzer passes them through as `Finding`s. `FindingType` identifies the specific pattern detected; `FindingTag` groups related findings for filtering and reporting and is open so new heuristics never edit a central union.
 
 ### Transforms & Changes
 
@@ -214,14 +210,19 @@ interface Transform {
   apply(findings: Finding[]): Promise<void>;
 }
 
-interface Change {
-  type: 'create' | 'update' | 'delete';
+type CreateChange = { type: 'create'; path: RelativePath; content: string };
+type DeleteChange = { type: 'delete'; path: RelativePath };
+type UpdateChange = {
+  type: 'update';
   path: RelativePath;
-  content?: string; // omitted for deletes
-}
+  content: string;
+  originalPath?: RelativePath; // when set, commit renames originalPath → path
+};
+
+type Change = CreateChange | UpdateChange | DeleteChange;
 ```
 
-Each transform is constructed with the shared `Tree` (via its `TransformFactory`). `apply` reads source through the `Tree`, writes edited content back to it, and returns nothing — there is no per-transform `Change[]` to merge. The `Tree` is the single accumulator of edits, so a `jest.mock` rewrite and an import rewrite can both edit the same test file in sequence, each seeing the prior edit. `Change` is the `Tree`'s own derived record of what was staged (its `type` is inferred from whether the path existed on disk).
+Each transform is constructed with the shared `Tree` (via its `TransformFactory`). `apply` reads source through the `Tree`, writes edited content back to it, and returns nothing — there is no per-transform `Change[]` to merge. The `Tree` is the single accumulator of edits, so a `jest.mock` rewrite and an import rewrite can both edit the same test file in sequence, each seeing the prior edit. `Change` is the `Tree`'s own derived record of what was staged: `create` for new paths, `delete` for removed paths, and `update` for in-place edits or renames (`path` is always the final path; pass `originalPath` to `Tree.write` when a transform renames a file, e.g. `jest.config.ts` → `vitest.config.ts`).
 
 ### Pipeline
 
@@ -240,7 +241,7 @@ class Pipeline {
 }
 ```
 
-The pipeline creates one `Tree` (over the real `FileSystem`) and threads it into the analyzer, transforms, and reporter. After transforms run, `result.changes` is `tree.changes()`. When `dryRun` is false it calls `tree.commit()` to flush everything to disk; when `dryRun` is true it skips the commit, so nothing is written.
+The pipeline creates one `Tree` (over the real `FileSystem`), assembles a `Workspace` from the scanner's `WorkspaceInfo` and that `Tree`, and threads both into the analyzer, transforms, and reporter. After transforms run, `result.changes` is `tree.changes()`. When `dryRun` is false it calls `tree.commit()` to flush everything to disk (including renames); when `dryRun` is true it skips the commit, so nothing is written.
 
 ### Reporter
 
@@ -272,24 +273,24 @@ The reporter always prints the summary to stdout, and stages `summary.md` into t
 
 ## Analyzer
 
-### [ ] Runs file and project heuristics and stamps context:
+### [ ] Runs heuristics and passes through context:
 
-- Arrange: a workspace with one project and one file; one dummy `FileHeuristic` that returns a result and one that returns nothing; one dummy `ProjectHeuristic` that returns a result.
-- Act: run analyzer with a backing `Tree`.
-- Assert: returns exactly two findings, each with `project` populated and the file-heuristic finding's `file` populated.
+- Arrange: a `Workspace` with one project and one file; one dummy `Heuristic` that returns a file-scoped result and one that returns a project-scoped result; one that returns nothing.
+- Act: run analyzer.
+- Assert: returns exactly two findings, each with `project` populated and the file-scoped finding's `file` populated.
 
 ## Heuristics
 
-### [ ] File heuristic detects `jest.mock` usage:
+### [ ] Heuristic detects `jest.mock` usage:
 
-- Arrange: provide a file containing `jest.mock('./foo')`.
+- Arrange: a `Workspace` whose test file contains `jest.mock('./foo')`.
 - Act: run the heuristic.
 - Assert: returns a result of type `jest-mock-call` with tag `"jest"`.
 
-### [ ] Project heuristic detects config extending the Nx preset (cross-file):
+### [ ] Heuristic detects config extending the Nx preset (cross-file):
 
-- Arrange: a `Tree` with a `jest.preset.js` and a per-project `jest.config.ts` that `require`s the preset.
-- Act: run the project heuristic against the project.
+- Arrange: a `Workspace` with a `jest.preset.js` and a per-project `jest.config.ts` that `require`s the preset.
+- Act: run the heuristic.
 - Assert: returns a result referencing both files (proving multi-file rules work).
 
 ## Transforms
@@ -348,8 +349,8 @@ flowchart LR
 
 1. [ ] **PR 0 — Core + Tree**: `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`). Everything downstream depends on it. Tests included.
 2. [ ] **PR 1 — Scanner**: workspace detection (Angular CLI vs Nx), `Enricher` interface + `AngularCliEnricher`/`NxEnricher`, Jest config discovery (all forms), test file discovery. Tests included.
-3. [ ] **PR 2 — Analyzer + heuristics**: analyzer engine, `Finding`/`HeuristicResult`/`FileHeuristic`/`ProjectHeuristic` types, tag system, two-phase run with context stamping. Ships with all v1 heuristics. Tests included.
-4. [ ] **PR 3 — Transform engine + transforms**: `Transform`/`TransformFactory`/`Change` types, transform runner over the `Tree`. Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift, Nx/Angular runner-wiring transform, agent-instruction transform). Tests included.
+3. [ ] **PR 2 — Analyzer + heuristics**: analyzer engine, `Workspace`/`Finding`/`HeuristicResult`/`Heuristic` types, tag system. Ships with all v1 heuristics. Tests included.
+4. [ ] **PR 3 — Transform engine + transforms**: `Transform`/`TransformFactory`/`Change` union (including rename-on-update), transform runner over the `Tree`. Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift, Nx/Angular runner-wiring transform, agent-instruction transform). Tests included.
 5. [ ] **PR 4 — Pipeline + wide test**: CLI entry point with `--dry-run`, `--path`, inquirer.js prompts. Wires Scanner + Analyzer + Transforms over one `Tree`. Wide integration test.
 6. [ ] **PR 5 — Reporter**: builds the Markdown summary, prints to stdout, stages it into the `Tree`. Plugs into the pipeline. Tests included.
 
