@@ -18,4 +18,18 @@ export class FileSystem {
   async scanDirectory(path: RelativePath): Promise<RelativePath[]> {
     throw new Error('🚧 Work in progress!');
   }
+
+  /**
+   * @deprecated 🚧 work in progress
+   */
+  async writeFile(path: RelativePath, content: string): Promise<void> {
+    throw new Error('🚧 work in progress');
+  }
+
+  /**
+   * @deprecated 🚧 work in progress
+   */
+  async deleteFile(path: RelativePath): Promise<void> {
+    throw new Error('🚧 work in progress');
+  }
 }

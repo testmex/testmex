@@ -33,4 +33,18 @@ export class FileSystemFake implements FileSystem {
     const prefix = `${path}/`;
     return files.filter((file) => file.startsWith(prefix));
   }
+
+  /**
+   * @deprecated 🚧 work in progress
+   */
+  async writeFile(path: RelativePath, content: string): Promise<void> {
+    throw new Error('🚧 work in progress');
+  }
+
+  /**
+   * @deprecated 🚧 work in progress
+   */
+  async deleteFile(path: RelativePath): Promise<void> {
+    throw new Error('🚧 work in progress');
+  }
 }
