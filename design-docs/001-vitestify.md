@@ -361,7 +361,7 @@ The reporter behavior:
 - Act: run scanner on the workspace path.
 - Assert: returns project type `nx` with the jest config path.
 
-### [ ] Enriches Nx project with jest config
+### [x] Enriches Nx project with jest config
 
 - Arrange: create an nx workspace with a `jest.config.ts` file.
 - Act: run scanner on the workspace path.
