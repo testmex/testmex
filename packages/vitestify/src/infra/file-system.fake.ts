@@ -1,4 +1,4 @@
-import type { RelativePath } from '../../core/core';
+import type { RelativePath } from '../core/relative-path';
 import { FileSystem } from './file-system';
 
 export class FileSystemFake implements FileSystem {
@@ -26,17 +26,11 @@ export class FileSystemFake implements FileSystem {
     return files.filter((file) => file.startsWith(prefix));
   }
 
-  /**
-   * @deprecated 🚧 work in progress
-   */
   async writeFile(path: RelativePath, content: string): Promise<void> {
-    throw new Error('🚧 work in progress');
+    this._files.set(path, content);
   }
 
-  /**
-   * @deprecated 🚧 work in progress
-   */
   async deleteFile(path: RelativePath): Promise<void> {
-    throw new Error('🚧 work in progress');
+    this._files.delete(path);
   }
 }

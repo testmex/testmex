@@ -12,7 +12,7 @@ describe(Tree.name, () => {
         'jest.mock("./app.service");\n\ndescribe("AppComponent", () => {});',
     });
 
-    tree.write(
+    await tree.write(
       relativePath('apps/my-app/src/app/app.component.spec.ts'),
       'vi.mock("./app.service");\n\ndescribe("AppComponent", () => {});',
     );
@@ -35,11 +35,11 @@ describe(Tree.name, () => {
       );
   });
 
-  it.todo('staged create is readable before commit', async () => {
+  it('staged create is readable before commit', async () => {
     const { tree } = setUp();
     const mainPath = relativePath('apps/my-app/main.ts');
 
-    tree.write(mainPath, 'console.log("hello");');
+    await tree.write(mainPath, 'console.log("hello");');
 
     expect(await tree.maybeReadFile(mainPath)).toBe('console.log("hello");');
     expect(tree.changes()).toEqual([
@@ -51,7 +51,7 @@ describe(Tree.name, () => {
     ]);
   });
 
-  it.todo('staged delete hides file from reads', async () => {
+  it('staged delete hides file from reads', async () => {
     const { fileSystem, tree } = setUp();
     const mainPath = relativePath('apps/my-app/main.ts');
 
@@ -68,7 +68,7 @@ describe(Tree.name, () => {
       .toBe('console.log("hello");');
   });
 
-  it.todo('sequential writes to the same file compose', async () => {
+  it('sequential writes to the same file compose', async () => {
     const { fileSystem, tree } = setUp();
     const mainPath = relativePath('apps/my-app/main.ts');
 
@@ -76,8 +76,8 @@ describe(Tree.name, () => {
       [mainPath]: 'console.log("hello");',
     });
 
-    tree.write(mainPath, 'console.log("world");');
-    tree.write(mainPath, 'console.log("good bye");');
+    await tree.write(mainPath, 'console.log("world");');
+    await tree.write(mainPath, 'console.log("good bye");');
 
     expect
       .soft(await tree.maybeReadFile(mainPath))
@@ -91,14 +91,14 @@ describe(Tree.name, () => {
     ]);
   });
 
-  it.todo('rename via `originalPath` on write', async () => {
+  it('rename via `originalPath` on write', async () => {
     const { fileSystem, tree } = setUp();
     const mainPath = relativePath('apps/my-app/main.ts');
 
     fileSystem.configure({
       [mainPath]: 'console.log("hello");',
     });
-    tree.write(mainPath, 'console.log("good bye");');
+    await tree.write(mainPath, 'console.log("good bye");');
 
     tree.rename(mainPath, relativePath('apps/my-app/main-moved.ts'));
 
@@ -116,7 +116,7 @@ describe(Tree.name, () => {
       .toBe('console.log("good bye");');
   });
 
-  it.todo('`commit()` flushes all staged changes to FileSystem', async () => {
+  it('`commit()` flushes all staged changes to FileSystem', async () => {
     const { fileSystem, tree } = setUp();
     const mainPath = relativePath('apps/my-app/main.ts');
     const jestConfigPath = relativePath('apps/my-app/jest.config.ts');
@@ -125,7 +125,7 @@ describe(Tree.name, () => {
       [mainPath]: 'console.log("hello");',
     });
 
-    tree.write(mainPath, 'console.log("good bye");');
+    await tree.write(mainPath, 'console.log("good bye");');
     tree.delete(jestConfigPath);
 
     await tree.commit();
