@@ -4,25 +4,22 @@ import { FileSystemFake } from '../infra/file-system.fake';
 import { Tree } from './tree';
 
 describe(Tree.name, () => {
-  it.todo(
-    'staged write is visible to subsequent reads without committing',
-    async () => {
-      const { fileSystem, tree } = setUp();
+  it('staged write is visible to subsequent reads without committing', async () => {
+    const { fileSystem, tree } = setUp();
 
-      fileSystem.configure({
-        [relativePath('src/app.spec.ts')]: 'jest.mock("./foo")',
-      });
+    fileSystem.configure({
+      [relativePath('src/app.spec.ts')]: 'jest.mock("./foo")',
+    });
 
-      tree.write(relativePath('src/app.spec.ts'), 'vi.mock("./foo")');
+    tree.write(relativePath('src/app.spec.ts'), 'vi.mock("./foo")');
 
-      expect(await tree.read(relativePath('src/app.spec.ts'))).toBe(
-        'vi.mock("./foo")',
-      );
-      expect(await fileSystem.readFile(relativePath('src/app.spec.ts'))).toBe(
-        'jest.mock("./foo")',
-      );
-    },
-  );
+    expect(await tree.read(relativePath('src/app.spec.ts'))).toBe(
+      'vi.mock("./foo")',
+    );
+    expect(await fileSystem.readFile(relativePath('src/app.spec.ts'))).toBe(
+      'jest.mock("./foo")',
+    );
+  });
 
   it.todo('staged create is readable before commit', () => {
     // Arrange: a `Tree` over an empty `FileSystemFake`.
