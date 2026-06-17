@@ -1,5 +1,9 @@
 import type { RelativePath } from '../core/relative-path';
-import type { ProjectFile, WorkspaceInfo } from '../core/workspace-info';
+import {
+  projectFileTag,
+  type ProjectFile,
+  type WorkspaceInfo,
+} from '../core/workspace-info';
 import { FileSystem } from '../infra/file-system';
 import { Enricher } from './enricher';
 
@@ -39,7 +43,7 @@ export class TestEnricher implements Enricher {
       .filter((file) => testFilePattern.test(file))
       .map((path) => ({
         path,
-        tags: ['test'],
+        tags: [projectFileTag.test],
       }));
   }
 }

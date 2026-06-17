@@ -1,6 +1,10 @@
 import { relative } from 'node:path';
 import type { RelativePath } from '../core/relative-path';
-import type { ProjectFile, WorkspaceInfo } from '../core/workspace-info';
+import {
+  projectFileTag,
+  type ProjectFile,
+  type WorkspaceInfo,
+} from '../core/workspace-info';
 import { FileSystem } from '../infra/file-system';
 import { Enricher } from './enricher';
 
@@ -46,7 +50,7 @@ export class JestEnricher implements Enricher {
       })
       .map((path) => ({
         path,
-        tags: ['jest-config'],
+        tags: [projectFileTag.jestConfig],
       }));
   }
 }

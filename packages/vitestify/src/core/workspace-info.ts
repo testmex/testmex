@@ -16,23 +16,31 @@ export interface ProjectFile {
   tags: ProjectFileTag[];
 }
 
+export const projectFileTag = {
+  jestConfig: 'jest-config',
+  nxProjectJson: 'nx-project-json',
+  angularJson: 'angular-json',
+  test: 'test',
+  tsconfig: 'tsconfig',
+} as const;
+
 export type ProjectFileTag =
-  | 'jest-config'
-  | 'nx-project-json'
-  | 'test'
-  | 'tsconfig';
+  (typeof projectFileTag)[keyof typeof projectFileTag];
 
 export function createWorkspaceInfo(): WorkspaceInfo {
   return {
     workspaceType: null,
-    projects: []
-  }
+    projects: [],
+  };
 }
 
-export function mergeWorkspaceInfo(workspaceInfo: WorkspaceInfo, overrides: WorkspaceInfo) {
+export function mergeWorkspaceInfo(
+  workspaceInfo: WorkspaceInfo,
+  overrides: WorkspaceInfo,
+) {
   return {
     ...workspaceInfo,
     ...overrides,
-    projects: [...workspaceInfo.projects, ...overrides.projects]
-  }
+    projects: [...workspaceInfo.projects, ...overrides.projects],
+  };
 }
