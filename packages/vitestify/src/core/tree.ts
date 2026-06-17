@@ -1,100 +1,139 @@
-import type { Change } from './change';
-import type { RelativePath } from './relative-path';
-import type { FileSystem } from '../infra/file-system';
 import { CachedFileSystem } from '../infra/cached-file-system';
+import type { FileSystem } from '../infra/file-system';
+import type { RelativePath } from './relative-path';
 
 export class Tree {
   private readonly _cachedFileSystem: CachedFileSystem;
-  private readonly _state = new TreeState();
+  private readonly _fileStates = new Map<RelativePath, FileState>();
 
   constructor({ fileSystem }: { fileSystem: FileSystem }) {
     this._cachedFileSystem = new CachedFileSystem(fileSystem);
   }
 
   async maybeReadFile(path: RelativePath): Promise<string | null> {
-    if (this._state.deleted.has(path)) {
+    const state = this._fileStates.get(path);
+
+    if (this._isDeletedOrRenamed(state)) {
       return null;
     }
 
-    return (
-      this._state.staged.get(path) ?? this._cachedFileSystem.maybeReadFile(path)
-    );
+    if (state?.type === 'create' || state?.type === 'update') {
+      return state.content;
+    }
+
+    return this._cachedFileSystem.maybeReadFile(path);
   }
 
   async write(path: RelativePath, content: string): Promise<void> {
-    this._state.deleted.delete(path);
-    this._state.staged.set(path, content);
+    const exists = (await this._cachedFileSystem.maybeReadFile(path)) !== null;
 
-    const existsOnDisk =
-      (await this._cachedFileSystem.maybeReadFile(path)) !== null;
-
-    if (existsOnDisk) {
-      this._state.changes.set(path, { type: 'update', path, content });
-      return;
-    }
-
-    this._state.changes.set(path, { type: 'create', path, content });
+    this._fileStates.set(path, {
+      type: exists ? 'update' : 'create',
+      content,
+    });
   }
 
   async rename(
     originalPath: RelativePath,
     newPath: RelativePath,
   ): Promise<void> {
-    const content =
-      this._state.staged.get(originalPath) ??
-      (await this._cachedFileSystem.maybeReadFile(originalPath));
+    const state = this._fileStates.get(originalPath);
+    const content = this._isCreatedOrUpdated(state)
+      ? state.content
+      : await this._cachedFileSystem.maybeReadFile(originalPath);
+
     if (content === null) {
       throw new Error(`Tree: cannot rename missing file "${originalPath}"`);
     }
 
-    this._state.staged.delete(originalPath);
-    this._state.staged.set(newPath, content);
-    this._state.deleted.add(originalPath);
-    this._state.changes.delete(originalPath);
-    this._state.changes.set(newPath, {
+    /* Keep track that the file was renamed so that we don't reload it from disk.
+     * See `RenameChange` type. */
+    this._fileStates.set(originalPath, {
+      type: 'rename',
+    });
+    this._fileStates.set(newPath, {
       type: 'update',
-      path: newPath,
       content,
       originalPath,
     });
   }
 
   delete(path: RelativePath): void {
-    this._state.deleted.add(path);
-    this._state.staged.delete(path);
-    this._state.changes.set(path, { type: 'delete', path });
+    this._fileStates.set(path, { type: 'delete' });
   }
 
-  changes(): Change[] {
-    return Array.from(this._state.changes.values());
+  changes(): FileState[] {
+    return Array.from(this._fileStates.entries())
+      .filter(([_, change]) => change.type !== 'rename')
+      .map(([path, change]) => ({
+        path,
+        ...change,
+      }));
   }
 
   async commit(): Promise<void> {
-    for (const change of this._state.changes.values()) {
-      if (change.type === 'delete') {
-        await this._cachedFileSystem.deleteFile(change.path);
+    for (const [path, change] of this._fileStates.entries()) {
+      if (change.type === 'rename') {
         continue;
       }
 
-      await this._cachedFileSystem.writeFile(change.path, change.content);
+      if (change.type === 'delete') {
+        await this._cachedFileSystem.deleteFile(path);
+        continue;
+      }
+
+      await this._cachedFileSystem.writeFile(path, change.content);
 
       if (change.type === 'update' && change.originalPath !== undefined) {
         await this._cachedFileSystem.deleteFile(change.originalPath);
       }
     }
 
-    this._state.clear();
+    this._fileStates.clear();
+  }
+
+  private _isCreatedOrUpdated(
+    state: FileState | undefined,
+  ): state is CreateState | UpdateState {
+    return state?.type === 'create' || state?.type === 'update';
+  }
+
+  private _isDeletedOrRenamed(
+    state: FileState | undefined,
+  ): state is DeleteState | _RenameState {
+    return state?.type === 'delete' || state?.type === 'rename';
   }
 }
 
-class TreeState {
-  readonly staged = new Map<RelativePath, string>();
-  readonly deleted = new Set<RelativePath>();
-  readonly changes = new Map<RelativePath, Change>();
+export type Change = { path: string } & (
+  | CreateState
+  | UpdateState
+  | DeleteState
+);
 
-  clear(): void {
-    this.staged.clear();
-    this.deleted.clear();
-    this.changes.clear();
-  }
+type FileState = CreateState | UpdateState | DeleteState | _RenameState;
+
+interface CreateState {
+  type: 'create';
+  content: string;
+}
+
+interface DeleteState {
+  type: 'delete';
+}
+
+/**
+ * This state is only used to keep track that this file was renamed.
+ * It does not move the file on disk. `UpdateChange` does that.
+ * We need this just to prevent `Tree` from reloading the file from disk
+ * when the file is renamed.
+ */
+interface _RenameState {
+  type: 'rename';
+}
+
+interface UpdateState {
+  type: 'update';
+  content: string;
+  originalPath?: RelativePath;
 }
