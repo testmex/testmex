@@ -367,7 +367,7 @@ The reporter behavior:
 - Act: run scanner on the workspace path.
 - Assert: project has a file tagged `jest-config`.
 
-### [ ] Enriches Nx project with test files
+### [x] Enriches Nx project with test files
 
 - Arrange: create an nx workspace with a test file : `....spec.ts`.
 - Act: run scanner on the workspace path.
