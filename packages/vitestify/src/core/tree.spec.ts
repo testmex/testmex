@@ -1,12 +1,28 @@
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { relativePath } from './relative-path';
+import { FileSystemFake } from '../infra/file-system.fake';
 import { Tree } from './tree';
 
 describe(Tree.name, () => {
-  it.todo('staged write is visible to subsequent reads without committing', () => {
-    // Arrange: a `Tree` over a `FileSystemFake` with an existing file.
-    // Act: `tree.write(path, newContent)` then `tree.read(path)`.
-    // Assert: `read` returns `newContent`; `FileSystemFake` still has the original content.
-  });
+  it.todo(
+    'staged write is visible to subsequent reads without committing',
+    async () => {
+      const { fileSystem, tree } = setUp();
+
+      fileSystem.configure({
+        [relativePath('src/app.spec.ts')]: 'jest.mock("./foo")',
+      });
+
+      tree.write(relativePath('src/app.spec.ts'), 'vi.mock("./foo")');
+
+      expect(await tree.read(relativePath('src/app.spec.ts'))).toBe(
+        'vi.mock("./foo")',
+      );
+      expect(await fileSystem.readFile(relativePath('src/app.spec.ts'))).toBe(
+        'jest.mock("./foo")',
+      );
+    },
+  );
 
   it.todo('staged create is readable before commit', () => {
     // Arrange: a `Tree` over an empty `FileSystemFake`.
@@ -38,3 +54,12 @@ describe(Tree.name, () => {
     // Assert: `FileSystemFake` reflects all three operations; `changes()` is empty afterward.
   });
 });
+
+function setUp() {
+  const fileSystem = new FileSystemFake();
+
+  return {
+    fileSystem,
+    tree: new Tree({ fileSystem }),
+  };
+}
