@@ -5,6 +5,7 @@ import { AngularCliEnricher } from './angular-cli-enricher';
 import { Enricher } from './enricher';
 import { JestEnricher } from './jest-enricher';
 import { NxEnricher } from './nx-enricher';
+import { TestEnricher } from './test-enricher';
 
 /**
  * @deprecated 🚧 work in progress
@@ -16,6 +17,7 @@ export class Scanner {
       new AngularCliEnricher(args),
       new NxEnricher(args),
       new JestEnricher(args),
+      new TestEnricher(args),
     ];
   }
 

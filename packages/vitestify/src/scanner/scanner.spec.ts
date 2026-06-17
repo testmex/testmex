@@ -62,6 +62,12 @@ describe(Scanner.name, () => {
       },
     ]);
   });
+
+  it.todo('enriches nx project with test files', () => {
+    // Arrange: create an nx workspace with a test file : `....spec.ts`.
+    // Act: run scanner on the workspace path.
+    // Assert: project has a file tagged `test`.
+  });
 });
 
 function setUp() {
