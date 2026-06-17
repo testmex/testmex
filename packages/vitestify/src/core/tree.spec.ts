@@ -100,7 +100,7 @@ describe(Tree.name, () => {
     });
     await tree.write(mainPath, 'console.log("good bye");');
 
-    tree.rename(mainPath, relativePath('apps/my-app/main-moved.ts'));
+    await tree.rename(mainPath, relativePath('apps/my-app/main-moved.ts'));
 
     expect.soft(tree.changes()).toEqual([
       {
