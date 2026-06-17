@@ -11,14 +11,7 @@ export class Tree {
     this._fileSystem = args.fileSystem;
   }
 
-  /**
-   * @deprecated 🚧 work in progress
-   */
-  async exists(path: RelativePath): Promise<boolean> {
-    throw new Error('🚧 work in progress');
-  }
-
-  async read(path: RelativePath): Promise<string> {
+  async maybeReadFile(path: RelativePath): Promise<string | null> {
     const staged = this._staged.get(path);
     if (staged !== undefined) {
       return staged;
@@ -30,11 +23,10 @@ export class Tree {
     }
 
     const content = await this._fileSystem.maybeReadFile(path);
-    if (content === null) {
-      throw new Error(`Tree: file not found "${path}"`);
+    if (content !== null) {
+      this._cache.set(path, content);
     }
 
-    this._cache.set(path, content);
     return content;
   }
 

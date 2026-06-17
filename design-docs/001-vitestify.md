@@ -95,7 +95,7 @@ sequenceDiagram
     Heuristics-->>Analyzer: HeuristicResult[]
     Analyzer-->>Pipeline: Finding[]
     Pipeline->>Transforms: apply(findings)
-    Transforms->>Tree: read() / write()
+    Transforms->>Tree: maybeReadFile() / write()
     Pipeline->>Reporter: write(result)
     Reporter->>Tree: write(summary.md)
     Reporter-->>User: summary printed to stdout
@@ -142,8 +142,7 @@ type RelativePath = string & { readonly [__relativePathBrand]: true };
 class Tree {
   constructor(args: { fileSystem: FileSystem }) {}
 
-  exists(path: RelativePath): Promise<boolean> {}
-  read(path: RelativePath): Promise<string> {} // lazy, cached
+  maybeReadFile(path: RelativePath): Promise<string | null> {} // lazy, cached
   write(
     path: RelativePath,
     content: string,
@@ -261,7 +260,7 @@ type FindingTag = 'jest' | 'testing-library' | 'needs-agent' | (string & {});
 
 Each heuristic receives the full `Workspace`.
 
-- It can inspect individual files (via `workspace.tree.read`).
+- It can inspect individual files (via `workspace.tree.maybeReadFile`).
 - It can inspect whole projects (via `workspace.info.projects`).
 - It can inspect cross-file relationships — e.g. a per-project `jest.config.ts` that extends the Nx `jest.preset.js`, or imports that must be reconciled with `tsconfig` paths.
 - Heuristics return `HeuristicResult`s stamped with the relevant `project` (and optional `file`).
@@ -354,32 +353,32 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 ### [ ] Staged write is visible to subsequent reads without committing:
 
 - Arrange: a `Tree` over a `FileSystemFake` with an existing file.
-- Act: `tree.write(path, newContent)` then `tree.read(path)`.
-- Assert: `read` returns `newContent`; `FileSystemFake` still has the original content.
+- Act: `tree.write(path, newContent)` then `tree.maybeReadFile(path)`.
+- Assert: `maybeReadFile` returns `newContent`; `FileSystemFake` still has the original content.
 
 ### [ ] Staged create is readable before commit:
 
 - Arrange: a `Tree` over an empty `FileSystemFake`.
 - Act: `tree.write(newPath, content)`.
-- Assert: `tree.exists(newPath)` is true; `tree.read(newPath)` returns `content`; `changes()` has one `create`.
+- Assert: `tree.maybeReadFile(newPath)` returns `content`; `changes()` has one `create`.
 
 ### [ ] Staged delete hides file from reads:
 
 - Arrange: a `Tree` over a `FileSystemFake` with one file.
 - Act: `tree.delete(path)`.
-- Assert: `tree.exists(path)` is false; `changes()` has one `delete`; `FileSystemFake` still has the file until commit.
+- Assert: `tree.maybeReadFile(path)` is null; `changes()` has one `delete`; `FileSystemFake` still has the file until commit.
 
 ### [ ] Sequential writes to the same file compose:
 
 - Arrange: a `Tree` with an existing file.
 - Act: `tree.write(path, 'first')` then `tree.write(path, 'second')`.
-- Assert: `tree.read(path)` returns `'second'`; `changes()` has one `update`.
+- Assert: `tree.maybeReadFile(path)` returns `'second'`; `changes()` has one `update`.
 
 ### [ ] Rename via `originalPath` on write:
 
 - Arrange: a `Tree` with `old/path.ts` on disk.
 - Act: `tree.write('new/path.ts', content, { originalPath: 'old/path.ts' })`.
-- Assert: `changes()` has one `update` with `path: 'new/path.ts'` and `originalPath: 'old/path.ts'`; `tree.exists('old/path.ts')` is false and `tree.read('new/path.ts')` returns `content`.
+- Assert: `changes()` has one `update` with `path: 'new/path.ts'` and `originalPath: 'old/path.ts'`; `tree.maybeReadFile('old/path.ts')` is null and `tree.maybeReadFile('new/path.ts')` returns `content`.
 
 ### [ ] `commit()` flushes all staged changes to FileSystem:
 
@@ -441,7 +440,7 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 
 - Arrange: a `Tree` whose test file contains `jest.mock('./foo')`; a matching finding.
 - Act: construct the transform with the `Tree` and apply it.
-- Assert: `tree.read(path)` now contains `vi.mock('./foo')`.
+- Assert: `tree.maybeReadFile(path)` now contains `vi.mock('./foo')`.
 
 ### [ ] Two transforms compose on the same file:
 

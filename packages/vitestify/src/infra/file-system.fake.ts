@@ -15,14 +15,6 @@ export class FileSystemFake implements FileSystem {
     return this._files.get(path) ?? null;
   }
 
-  async readFile(path: RelativePath): Promise<string> {
-    const content = this._files.get(path)
-    if (content === undefined) {
-      throw new Error(`FileSystemFake: file not found "${path}"`)
-    }
-    return content;
-  }
-
   async scanDirectory(path: RelativePath): Promise<RelativePath[]> {
     const files = Array.from(this._files.keys());
 
