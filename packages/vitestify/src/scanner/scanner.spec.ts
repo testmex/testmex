@@ -40,7 +40,7 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('enriches nx project with jest config', async () => {
+  it('enriches nx project with jest config', async () => {
     const { configureWorkspace, scanner } = setUp();
 
     configureWorkspace(

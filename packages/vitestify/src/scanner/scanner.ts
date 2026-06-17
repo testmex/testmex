@@ -3,6 +3,7 @@ import { createWorkspaceInfo, WorkspaceInfo } from '../core/workspace-info';
 import type { FileSystem } from '../infra/file-system';
 import { AngularCliEnricher } from './angular-cli-enricher';
 import { Enricher } from './enricher';
+import { JestEnricher } from './jest-enricher';
 import { NxEnricher } from './nx-enricher';
 
 /**
@@ -11,7 +12,11 @@ import { NxEnricher } from './nx-enricher';
 export class Scanner {
   private _enrichers: Enricher[];
   constructor(args: { commandRunner: CommandRunner; fileSystem: FileSystem }) {
-    this._enrichers = [new AngularCliEnricher(args), new NxEnricher(args)];
+    this._enrichers = [
+      new AngularCliEnricher(args),
+      new NxEnricher(args),
+      new JestEnricher(args),
+    ];
   }
 
   /**
