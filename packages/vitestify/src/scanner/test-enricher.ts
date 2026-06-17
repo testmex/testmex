@@ -3,9 +3,6 @@ import type { ProjectFile, WorkspaceInfo } from '../core/workspace-info';
 import { FileSystem } from '../infra/file-system';
 import { Enricher } from './enricher';
 
-/**
- * @deprecated 🚧 work in progress
- */
 export class TestEnricher implements Enricher {
   private readonly _fileSystem: FileSystem;
 
@@ -14,15 +11,35 @@ export class TestEnricher implements Enricher {
   }
 
   async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
-    return workspaceInfo;
+    if (workspaceInfo.projects.length === 0) {
+      return workspaceInfo;
+    }
+
+    return {
+      ...workspaceInfo,
+      projects: await Promise.all(
+        workspaceInfo.projects.map(async (project) => ({
+          ...project,
+          files: [
+            ...project.files,
+            ...(await this._discoverTestFiles(project.path)),
+          ],
+        })),
+      ),
+    };
   }
 
-  /**
-   * @deprecated 🚧 work in progress
-   */
   private async _discoverTestFiles(
     projectRoot: RelativePath,
   ): Promise<ProjectFile[]> {
-    throw new Error('🚧 work in progress');
+    const files = await this._fileSystem.scanDirectory(projectRoot);
+    const testFilePattern = /\.spec\.ts$/;
+
+    return files
+      .filter((file) => testFilePattern.test(file))
+      .map((path) => ({
+        path,
+        tags: ['test'],
+      }));
   }
 }

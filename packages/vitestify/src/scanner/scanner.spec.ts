@@ -63,7 +63,7 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('enriches nx project with test files', async () => {
+  it('enriches nx project with test files', async () => {
     const { configureWorkspace, scanner } = setUp();
 
     configureWorkspace(
