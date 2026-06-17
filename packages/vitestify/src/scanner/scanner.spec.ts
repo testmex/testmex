@@ -63,10 +63,27 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('enriches nx project with test files', () => {
-    // Arrange: create an nx workspace with a test file : `....spec.ts`.
-    // Act: run scanner on the workspace path.
-    // Assert: project has a file tagged `test`.
+  it.todo('enriches nx project with test files', async () => {
+    const { configureWorkspace, scanner } = setUp();
+
+    configureWorkspace(
+      nxWorkspaceMother
+        .withApp('my-app')
+        .withAppFile('my-app', 'src/app.spec.ts', 'it("works", () => {})'),
+    );
+
+    const { projects } = await scanner.scanWorkspace();
+
+    expect(projects).toMatchObject([
+      {
+        files: [
+          {
+            path: relativePath('apps/my-app/src/app.spec.ts'),
+            tags: ['test'],
+          },
+        ],
+      },
+    ]);
   });
 });
 
