@@ -8,47 +8,133 @@ describe(Tree.name, () => {
     const { fileSystem, tree } = setUp();
 
     fileSystem.configure({
-      [relativePath('src/app.spec.ts')]: 'jest.mock("./foo")',
+      [relativePath('apps/my-app/src/app/app.component.spec.ts')]:
+        'jest.mock("./app.service");\n\ndescribe("AppComponent", () => {});',
     });
 
-    tree.write(relativePath('src/app.spec.ts'), 'vi.mock("./foo")');
+    tree.write(
+      relativePath('apps/my-app/src/app/app.component.spec.ts'),
+      'vi.mock("./app.service");\n\ndescribe("AppComponent", () => {});',
+    );
 
-    expect(
-      await tree.maybeReadFile(relativePath('src/app.spec.ts')),
-    ).toBe('vi.mock("./foo")');
-    expect(
-      await fileSystem.maybeReadFile(relativePath('src/app.spec.ts')),
-    ).toBe('jest.mock("./foo")');
+    expect
+      .soft(
+        await tree.maybeReadFile(
+          relativePath('apps/my-app/src/app/app.component.spec.ts'),
+        ),
+      )
+      .toBe('vi.mock("./app.service");\n\ndescribe("AppComponent", () => {});');
+    expect
+      .soft(
+        await fileSystem.maybeReadFile(
+          relativePath('apps/my-app/src/app/app.component.spec.ts'),
+        ),
+      )
+      .toBe(
+        'jest.mock("./app.service");\n\ndescribe("AppComponent", () => {});',
+      );
   });
 
-  it.todo('staged create is readable before commit', () => {
-    // Arrange: a `Tree` over an empty `FileSystemFake`.
-    // Act: `tree.write(newPath, content)`.
-    // Assert: `tree.maybeReadFile(newPath)` returns `content`; `changes()` has one `create`.
+  it.todo('staged create is readable before commit', async () => {
+    const { tree } = setUp();
+    const mainPath = relativePath('apps/my-app/main.ts');
+
+    tree.write(mainPath, 'console.log("hello");');
+
+    expect(await tree.maybeReadFile(mainPath)).toBe('console.log("hello");');
+    expect(tree.changes()).toEqual([
+      {
+        type: 'create',
+        path: 'apps/my-app/main.ts',
+        content: 'console.log("hello");',
+      },
+    ]);
   });
 
-  it.todo('staged delete hides file from reads', () => {
-    // Arrange: a `Tree` over a `FileSystemFake` with one file.
-    // Act: `tree.delete(path)`.
-    // Assert: `tree.maybeReadFile(path)` is null; `changes()` has one `delete`; `FileSystemFake` still has the file until commit.
+  it.todo('staged delete hides file from reads', async () => {
+    const { fileSystem, tree } = setUp();
+    const mainPath = relativePath('apps/my-app/main.ts');
+
+    fileSystem.configure({
+      [mainPath]: 'console.log("hello");',
+    });
+
+    tree.delete(mainPath);
+
+    expect.soft(await tree.maybeReadFile(mainPath)).toBeNull();
+    expect.soft(tree.changes()).toEqual([{ type: 'delete', path: mainPath }]);
+    expect
+      .soft(await fileSystem.maybeReadFile(mainPath))
+      .toBe('console.log("hello");');
   });
 
-  it.todo('sequential writes to the same file compose', () => {
-    // Arrange: a `Tree` with an existing file.
-    // Act: `tree.write(path, 'first')` then `tree.write(path, 'second')`.
-    // Assert: `tree.maybeReadFile(path)` returns `'second'`; `changes()` has one `update`.
+  it.todo('sequential writes to the same file compose', async () => {
+    const { fileSystem, tree } = setUp();
+    const mainPath = relativePath('apps/my-app/main.ts');
+
+    fileSystem.configure({
+      [mainPath]: 'console.log("hello");',
+    });
+
+    tree.write(mainPath, 'console.log("world");');
+    tree.write(mainPath, 'console.log("good bye");');
+
+    expect
+      .soft(await tree.maybeReadFile(mainPath))
+      .toBe('console.log("good bye");');
+    expect.soft(tree.changes()).toEqual([
+      {
+        type: 'update',
+        path: 'apps/my-app/main.ts',
+        content: 'console.log("good bye");',
+      },
+    ]);
   });
 
-  it.todo('rename via `originalPath` on write', () => {
-    // Arrange: a `Tree` with `old/path.ts` on disk.
-    // Act: `tree.write('new/path.ts', content, { originalPath: 'old/path.ts' })`.
-    // Assert: `changes()` has one `update` with `path: 'new/path.ts'` and `originalPath: 'old/path.ts'`; `tree.maybeReadFile('old/path.ts')` is null and `tree.maybeReadFile('new/path.ts')` returns `content`.
+  it.todo('rename via `originalPath` on write', async () => {
+    const { fileSystem, tree } = setUp();
+    const mainPath = relativePath('apps/my-app/main.ts');
+
+    fileSystem.configure({
+      [mainPath]: 'console.log("hello");',
+    });
+    tree.write(mainPath, 'console.log("good bye");');
+
+    tree.rename(mainPath, relativePath('apps/my-app/main-moved.ts'));
+
+    expect.soft(tree.changes()).toEqual([
+      {
+        type: 'update',
+        path: 'apps/my-app/main-moved.ts',
+        content: 'console.log("good bye");',
+        originalPath: 'apps/my-app/main.ts',
+      },
+    ]);
+    expect.soft(await tree.maybeReadFile(mainPath)).toBeNull();
+    expect
+      .soft(await tree.maybeReadFile(relativePath('apps/my-app/main-moved.ts')))
+      .toBe('console.log("good bye");');
   });
 
-  it.todo('`commit()` flushes all staged changes to FileSystem', () => {
-    // Arrange: a `Tree` with staged create, update, and delete.
-    // Act: `tree.commit()`.
-    // Assert: `FileSystemFake` reflects all three operations; `changes()` is empty afterward.
+  it.todo('`commit()` flushes all staged changes to FileSystem', async () => {
+    const { fileSystem, tree } = setUp();
+    const mainPath = relativePath('apps/my-app/main.ts');
+    const jestConfigPath = relativePath('apps/my-app/jest.config.ts');
+
+    fileSystem.configure({
+      [mainPath]: 'console.log("hello");',
+    });
+
+    tree.write(mainPath, 'console.log("good bye");');
+    tree.delete(jestConfigPath);
+
+    await tree.commit();
+
+    expect
+      .soft(await fileSystem.maybeReadFile(mainPath))
+      .toBe('console.log("good bye");');
+    expect.soft(await fileSystem.maybeReadFile(jestConfigPath)).toBeNull();
+    expect.soft(tree.changes()).toEqual([]);
   });
 });
 

@@ -39,6 +39,13 @@ export class Tree {
   }
 
   /**
+   * @deprecated 🚧 Work in progress.
+   */
+  rename(originalPath: RelativePath, newPath: RelativePath): void {
+    throw new Error('🚧 Work in progress!');
+  }
+
+  /**
    * @deprecated 🚧 work in progress
    */
   delete(path: RelativePath): void {
