@@ -1,4 +1,4 @@
-import type { CommandRunner } from '../core/ports/command-runner';
+import { CommandRunner } from '../ports/command-runner';
 import { CommandRunnerPooled } from './command-runner-pooled';
 
 describe(CommandRunnerPooled, () => {
