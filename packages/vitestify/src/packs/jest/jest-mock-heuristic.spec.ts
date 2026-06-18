@@ -24,9 +24,11 @@ describe('jestMockHeuristic', () => {
 });
 
 function setUp() {
-  const workspace = createTestingWorkspace(workspaceMother
-    .withApp('my-app')
-    .withAppFile('my-app', 'src/app.spec.ts', "jest.mock('./foo');"));
+  const workspace = createTestingWorkspace(
+    workspaceMother
+      .withApp('my-app')
+      .withAppFile('my-app', 'src/app.spec.ts', "jest.mock('./foo');"),
+  );
   const project = workspace.info.projects[0];
   const file = project.files[0];
 
