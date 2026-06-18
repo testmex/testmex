@@ -8,7 +8,7 @@ import { jestMockTransform } from './jest-mock-transform';
 
 describe('jestMock', () => {
   it('detects and rewrites `jest.mock` to `vi.mock` via the Tree', async () => {
-    const { project, file, workspace } = setUp();
+    const { file, workspace } = setUp();
 
     const findings = await jestMockHeuristic.inspect(workspace);
     await jestMockTransform.apply(workspace, findings);
