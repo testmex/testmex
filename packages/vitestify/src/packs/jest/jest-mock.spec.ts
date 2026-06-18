@@ -5,15 +5,13 @@ import {
 } from '../../core/models/workspace.mother';
 import { jestMockHeuristic } from './jest-mock-heuristic';
 import { jestMockTransform } from './jest-mock-transform';
+import { runTransform } from '../../testing/run-transform';
 
 describe('jestMock', () => {
   it('detects and rewrites `jest.mock` to `vi.mock` via the Tree', async () => {
-    const { file, workspace } = setUp();
+    const { transformTestFile } = setUp();
 
-    const findings = await jestMockHeuristic.inspect(workspace);
-    await jestMockTransform.apply({ findings, workspace });
-
-    expect(await workspace.tree.maybeReadFile(file.path)).toBe(
+    expect(await transformTestFile(`jest.mock('./foo');`)).toBe(
       `\
 import { vi } from 'vitest';
 vi.mock('./foo');`,
@@ -21,48 +19,43 @@ vi.mock('./foo');`,
   });
 
   it("adds `import { vi } from 'vitest'` when missing", async () => {
-    const { file, workspace } = setUp();
+    const { transformTestFile } = setUp();
 
-    const findings = await jestMockHeuristic.inspect(workspace);
-    await jestMockTransform.apply({ findings, workspace });
-
-    expect(await workspace.tree.maybeReadFile(file.path)).toContain(
+    expect(await transformTestFile(`jest.mock('./foo');`)).toContain(
       `import { vi } from 'vitest';`,
     );
   });
 
   it('does not add a duplicate `vi` import when already present', async () => {
-    const workspace = createTestingWorkspace(
-      workspaceMother.withApp('my-app').withAppFile(
-        'my-app',
-        'src/app.spec.ts',
-        `\
+    const { transformTestFile } = setUp();
+
+    expect(
+      await transformTestFile(`\
 import { vi } from 'vitest';
-jest.mock('./foo');`,
-      ),
+jest.mock('./foo');`),
+    ).toBe(
+      `\
+import { vi } from 'vitest';
+vi.mock('./foo');`,
     );
-    const file = workspace.info.projects[0].files[0];
-
-    const findings = await jestMockHeuristic.inspect(workspace);
-    await jestMockTransform.apply({ findings, workspace });
-
-    const lines = (await workspace.tree.maybeReadFile(file.path))?.split('\n');
-    expect(lines).toHaveLength(2);
   });
 });
 
 function setUp() {
-  const workspace = createTestingWorkspace(
-    workspaceMother
-      .withApp('my-app')
-      .withAppFile('my-app', 'src/app.spec.ts', "jest.mock('./foo');"),
-  );
-  const project = workspace.info.projects[0];
-  const file = project.files[0];
-
   return {
-    file,
-    project,
-    workspace,
+    transformTestFile: async (content: string) => {
+      const workspace = createTestingWorkspace(
+        workspaceMother
+          .withApp('my-app')
+          .withAppFile('my-app', 'src/app.spec.ts', content),
+      );
+      await runTransform({
+        workspace,
+        heuristics: [jestMockHeuristic],
+        transforms: [jestMockTransform],
+      });
+      const file = workspace.info.projects[0].files[0];
+      return await workspace.tree.maybeReadFile(file.path);
+    },
   };
 }
