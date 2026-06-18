@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../../core/domain/tree';
+import type { WorkspaceMother } from '../../core/models/workspace.mother';
 import { workspaceMother } from '../../core/models/workspace.mother';
 import { FileSystemFake } from '../../core/ports/file-system.fake';
 import { TestEnricher } from './test-enricher';
-
-type Mother = ReturnType<typeof workspaceMother.withApp>;
 
 describe(TestEnricher.name, () => {
   it('ignores non test files', async () => {
@@ -49,7 +48,7 @@ describe(TestEnricher.name, () => {
   });
 });
 
-async function enrich(mother: Mother) {
+async function enrich(mother: WorkspaceMother) {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(mother.buildFiles());
 

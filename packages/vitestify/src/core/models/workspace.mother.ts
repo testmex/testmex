@@ -8,7 +8,7 @@ import {
   type WorkspaceInfo,
 } from './workspace-info';
 
-class WorkspaceMother {
+export class WorkspaceMother {
   constructor(private readonly _state: State = { appFiles: {} }) {}
 
   withApp(name: string) {
