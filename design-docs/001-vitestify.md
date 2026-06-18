@@ -385,7 +385,7 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 
 ## Heuristics
 
-### [ ] Heuristic detects `jest.mock` usage:
+### [x] Heuristic detects `jest.mock` usage:
 
 - Arrange: a `Workspace` whose test file contains `jest.mock('./foo')`.
 - Act: run the heuristic.
