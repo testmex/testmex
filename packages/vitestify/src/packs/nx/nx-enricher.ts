@@ -30,7 +30,6 @@ export class NxEnricher implements Enricher {
     const graph = await this._runNxGraphCommand();
 
     return mergeWorkspaceInfo(workspaceInfo, {
-      workspaceType: 'nx',
       projects: Object.values(graph.graph.nodes).map((node) => ({
         name: node.name,
         path: relativePath(node.data.root),

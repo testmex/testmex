@@ -34,7 +34,6 @@ export class AngularCliEnricher implements Enricher {
     );
 
     return mergeWorkspaceInfo(workspaceInfo, {
-      workspaceType: 'angular-cli',
       projects,
     });
   }

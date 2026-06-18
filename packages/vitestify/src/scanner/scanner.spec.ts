@@ -19,7 +19,6 @@ describe(Scanner.name, () => {
 
     const { info } = await scanner.scanWorkspace();
 
-    expect.soft(info.workspaceType).toBe('angular-cli');
     expect.soft(info.projects).toMatchObject([
       {
         name: 'my-app',
@@ -35,7 +34,6 @@ describe(Scanner.name, () => {
 
     const { info } = await scanner.scanWorkspace();
 
-    expect.soft(info.workspaceType).toBe('nx');
     expect.soft(info.projects).toMatchObject([
       {
         name: 'my-app',

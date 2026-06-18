@@ -68,7 +68,6 @@ class WorkspaceMother {
     );
 
     return {
-      workspaceType: 'nx',
       projects: [
         {
           name,

@@ -1,7 +1,6 @@
 import { RelativePath } from './relative-path';
 
 export interface WorkspaceInfo {
-  workspaceType: 'angular-cli' | 'nx' | null;
   projects: Project[];
 }
 
@@ -29,7 +28,6 @@ export type ProjectFileTag =
 
 export function createWorkspaceInfo(): WorkspaceInfo {
   return {
-    workspaceType: null,
     projects: [],
   };
 }
