@@ -472,8 +472,8 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 
 ```mermaid
 flowchart LR
-    PR0["PR 0<br>Core + Tree"]
-    PR1["PR 1<br>Scanner"]
+    PR0["PR 0 ✓<br>Core + Tree"]
+    PR1["PR 1 ✓<br>Scanner"]
     PR2["PR 2<br>Analyzer +<br>heuristics"]
     PR3["PR 3<br>Transform engine +<br>transforms"]
     PR4["PR 4<br>Pipeline +<br>wide test"]
@@ -488,11 +488,11 @@ flowchart LR
     PR4 --> PR5
 ```
 
-1. [ ] **PR 0 — Core + Tree**:
+1. [x] **PR 0 — Core + Tree**:
    - `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`).
    - Everything downstream depends on it.
    - Tests included.
-2. [ ] **PR 1 — Scanner**:
+2. [x] **PR 1 — Scanner**:
    - Workspace detection (Angular CLI vs Nx).
    - `Enricher` interface + `AngularCliEnricher`/`NxEnricher`.
    - Jest config discovery (all forms), test file discovery.
