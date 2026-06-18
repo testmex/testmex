@@ -21,31 +21,29 @@
 - The tool applies transforms: updates config files, rewrites Jest-specific imports/APIs in test files, updates `package.json` dependencies, etc.
 - Progress is logged to stdout as each step completes.
 - For migrations too complex to automate, agent instruction files are written alongside the migration output.
-- `--dry-run` — scans and reports what would change without writing anything.
 - `--path <dir>` — target a specific project or subdirectory instead of the full workspace.
 
 # Design
 
-1. **CLI** — entry point. Parses `--dry-run` and `--path` flags. Uses **inquirer.js** for interactive prompts. Bootstraps the pipeline.
+1. **CLI** — entry point. Parses `--path` flag. Uses **inquirer.js** for interactive prompts. Bootstraps **Vitestify**.
 2. **Scanner** — discovers workspace structure: project type (Angular CLI vs Nx), Jest config files, test files, `package.json` entries.
-3. **Analyzer** — the engine. Runs registered heuristics over the `Workspace` and collects findings.
-4. **Heuristics** — small, composable rules registered in a simple array.
+3. **Heuristics** — small, composable rules registered in a simple array.
   - Each **Heuristic** receives the full `Workspace` (`WorkspaceInfo` + `Tree`).
   - It can inspect individual files, cross-file relationships, or whole projects.
   - Examples: "file uses `jest.mock`".
   - They produce **Findings**. Easy to add new ones.
-5. **Transforms** — each transform is constructed with the shared `Tree`.
-  - It receives a list of findings, reads source from the `Tree`, and writes edits back to it.
+4. **Transforms** — each transform reads and writes through the shared `Tree`.
+  - It receives the `Workspace` and a list of findings.
   - Registered in a simple array.
   - The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
-6. **Pipeline** — wires it all together: CLI → Scanner → Analyzer → Transforms, all sharing one `Tree`. Respects `--dry-run` by skipping the `Tree` commit.
+5. **Vitestify** — wires it all together: CLI → Scanner → heuristics → transforms, all sharing one `Tree`.
 
 ## Mental Model
 
 **detect → act.**
 
 - The scanner maps the workspace (`WorkspaceInfo`).
-- The pipeline bundles that with a shared `Tree` into a `**Workspace`**.
+- Vitestify bundles that with a shared `Tree` into a **`Workspace`**.
 - Heuristics inspect the `Workspace` and produce **findings** — observations about what needs changing.
 - Heuristics have full access to file content and cross-file context via the `Tree`.
 - **Transforms** act on findings by reading and writing through the same `Tree`.
@@ -58,9 +56,9 @@
 ```mermaid
 flowchart LR
     Scan["Scanner<br>WorkspaceInfo"]
-    Find["Analyzer<br>Finding[]"]
+    Find["Heuristics<br>Finding[]"]
     Change["Transforms<br>write to Tree"]
-    Commit["Tree.commit()<br>(skipped on --dry-run)"]
+    Commit["Tree.commit()"]
 
     Scan --> Find --> Change --> Commit
 ```
@@ -73,42 +71,39 @@ flowchart LR
 sequenceDiagram
     actor User
     participant CLI
-    participant Pipeline
+    participant Vitestify
     participant Scanner
-    participant Analyzer
     participant Heuristics
     participant Transforms
     participant Tree
 
-    User->>CLI: npx @testmex/vitestify [--dry-run] [--path]
-    CLI->>Pipeline: run(options)
-    Pipeline->>Scanner: scanWorkspace()
-    Scanner-->>Pipeline: WorkspaceInfo (projects, files)
-    Pipeline->>CLI: prompt(questions)
+    User->>CLI: npx @testmex/vitestify [--path]
+    CLI->>Vitestify: run(options)
+    Vitestify->>Scanner: scanWorkspace()
+    Scanner-->>Vitestify: WorkspaceInfo (projects, files)
+    Vitestify->>CLI: prompt(questions)
     CLI->>User: interactive prompts (inquirer.js)
     User-->>CLI: answers
-    Pipeline->>Analyzer: analyze(workspace, heuristics)
-    Analyzer->>Heuristics: inspect(workspace)
-    Heuristics-->>Analyzer: Finding[]
-    Analyzer-->>Pipeline: Finding[]
-    Pipeline->>Transforms: apply(findings)
+    Vitestify->>Heuristics: inspect(workspace)
+    Heuristics-->>Vitestify: Finding[]
+    Vitestify->>Transforms: apply(workspace, findings)
     Transforms->>Tree: maybeReadFile() / write()
-    Pipeline->>Tree: commit() (unless --dry-run)
+    Vitestify->>Tree: commit()
 ```
 
 
 
 ## Implementation Details
 
-- **Heuristic & Transform registration**: hardcoded arrays — no auto-discovery or plugin system. Heuristics and transforms are registered as simple arrays. Transforms are registered as factories that receive the shared `Tree`.
+- **Heuristic & Transform registration**: hardcoded arrays — no auto-discovery or plugin system. Heuristics and transforms are registered as simple arrays.
 - **Tree**:
   - An in-memory overlay over the `FileSystem`.
   - Reads are lazy and cached.
   - Writes/deletes are staged in memory.
   - `commit()` flushes staged changes to disk.
-  - It is the single channel through which the analyzer and transforms touch file content.
+  - It is the single channel through which heuristics and transforms touch file content.
   - This is what makes multi-transform edits to the same file compose.
-- **Code transforms**: use **jscodeshift** for AST-based rewrites of test files (e.g. `jest.mock` → `vi.mock`).
+- **Code transforms**: use **@ast-grep/napi** for AST-based rewrites of test files (e.g. `jest.mock` → `vi.mock`).
 - **Config parsing**:
   - Support the Jest config in all its common forms — `jest.config.{ts,js,mjs,cjs}`, the Nx `jest.preset.js`, and an inline `jest` field in `package.json`.
   - JS/TS configs are edited via AST.
@@ -150,13 +145,12 @@ class Tree {
 }
 ```
 
-The `Tree` is the shared mutation surface for the whole pipeline.
+The `Tree` is the shared mutation surface for the whole run.
 
-- The analyzer reads through it.
+- Heuristics read through it.
 - Transforms read and write through it.
 - Edits live in one in-memory cache until `commit()`.
 - Multiple transforms can edit the same file in sequence and each sees the previous transform's output.
-- `--dry-run` simply never calls `commit()`.
 
 ### Scanner
 
@@ -207,29 +201,11 @@ type ProjectFileTag =
 - If so, it augments the `WorkspaceInfo` with the projects and files it discovers.
 - Enrichers are passed into the `Scanner` constructor so the set is explicit and testable.
 
-The pipeline assembles a `Workspace` from the scanner output and the shared `Tree`:
+Vitestify assembles a `Workspace` from the scanner output and the shared `Tree`:
 
 ```typescript
 type Workspace = { info: WorkspaceInfo; tree: Tree };
 ```
-
-### Analyzer
-
-```typescript
-class Analyzer {
-  async analyze(
-    workspace: Workspace,
-    heuristics: Heuristic[],
-  ): Promise<Finding[]> {}
-}
-```
-
-The analyzer runs every registered `Heuristic` against the `Workspace`.
-
-- Each heuristic decides what to inspect — a single file, a whole project, or cross-file relationships.
-- It uses `workspace.info` and `workspace.tree`.
-- It returns `Finding`s stamped with the relevant `project` (and optional `file`).
-- The analyzer collects them.
 
 ### Heuristics & Findings
 
@@ -264,10 +240,8 @@ Each heuristic receives the full `Workspace`.
 ### Transforms & Changes
 
 ```typescript
-type TransformFactory = (args: { tree: Tree }) => Transform;
-
 interface Transform {
-  apply(findings: Finding[]): Promise<void>;
+  apply(workspace: Workspace, findings: Finding[]): Promise<void>;
 }
 
 type CreateChange = { type: 'create'; path: RelativePath; content: string };
@@ -282,9 +256,9 @@ type UpdateChange = {
 type Change = CreateChange | UpdateChange | DeleteChange;
 ```
 
-Each transform is constructed with the shared `Tree` (via its `TransformFactory`).
+Each transform receives the `Workspace` and matching findings.
 
-- `apply` reads source through the `Tree` and writes edited content back to it.
+- `apply` reads source through `workspace.tree` and writes edited content back to it.
 - It returns nothing — there is no per-transform `Change[]` to merge.
 - The `Tree` is the single accumulator of edits.
 - A `jest.mock` rewrite and an import rewrite can both edit the same test file in sequence, each seeing the prior edit.
@@ -293,31 +267,30 @@ Each transform is constructed with the shared `Tree` (via its `TransformFactory`
   - `delete` for removed paths.
   - `update` for in-place edits or renames (`path` is always the final path; pass `originalPath` to `Tree.write` when a transform renames a file, e.g. `jest.config.ts` → `vitest.config.ts`).
 
-### Pipeline
+### Vitestify
 
 ```typescript
-interface PipelineOptions {
-  dryRun: boolean;
+interface VitestifyOptions {
   path?: RelativePath;
 }
 
-interface PipelineResult {
+interface VitestifyResult {
   changes: Change[];
 }
 
-class Pipeline {
-  async run(options: PipelineOptions): Promise<PipelineResult> {}
+class Vitestify {
+  async run(options: VitestifyOptions): Promise<VitestifyResult> {}
 }
 ```
 
-The pipeline workflow:
+The Vitestify workflow:
 
 - Creates one `Tree` (over the real `FileSystem`).
 - Assembles a `Workspace` from the scanner's `WorkspaceInfo` and that `Tree`.
-- Threads both into the analyzer and transforms.
+- Runs each registered heuristic and collects findings.
+- Applies each registered transform with the `Workspace` and findings.
 - After transforms run, `result.changes` is `tree.changes()`.
-- When `dryRun` is false it calls `tree.commit()` to flush everything to disk (including renames).
-- When `dryRun` is true it skips the commit, so nothing is written.
+- Calls `tree.commit()` to flush everything to disk (including renames).
 
 # Testing Strategy
 
@@ -400,15 +373,15 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 ### [x] Rewrites `jest.mock` to `vi.mock` via the Tree:
 
 - Arrange: a `Tree` whose test file contains `jest.mock('./foo')`; a matching finding.
-- Act: construct the transform with the `Tree` and apply it.
+- Act: apply the transform with the `Workspace` and finding.
 - Assert: `tree.maybeReadFile(path)` now contains `vi.mock('./foo')`.
 
-## Pipeline
+## Vitestify
 
 ### [ ] Wide test — applies transforms and commits:
 
 - Arrange: set up a workspace with a jest config and a test file using `jest.mock`.
-- Act: run the pipeline.
+- Act: run Vitestify.
 - Assert: after commit, the test file is rewritten on disk.
 
 # PR Plan
@@ -417,9 +390,9 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 flowchart LR
     PR0["PR 0 ✓<br>Core + Tree"]
     PR1["PR 1 ✓<br>Scanner"]
-    PR2["PR 2<br>Analyzer +<br>heuristics"]
-    PR3["PR 3<br>Transform engine +<br>transforms"]
-    PR4["PR 4<br>Pipeline +<br>wide test"]
+    PR2["PR 2 ✓<br>Heuristics"]
+    PR3["PR 3<br>Transforms"]
+    PR4["PR 4<br>Vitestify +<br>wide test"]
 
     PR0 --> PR1
     PR0 --> PR2
@@ -444,13 +417,13 @@ flowchart LR
   - `Workspace`/`Finding`/`Heuristic` types, tag system.
   - Ships with the `jest.mock` heuristic.
   - Tests included.
-4. [ ] **PR 3 — Transform engine + transforms**:
-  - `Transform`/`TransformFactory`/`Change` union (including rename-on-update), transform runner over the `Tree`.
-  - Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift, Nx/Angular runner-wiring transform, agent-instruction transform).
+4. [ ] **PR 3 — Transforms**:
+  - `Transform`/`Change` union (including rename-on-update).
+  - Ships with v1 transforms (e.g. `jest.mock` → `vi.mock` via `@ast-grep/napi`, Nx/Angular runner-wiring transform, agent-instruction transform).
   - Tests included.
-5. [ ] **PR 4 — Analyzer + Pipeline + wide test**:
-  - CLI entry point with `--dry-run`, `--path`, inquirer.js prompts.
-  - Wires Scanner + Analyzer + Transforms over one `Tree`.
+5. [ ] **PR 4 — Vitestify + wide test**:
+  - CLI entry point with `--path`, inquirer.js prompts.
+  - Wires Scanner, heuristics, and transforms over one `Tree`.
   - Wide integration test.
 
 # Alternatives Considered
@@ -472,7 +445,10 @@ Produce agent instruction transforms for non-trivial ones.
 
 ### `--dry-run` option
 
-### Reporter
+- `--dry-run` — scans and reports what would change without writing anything.
+- CLI parses a `--dry-run` flag.
+- Vitestify skips `tree.commit()` when dry-run is enabled; staged changes appear in `result.changes` only.
+- Reporter shows the summary but never writes it to disk under `--dry-run`.
 
 Summarizes all staged changes and writes a Markdown summary report.
 
@@ -480,7 +456,7 @@ Summarizes all staged changes and writes a Markdown summary report.
 class Reporter {
   constructor(args: { tree: Tree }) {}
 
-  write(result: PipelineResult, outputPath: RelativePath): Promise<void> {}
+  write(result: VitestifyResult, outputPath: RelativePath): Promise<void> {}
 }
 ```
 
@@ -488,11 +464,9 @@ Behavior:
 
 - Always prints the summary to stdout.
 - Stages `summary.md` into the `Tree`.
-- Persisting it to disk happens through the pipeline's `tree.commit()`.
-- Under `--dry-run` the summary is shown but never written.
+- Persisting it to disk happens through Vitestify's `tree.commit()`.
 
-Pipeline integration:
+Vitestify integration:
 
-- Runs after transforms: `CLI → Scanner → Analyzer → Transforms → Reporter → commit`.
+- Runs after transforms: `CLI → Scanner → heuristics → transforms → Reporter → commit`.
 - At the end of a migration, a Markdown summary report is written to disk listing all changes made.
-
