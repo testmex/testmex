@@ -4,9 +4,6 @@
   "license": "MIT",
   "scripts": {},
   "private": true,
-  "dependencies": {
-    "jscodeshift": "17.3.0"
-  },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
     "@nx/eslint": "22.6.0",

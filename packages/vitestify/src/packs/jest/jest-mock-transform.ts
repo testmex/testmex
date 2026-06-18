@@ -1,33 +1,8 @@
-import jscodeshift from 'jscodeshift';
+import { Lang, parse } from '@ast-grep/napi';
 import type { Finding } from '../../core/finding';
 import type { Transform } from '../../core/transform';
 import type { Workspace } from '../../core/workspace';
 import { findingTypes } from './findings';
-
-function rewriteJestMock(content: string): string {
-  const root = jscodeshift(content);
-
-  root
-    .find(jscodeshift.CallExpression, {
-      callee: {
-        type: 'MemberExpression',
-        object: { type: 'Identifier', name: 'jest' },
-        property: { type: 'Identifier', name: 'mock' },
-      },
-    })
-    .forEach((path) => {
-      const callee = path.node.callee;
-
-      if (
-        callee.type === 'MemberExpression' &&
-        callee.object.type === 'Identifier'
-      ) {
-        callee.object.name = 'vi';
-      }
-    });
-
-  return root.toSource();
-}
 
 export const jestMockTransform: Transform = {
   apply: async (workspace: Workspace, findings: Finding[]): Promise<void> => {
@@ -43,11 +18,29 @@ export const jestMockTransform: Transform = {
 
       const content = await tree.maybeReadFile(finding.file.path);
 
-      if (content === null) {
-        continue;
+      if (content != null) {
+        await tree.write(finding.file.path, _rewriteJestMock(content));
       }
-
-      await tree.write(finding.file.path, rewriteJestMock(content));
     }
   },
 };
+
+function _rewriteJestMock(content: string): string {
+  const root = parse(Lang.TypeScript, content).root();
+  const nodes = root.findAll('jest.mock($$$ARGS)');
+
+  if (nodes.length === 0) {
+    return content;
+  }
+
+  const edits = nodes.map((node) => {
+    const args = node
+      .getMultipleMatches('ARGS')
+      .map((arg) => arg.text())
+      .join('');
+
+    return node.replace(`vi.mock(${args})`);
+  });
+
+  return root.commitEdits(edits);
+}
