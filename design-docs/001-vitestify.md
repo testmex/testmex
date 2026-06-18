@@ -446,6 +446,10 @@ Produce agent instruction transforms for non-trivial ones.
 - When ambiguity or choices arise (e.g. multiple projects, unclear config), prompt the user interactively via **inquirer.js**.
 - CLI handles prompts before Vitestify runs heuristics and transforms.
 
+### Warn when a transform didn't change the content
+
+### Survive failing enrichers, heuristics, and transforms
+
 ### `--path` option
 
 - `--path <dir>` — target a specific project or subdirectory instead of the full workspace.
