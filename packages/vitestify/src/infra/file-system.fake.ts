@@ -1,7 +1,8 @@
 import type { RelativePath } from '../core/relative-path';
 import type { FileSystem } from './file-system';
+import type { Public } from '../shared/public';
 
-export class FileSystemFake implements FileSystem {
+export class FileSystemFake implements Public<FileSystem> {
   private readonly _files = new Map<RelativePath, string>();
 
   configure(entries: Record<RelativePath, string>): void {

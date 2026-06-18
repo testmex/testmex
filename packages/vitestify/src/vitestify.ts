@@ -17,10 +17,10 @@ export class Vitestify {
   ];
   private readonly _scanner: Scanner;
 
-  constructor({ workspaceRoot }: { workspaceRoot: string }) {
-    const commandRunner = new CommandRunner();
-    const fileSystem = new FileSystem({ workspaceRoot });
-
+  constructor({
+    commandRunner = new CommandRunner(),
+    fileSystem = new FileSystem({ workspaceRoot: process.cwd() }),
+  }: { commandRunner?: CommandRunner; fileSystem?: FileSystem } = {}) {
     this._scanner = new Scanner({
       commandRunner,
       enricherFactories: this._packs.flatMap((pack) => pack.enricherFactories),

@@ -6,5 +6,5 @@ main(process.argv.slice(2)).catch((error) => {
 });
 
 async function main(argv: string[]): Promise<void> {
-  await new Vitestify({ workspaceRoot: process.cwd() }).run();
+  await new Vitestify().run();
 }
