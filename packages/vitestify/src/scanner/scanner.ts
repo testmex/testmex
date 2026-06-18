@@ -1,9 +1,12 @@
+import debug from 'debug';
 import { EnricherFactory } from '../core/models/enricher';
 import { Tree } from '../core/domain/tree';
 import { defineWorkspace, type Workspace } from '../core/domain/workspace';
 import { createWorkspaceInfo } from '../core/models/workspace-info';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
+
+const log = debug('vitestify:scanner');
 
 export class Scanner {
   private readonly _commandRunner: CommandRunner;
@@ -21,6 +24,7 @@ export class Scanner {
   }
 
   async scanWorkspace(): Promise<Workspace> {
+    log('scanning workspace');
     const tree = new Tree({ fileSystem: this._fileSystem });
     const enrichers = this._enricherFactories.map((factory) =>
       factory({ commandRunner: this._commandRunner, tree }),
