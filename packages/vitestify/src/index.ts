@@ -1,4 +1,1 @@
-export {
-  Vitestify,
-  type VitestifyOptions,
-} from './vitestify/vitestify';
+export { Vitestify } from './vitestify/vitestify';

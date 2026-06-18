@@ -374,7 +374,7 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 
 ## Vitestify
 
-### [ ] Wide test — applies transforms and commits:
+### [x] Applies transforms and commits:
 
 - Arrange: set up a workspace with a jest config and a test file using `jest.mock`.
 - Act: run Vitestify.
