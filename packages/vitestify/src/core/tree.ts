@@ -13,7 +13,7 @@ export class Tree {
   async maybeReadFile(path: RelativePath): Promise<string | null> {
     const state = this._fileStates.get(path);
 
-    if (this._isDeletedOrRenamed(state)) {
+    if (isDeletedOrGhost(state)) {
       return null;
     }
 
@@ -38,7 +38,7 @@ export class Tree {
     newPath: RelativePath,
   ): Promise<void> {
     const state = this._fileStates.get(originalPath);
-    const content = this._isCreatedOrUpdated(state)
+    const content = isCreatedOrUpdated(state)
       ? state.content
       : await this._cachedFileSystem.maybeReadFile(originalPath);
 
@@ -49,7 +49,7 @@ export class Tree {
     /* Keep track that the file was renamed so that we don't reload it from disk.
      * See `RenameChange` type. */
     this._fileStates.set(originalPath, {
-      type: 'rename',
+      type: 'ghost',
     });
     this._fileStates.set(newPath, {
       type: 'update',
@@ -62,27 +62,20 @@ export class Tree {
     this._fileStates.set(path, { type: 'delete' });
   }
 
-  changes(): FileState[] {
+  changes(): Change[] {
     return Array.from(this._fileStates.entries())
-      .filter(([_, change]) => change.type !== 'rename')
-      .map(([path, change]) => ({
-        path,
-        ...change,
-      }));
+      .map(([path, state]) => ({ path, ...state }))
+      .filter((state): state is Change => !isGhost(state));
   }
 
   async commit(): Promise<void> {
-    for (const [path, change] of this._fileStates.entries()) {
-      if (change.type === 'rename') {
-        continue;
-      }
-
+    for (const change of this.changes()) {
       if (change.type === 'delete') {
-        await this._cachedFileSystem.deleteFile(path);
+        await this._cachedFileSystem.deleteFile(change.path);
         continue;
       }
 
-      await this._cachedFileSystem.writeFile(path, change.content);
+      await this._cachedFileSystem.writeFile(change.path, change.content);
 
       if (change.type === 'update' && change.originalPath !== undefined) {
         await this._cachedFileSystem.deleteFile(change.originalPath);
@@ -91,27 +84,15 @@ export class Tree {
 
     this._fileStates.clear();
   }
-
-  private _isCreatedOrUpdated(
-    state: FileState | undefined,
-  ): state is CreateState | UpdateState {
-    return state?.type === 'create' || state?.type === 'update';
-  }
-
-  private _isDeletedOrRenamed(
-    state: FileState | undefined,
-  ): state is DeleteState | _RenameState {
-    return state?.type === 'delete' || state?.type === 'rename';
-  }
 }
 
-export type Change = { path: string } & (
+export type Change = { path: RelativePath } & (
   | CreateState
   | UpdateState
   | DeleteState
 );
 
-type FileState = CreateState | UpdateState | DeleteState | _RenameState;
+type FileState = CreateState | UpdateState | DeleteState | GhostState;
 
 interface CreateState {
   type: 'create';
@@ -128,12 +109,28 @@ interface DeleteState {
  * We need this just to prevent `Tree` from reloading the file from disk
  * when the file is renamed.
  */
-interface _RenameState {
-  type: 'rename';
+interface GhostState {
+  type: 'ghost';
 }
 
 interface UpdateState {
   type: 'update';
   content: string;
   originalPath?: RelativePath;
+}
+
+function isCreatedOrUpdated(
+  state: FileState | undefined,
+): state is CreateState | UpdateState {
+  return state?.type === 'create' || state?.type === 'update';
+}
+
+function isDeletedOrGhost(
+  state: FileState | undefined,
+): state is DeleteState | GhostState {
+  return state?.type === 'delete' || isGhost(state);
+}
+
+function isGhost(state: FileState | undefined): state is GhostState {
+  return state?.type === 'ghost';
 }
