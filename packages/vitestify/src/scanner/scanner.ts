@@ -5,7 +5,7 @@ import { AngularCliEnricher } from '../packs/angular-cli/angular-cli-enricher';
 import { TestEnricher } from '../packs/core/test-enricher';
 import { JestEnricher } from '../packs/jest/jest-enricher';
 import { NxEnricher } from '../packs/nx/nx-enricher';
-import { Enricher } from './enricher';
+import { Enricher } from '../core/enricher';
 
 /**
  * @deprecated 🚧 work in progress

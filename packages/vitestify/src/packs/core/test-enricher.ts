@@ -5,7 +5,7 @@ import {
   type WorkspaceInfo,
 } from '../../core/workspace-info';
 import { FileSystem } from '../../infra/file-system';
-import { Enricher } from '../../scanner/enricher';
+import { Enricher } from '../../core/enricher';
 
 export class TestEnricher implements Enricher {
   private readonly _fileSystem: FileSystem;

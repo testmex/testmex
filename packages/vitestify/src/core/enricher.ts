@@ -1,4 +1,4 @@
-import { WorkspaceInfo } from '../core/workspace-info';
+import type { WorkspaceInfo } from './workspace-info';
 
 export interface Enricher {
   enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo>;
