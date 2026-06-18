@@ -1,4 +1,4 @@
 import type { Heuristic } from '../../core/heuristic';
-import { JestMockHeuristic } from './jest-mock-heuristic';
+import { jestMockHeuristic } from './jest-mock-heuristic';
 
-export const heuristics: Heuristic[] = [new JestMockHeuristic()];
+export const heuristics: Heuristic[] = [jestMockHeuristic];
