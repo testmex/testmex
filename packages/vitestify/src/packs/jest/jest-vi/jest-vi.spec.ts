@@ -1,16 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createTestingWorkspace,
-  workspaceMother,
-} from '../../../core/models/workspace.mother';
-import { runTransform } from '../../../testing/run-transform';
 import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol-heuristic';
+import { transformTestFile as runTransformTestFile } from '../testing';
 import { jestViTransform } from './jest-vi-transform';
 
 describe('jestVi', () => {
   it('rewrites `jest.spyOn` to `vi.spyOn`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(
         `jest.spyOn(syncService, 'syncAgency').mockRejectedValueOnce(new Error('Database connection failed'));`,
@@ -23,8 +17,6 @@ vi.spyOn(syncService, 'syncAgency').mockRejectedValueOnce(new Error('Database co
   });
 
   it('rewrites `jest.fn` to `vi.fn`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(
         `await service.uploadFile(imageFile, { sizeLimit: FILE_SIZE_LIMIT_45_MO }, jest.fn());`,
@@ -47,8 +39,6 @@ const reply = { send: vi.fn(), status: vi.fn().mockReturnThis() };`,
   });
 
   it('rewrites `jest.clearAllMocks` to `vi.clearAllMocks`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(await transformTestFile(`jest.clearAllMocks();`)).toBe(
       `\
 import { vi } from 'vitest';
@@ -57,8 +47,6 @@ vi.clearAllMocks();`,
   });
 
   it('rewrites `jest.resetAllMocks` to `vi.resetAllMocks`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(`\
 beforeEach(() => {
@@ -74,8 +62,6 @@ beforeEach(() => {
   });
 
   it('rewrites `jest.restoreAllMocks` to `vi.restoreAllMocks`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(`\
 afterEach(async () => {
@@ -95,8 +81,6 @@ afterEach(async () => {
   it(
     'rewrites `jest.requireActual` to `await vi.importActual` and marks enclosing function `async`',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(`\
 jest.mock('@mynotary/crossplatform/orpi-directories/core', () => ({
@@ -119,8 +103,6 @@ vi.mock('@mynotary/crossplatform/orpi-directories/core', async () => ({
   it(
     'rewrites `jest.requireMock` to `await vi.importMock` and marks enclosing function `async`',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(
           `const { canSyncAgency } = jest.requireMock('@mynotary/crossplatform/orpi-directories/core');`,
@@ -136,8 +118,6 @@ const { canSyncAgency } = await vi.importMock('@mynotary/crossplatform/orpi-dire
   it(
     'rewrites `jest.genMockFromModule` / `jest.createMockFromModule` to `await vi.importMock`',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(
           `const mocked = jest.createMockFromModule<typeof import('./module')>('./module');`,
@@ -153,8 +133,6 @@ const mocked = await vi.importMock<typeof import('./module')>('./module');`,
   it(
     'rewrites `jest.setMock` to `vi.mock` with factory function wrapper',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(
           `jest.setMock('./module', () => ({ foo: 'bar' }));`,
@@ -168,8 +146,6 @@ vi.mock('./module', () => ({ foo: 'bar' }));`,
   );
 
   it('rewrites `jest.deepUnmock` to `vi.unmock`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(await transformTestFile(`jest.deepUnmock('./heavy-module');`)).toBe(
       `\
 import { vi } from 'vitest';
@@ -178,8 +154,6 @@ vi.unmock('./heavy-module');`,
   });
 
   it('rewrites `jest.unmock` to `vi.unmock`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(await transformTestFile(`jest.unmock('./heavy-module');`)).toBe(
       `\
 import { vi } from 'vitest';
@@ -190,8 +164,6 @@ vi.unmock('./heavy-module');`,
   it(
     'rewrites other `jest.*` APIs to `vi.*` (generic passthrough)',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(await transformTestFile(`jest.resetModules();`)).toBe(
         `\
 import { vi } from 'vitest';
@@ -231,20 +203,14 @@ const fn = vi.hoisted(() => () => 42);`,
   );
 
   it('removes `jest.disableAutomock()` calls', async () => {
-    const { transformTestFile } = setUp();
-
     expect(await transformTestFile(`jest.disableAutomock();`)).toBe('');
   });
 
   it('flags `jest.enableAutomock()` as unsupported', async () => {
-    const { transformTestFile } = setUp();
-
     await expect(transformTestFile(`jest.enableAutomock();`)).rejects.toThrow();
   });
 
   it('rewrites `jest.useFakeTimers` to `vi.useFakeTimers`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(`\
 beforeEach(() => {
@@ -260,8 +226,6 @@ beforeEach(() => {
   });
 
   it('rewrites `jest.useRealTimers` to `vi.useRealTimers`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(await transformTestFile(`jest.useRealTimers();`)).toBe(
       `\
 import { vi } from 'vitest';
@@ -272,8 +236,6 @@ vi.useRealTimers();`,
   it(
     'rewrites `jest.advanceTimersByTimeAsync` to `vi.advanceTimersByTimeAsync`',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(`await jest.advanceTimersByTimeAsync(0);`),
       ).toBe(
@@ -287,8 +249,6 @@ await vi.advanceTimersByTimeAsync(0);`,
   it(
     'rewrites `jest.runOnlyPendingTimersAsync` to `vi.runOnlyPendingTimersAsync`',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(`await jest.runOnlyPendingTimersAsync();`),
       ).toBe(
@@ -302,8 +262,6 @@ await vi.runOnlyPendingTimersAsync();`,
   it(
     'rewrites `jest.runAllTimersAsync` to `vi.runAllTimersAsync`',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(await transformTestFile(`await jest.runAllTimersAsync();`)).toBe(
         `\
 import { vi } from 'vitest';
@@ -315,8 +273,6 @@ await vi.runAllTimersAsync();`,
   it(
     'rewrites `jest.advanceTimersByTime` / `jest.runAllTimers` / `jest.runOnlyPendingTimers` to `vi.*` sync equivalents',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(await transformTestFile(`jest.advanceTimersByTime(1000);`)).toBe(
         `\
 import { vi } from 'vitest';
@@ -340,8 +296,6 @@ vi.runOnlyPendingTimers();`,
   it(
     'rewrites `jest.spyOn(global, setTimeout)` to `vi.spyOn(globalThis, setTimeout)`',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(
           `const setTimeoutSpy = jest.spyOn(global, 'setTimeout');`,
@@ -355,21 +309,10 @@ const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');`,
   );
 });
 
-function setUp() {
-  return {
-    transformTestFile: async (content: string) => {
-      const workspace = createTestingWorkspace(
-        workspaceMother
-          .withApp('my-app')
-          .withAppFile('my-app', 'src/app.spec.ts', content),
-      );
-      await runTransform({
-        workspace,
-        heuristics: [jestSymbolHeuristic],
-        transforms: [jestViTransform],
-      });
-      const file = workspace.info.projects[0].files[0];
-      return await workspace.tree.maybeReadFile(file.path);
-    },
-  };
+function transformTestFile(content: string) {
+  return runTransformTestFile(content, {
+    heuristics: [jestSymbolHeuristic],
+    transforms: [jestViTransform],
+  });
 }
+

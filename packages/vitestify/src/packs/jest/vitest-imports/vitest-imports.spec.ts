@@ -1,16 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createTestingWorkspace,
-  workspaceMother,
-} from '../../../core/models/workspace.mother';
-import { runTransform } from '../../../testing/run-transform';
+import { transformTestFile as runTransformTestFile } from '../testing';
 import { vitestImportsHeuristic } from './vitest-imports-heuristic';
 import { vitestImportsTransform } from './vitest-imports-transform';
 
 describe('vitestImports', () => {
   it('adds named imports from vitest for globals used in a file', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(`\
 describe(OrpiDirectoriesController.name, () => {
@@ -31,8 +25,6 @@ describe(OrpiDirectoriesController.name, () => {
   it(
     'adds imports for describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, and vi',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(`\
 describe('suite', () => {
@@ -70,8 +62,6 @@ describe('suite', () => {
   );
 
   it('does not rewrite it.todo or test.todo (imports it/test only)', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(`\
 it.todo('implement later');
@@ -86,8 +76,6 @@ test.todo('also later');`);
   it(
     'does not rewrite it.concurrent or test.concurrent (imports it/test only)',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(`\
 it.concurrent('runs in parallel', async () => { /* … */ });
@@ -103,8 +91,6 @@ test.concurrent('also parallel', async () => { /* … */ });`);
   it(
     'does not rewrite describe.only, describe.skip, or describe.each (imports describe only)',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(`\
 const cases = [1, 2];
@@ -124,21 +110,9 @@ describe.each(cases)('case %s', (input) => { /* … */ });`);
   );
 });
 
-function setUp() {
-  return {
-    transformTestFile: async (content: string) => {
-      const workspace = createTestingWorkspace(
-        workspaceMother
-          .withApp('my-app')
-          .withAppFile('my-app', 'src/app.spec.ts', content),
-      );
-      await runTransform({
-        workspace,
-        heuristics: [vitestImportsHeuristic],
-        transforms: [vitestImportsTransform],
-      });
-      const file = workspace.info.projects[0].files[0];
-      return await workspace.tree.maybeReadFile(file.path);
-    },
-  };
+function transformTestFile(content: string) {
+  return runTransformTestFile(content, {
+    heuristics: [vitestImportsHeuristic],
+    transforms: [vitestImportsTransform],
+  });
 }

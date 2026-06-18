@@ -1,16 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createTestingWorkspace,
-  workspaceMother,
-} from '../../../core/models/workspace.mother';
+import { transformTestFile as runTransformTestFile } from '../testing';
 import { replaceApiHeuristic } from './replace-api-heuristic';
 import { replaceApiTransform } from './replace-api-transform';
-import { runTransform } from '../../../testing/run-transform';
 
 describe('replaceApi', () => {
   it('rewrites `fit(` → `it.only(`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(
         `fit('should manage grouping', async () => { /* … */ });`,
@@ -21,8 +15,6 @@ describe('replaceApi', () => {
   it(
     'rewrites `fit.each` / `fit.failing` → `it.only.each` / `it.only.fails`',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(
           `fit.failing('focused expected failure', () => { /* … */ });`,
@@ -42,8 +34,6 @@ describe('replaceApi', () => {
   it(
     'rewrites `it.failing` / `test.failing` → `it.fails` / `test.fails`',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(`\
 it.failing('Should not fetch public views is user is not a member', async () => {
@@ -69,8 +59,6 @@ test.fails('Should not fetch public views is user is not a member', async () => 
   it(
     'rewrites `(it|test).only.failing` / `.skip.failing` → `.fails`',
     async () => {
-      const { transformTestFile } = setUp();
-
       expect(
         await transformTestFile(
           `it.only.failing('focused failure case', () => { throw new Error('nope'); });`,
@@ -106,8 +94,6 @@ test.fails('Should not fetch public views is user is not a member', async () => 
   );
 
   it('rewrites `xit(` → `it.skip(`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(
         `xit('should restart a pending signature and return new draft signature id', async () => { /* … */ });`,
@@ -118,45 +104,27 @@ test.fails('Should not fetch public views is user is not a member', async () => 
   });
 
   it('rewrites `xdescribe(` → `describe.skip(`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(`xdescribe('legacy flow', () => { /* … */ });`),
     ).toBe(`describe.skip('legacy flow', () => { /* … */ });`);
   });
 
   it('rewrites `xtest(` → `test.skip(`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(`xtest('skipped', () => { /* … */ });`),
     ).toBe(`test.skip('skipped', () => { /* … */ });`);
   });
 
   it('rewrites `fdescribe(` → `describe.only(`', async () => {
-    const { transformTestFile } = setUp();
-
     expect(
       await transformTestFile(`fdescribe('focused suite', () => { /* … */ });`),
     ).toBe(`describe.only('focused suite', () => { /* … */ });`);
   });
 });
 
-function setUp() {
-  return {
-    transformTestFile: async (content: string) => {
-      const workspace = createTestingWorkspace(
-        workspaceMother
-          .withApp('my-app')
-          .withAppFile('my-app', 'src/app.spec.ts', content),
-      );
-      await runTransform({
-        workspace,
-        heuristics: [replaceApiHeuristic],
-        transforms: [replaceApiTransform],
-      });
-      const file = workspace.info.projects[0].files[0];
-      return await workspace.tree.maybeReadFile(file.path);
-    },
-  };
+function transformTestFile(content: string) {
+  return runTransformTestFile(content, {
+    heuristics: [replaceApiHeuristic],
+    transforms: [replaceApiTransform],
+  });
 }
