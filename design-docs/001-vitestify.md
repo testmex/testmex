@@ -20,8 +20,7 @@
 - If ambiguity or choices arise (e.g. multiple projects, unclear config), the tool prompts the user interactively.
 - The tool applies transforms: updates config files, rewrites Jest-specific imports/APIs in test files, updates `package.json` dependencies, etc.
 - Progress is logged to stdout as each step completes.
-- At the end, a Markdown summary report is written to disk listing all changes made.
-- For migrations too complex to automate, agent instruction files are written alongside the report.
+- For migrations too complex to automate, agent instruction files are written alongside the migration output.
 - `--dry-run` — scans and reports what would change without writing anything.
 - `--path <dir>` — target a specific project or subdirectory instead of the full workspace.
 
@@ -39,12 +38,11 @@
    - It receives a list of findings, reads source from the `Tree`, and writes edits back to it.
    - Registered in a simple array.
    - The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
-6. **Reporter** — summarizes all staged changes and writes a Markdown summary report.
-7. **Pipeline** — wires it all together: CLI → Scanner → Analyzer → Transforms → Reporter, all sharing one `Tree`. Respects `--dry-run` by skipping the `Tree` commit.
+6. **Pipeline** — wires it all together: CLI → Scanner → Analyzer → Transforms, all sharing one `Tree`. Respects `--dry-run` by skipping the `Tree` commit.
 
 ## Mental Model
 
-**detect → act → report.**
+**detect → act.**
 
 - The scanner maps the workspace (`WorkspaceInfo`).
 - The pipeline bundles that with a shared `Tree` into a **`Workspace`**.
@@ -56,17 +54,15 @@
 - Because all transforms edit the same `Tree`, several of them can touch the same file in sequence without clobbering each other.
 - A **change** is the `Tree`'s record of a staged create, update (optionally with a rename), or delete.
 - The agent-instruction transform is just another transform — it stages Markdown files for findings flagged as needing manual help.
-- The reporter summarizes all staged changes.
 
 ```mermaid
 flowchart LR
     Scan["Scanner<br>WorkspaceInfo"]
     Find["Analyzer<br>Finding[]"]
     Change["Transforms<br>write to Tree"]
-    Report["Reporter<br>summary.md"]
     Commit["Tree.commit()<br>(skipped on --dry-run)"]
 
-    Scan --> Find --> Change --> Report --> Commit
+    Scan --> Find --> Change --> Commit
 ```
 
 ## Diagram
@@ -81,7 +77,6 @@ sequenceDiagram
     participant Heuristics
     participant Transforms
     participant Tree
-    participant Reporter
 
     User->>CLI: npx @testmex/vitestify [--dry-run] [--path]
     CLI->>Pipeline: run(options)
@@ -96,9 +91,6 @@ sequenceDiagram
     Analyzer-->>Pipeline: Finding[]
     Pipeline->>Transforms: apply(findings)
     Transforms->>Tree: maybeReadFile() / write()
-    Pipeline->>Reporter: write(result)
-    Reporter->>Tree: write(summary.md)
-    Reporter-->>User: summary printed to stdout
     Pipeline->>Tree: commit() (unless --dry-run)
 ```
 
@@ -110,7 +102,7 @@ sequenceDiagram
   - Reads are lazy and cached.
   - Writes/deletes are staged in memory.
   - `commit()` flushes staged changes to disk.
-  - It is the single channel through which the analyzer, transforms, and reporter touch file content.
+  - It is the single channel through which the analyzer and transforms touch file content.
   - This is what makes multi-transform edits to the same file compose.
 - **Code transforms**: use **jscodeshift** for AST-based rewrites of test files (e.g. `jest.mock` → `vi.mock`).
 - **Config parsing**:
@@ -158,7 +150,6 @@ The `Tree` is the shared mutation surface for the whole pipeline.
 
 - The analyzer reads through it.
 - Transforms read and write through it.
-- The reporter stages its report file through it.
 - Edits live in one in-memory cache until `commit()`.
 - Multiple transforms can edit the same file in sequence and each sees the previous transform's output.
 - `--dry-run` simply never calls `commit()`.
@@ -322,27 +313,10 @@ The pipeline workflow:
 
 - Creates one `Tree` (over the real `FileSystem`).
 - Assembles a `Workspace` from the scanner's `WorkspaceInfo` and that `Tree`.
-- Threads both into the analyzer, transforms, and reporter.
+- Threads both into the analyzer and transforms.
 - After transforms run, `result.changes` is `tree.changes()`.
 - When `dryRun` is false it calls `tree.commit()` to flush everything to disk (including renames).
 - When `dryRun` is true it skips the commit, so nothing is written.
-
-### Reporter
-
-```typescript
-class Reporter {
-  constructor(args: { tree: Tree }) {}
-
-  write(result: PipelineResult, outputPath: RelativePath): Promise<void> {}
-}
-```
-
-The reporter behavior:
-
-- Always prints the summary to stdout.
-- Stages `summary.md` into the `Tree`.
-- Persisting it to disk happens through the pipeline's `tree.commit()`.
-- Under `--dry-run` the summary is shown but never written.
 
 # Testing Strategy
 
@@ -454,13 +428,13 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 
 - Arrange: set up a workspace with a jest config and test files.
 - Act: run the pipeline with `--dry-run`.
-- Assert: `tree.commit()` is never called and no files are modified; the summary is still printed to stdout and appears in `result.changes`.
+- Assert: `tree.commit()` is never called and no files are modified; staged changes appear in `result.changes`.
 
-### [ ] Wide test — applies transforms and commits report:
+### [ ] Wide test — applies transforms and commits:
 
 - Arrange: set up a workspace with a jest config and a test file using `jest.mock`.
 - Act: run the pipeline.
-- Assert: after commit, the test file is rewritten on disk and the report file exists on disk.
+- Assert: after commit, the test file is rewritten on disk.
 
 # PR Plan
 
@@ -471,7 +445,6 @@ flowchart LR
     PR2["PR 2<br>Analyzer +<br>heuristics"]
     PR3["PR 3<br>Transform engine +<br>transforms"]
     PR4["PR 4<br>Pipeline +<br>wide test"]
-    PR5["PR 5<br>Reporter"]
 
     PR0 --> PR1
     PR0 --> PR2
@@ -479,7 +452,6 @@ flowchart LR
     PR1 --> PR4
     PR2 --> PR3
     PR3 --> PR4
-    PR4 --> PR5
 ```
 
 1. [x] **PR 0 — Core + Tree**:
@@ -503,10 +475,6 @@ flowchart LR
    - CLI entry point with `--dry-run`, `--path`, inquirer.js prompts.
    - Wires Scanner + Analyzer + Transforms over one `Tree`.
    - Wide integration test.
-6. [ ] **PR 5 — Reporter**:
-   - Builds the Markdown summary, prints to stdout, stages it into the `Tree`.
-   - Plugs into the pipeline.
-   - Tests included.
 
 # Alternatives Considered
 
@@ -518,3 +486,29 @@ flowchart LR
   - It works with both Angular CLI and Nx projects.
 
 # Kitchen Sink
+
+## Future Plans
+
+### Reporter
+
+Summarizes all staged changes and writes a Markdown summary report.
+
+```typescript
+class Reporter {
+  constructor(args: { tree: Tree }) {}
+
+  write(result: PipelineResult, outputPath: RelativePath): Promise<void> {}
+}
+```
+
+Behavior:
+
+- Always prints the summary to stdout.
+- Stages `summary.md` into the `Tree`.
+- Persisting it to disk happens through the pipeline's `tree.commit()`.
+- Under `--dry-run` the summary is shown but never written.
+
+Pipeline integration:
+
+- Runs after transforms: `CLI → Scanner → Analyzer → Transforms → Reporter → commit`.
+- At the end of a migration, a Markdown summary report is written to disk listing all changes made.
