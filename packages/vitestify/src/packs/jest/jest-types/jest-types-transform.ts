@@ -1,5 +1,5 @@
 import { Lang, parse } from '@ast-grep/napi';
-import type { Transform } from '../../../core/models/transform';
+import { defineFileTransform } from '../../../core/domain/define-file-transform';
 import { findingTypes } from '../identifiers';
 
 const jestTypeReplacements = [
@@ -8,26 +8,10 @@ const jestTypeReplacements = [
   { regex: '^jest\\.Mock$', replacement: 'Mock' },
 ] as const;
 
-export const jestTypesTransform: Transform = {
-  apply: async ({ findings, workspace }): Promise<void> => {
-    const { tree } = workspace;
-
-    for (const finding of findings) {
-      if (
-        finding.type !== findingTypes.jestTypesUsage ||
-        finding.file === undefined
-      ) {
-        continue;
-      }
-
-      const content = await tree.maybeReadFile(finding.file.path);
-
-      if (content != null) {
-        await tree.write(finding.file.path, _rewriteJestTypes(content));
-      }
-    }
-  },
-};
+export const jestTypesTransform = defineFileTransform({
+  findingType: findingTypes.jestTypesUsage,
+  apply: _rewriteJestTypes,
+});
 
 function _rewriteJestTypes(content: string): string {
   const root = parse(Lang.TypeScript, content).root();

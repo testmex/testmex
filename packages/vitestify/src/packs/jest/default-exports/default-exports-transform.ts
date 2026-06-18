@@ -1,14 +1,14 @@
 import { Lang, parse, type SgNode } from '@ast-grep/napi';
 import { dirname, join } from 'node:path';
 import type { ReadonlyTree } from '../../../core/domain/tree';
-import type { Transform } from '../../../core/models/transform';
+import { defineTransform } from '../../../core/models/transform';
 import { relativePath, type RelativePath } from '../../../core/models/relative-path';
 import { findingTypes } from '../identifiers';
 
 const moduleExtensions = ['', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
 
-export const defaultExportsTransform: Transform = {
-  apply: async ({ findings, workspace }): Promise<void> => {
+export const defaultExportsTransform = defineTransform({
+  apply: async ({ findings, workspace }) => {
     const { tree } = workspace;
 
     for (const finding of findings) {
@@ -33,7 +33,7 @@ export const defaultExportsTransform: Transform = {
       }
     }
   },
-};
+});
 
 async function _rewriteDefaultExportMocks({
   content,

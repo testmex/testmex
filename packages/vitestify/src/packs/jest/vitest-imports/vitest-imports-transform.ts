@@ -1,31 +1,15 @@
 import { Lang, parse } from '@ast-grep/napi';
-import type { Transform } from '../../../core/models/transform';
+import { defineFileTransform } from '../../../core/domain/define-file-transform';
 import { findingTypes } from '../identifiers';
 import {
   _collectUsedVitestGlobals,
   vitestGlobals,
 } from './vitest-imports-heuristic';
 
-export const vitestImportsTransform: Transform = {
-  apply: async ({ findings, workspace }): Promise<void> => {
-    const { tree } = workspace;
-
-    for (const finding of findings) {
-      if (
-        finding.type !== findingTypes.vitestImportsNeeded ||
-        finding.file === undefined
-      ) {
-        continue;
-      }
-
-      const content = await tree.maybeReadFile(finding.file.path);
-
-      if (content != null) {
-        await tree.write(finding.file.path, _rewriteVitestImports(content));
-      }
-    }
-  },
-};
+export const vitestImportsTransform = defineFileTransform({
+  findingType: findingTypes.vitestImportsNeeded,
+  apply: _rewriteVitestImports,
+});
 
 function _rewriteVitestImports(content: string): string {
   const usedGlobals = _collectUsedVitestGlobals(content);

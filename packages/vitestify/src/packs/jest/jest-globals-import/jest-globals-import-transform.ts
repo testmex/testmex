@@ -1,9 +1,9 @@
 import { Lang, parse } from '@ast-grep/napi';
-import type { Transform } from '../../../core/models/transform';
+import { defineTransform } from '../../../core/models/transform';
 import { findingTypes } from '../identifiers';
 
-export const jestGlobalsImportTransform: Transform = {
-  apply: async ({ findings, workspace }): Promise<void> => {
+export const jestGlobalsImportTransform = defineTransform({
+  apply: async ({ findings, workspace }) => {
     const { tree } = workspace;
 
     for (const finding of findings) {
@@ -32,7 +32,7 @@ export const jestGlobalsImportTransform: Transform = {
       }
     }
   },
-};
+});
 
 function _rewriteJestGlobalsImport(content: string): string {
   const root = parse(Lang.TypeScript, content).root();

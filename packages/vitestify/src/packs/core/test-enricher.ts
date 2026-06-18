@@ -37,10 +37,10 @@ export class TestEnricher implements Enricher {
     projectRoot: RelativePath,
   ): Promise<ProjectFile[]> {
     const files = await this._tree.scanDirectory(projectRoot);
-    const testFilePattern = /\.spec\.ts$/;
+    const testFilePattern = /\.spec\.tsx?$/;
 
     return files
-      .filter((file) => testFilePattern.test(file))
+      .filter((file) => file.endsWith('.spec.ts') || file.endsWith('.spec.tsx'))
       .map((path) => ({
         path,
         tags: [projectFileTags.test],

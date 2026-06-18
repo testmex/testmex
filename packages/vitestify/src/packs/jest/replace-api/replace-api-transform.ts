@@ -1,27 +1,11 @@
 import { Lang, parse } from '@ast-grep/napi';
-import type { Transform } from '../../../core/models/transform';
+import { defineFileTransform } from '../../../core/domain/define-file-transform';
 import { findingTypes } from '../identifiers';
 
-export const replaceApiTransform: Transform = {
-  apply: async ({ findings, workspace }): Promise<void> => {
-    const { tree } = workspace;
-
-    for (const finding of findings) {
-      if (
-        finding.type !== findingTypes.replaceApiUsage ||
-        finding.file === undefined
-      ) {
-        continue;
-      }
-
-      const content = await tree.maybeReadFile(finding.file.path);
-
-      if (content != null) {
-        await tree.write(finding.file.path, _rewriteReplaceApi(content));
-      }
-    }
-  },
-};
+export const replaceApiTransform = defineFileTransform({
+  findingType: findingTypes.replaceApiUsage,
+  apply: _rewriteReplaceApi,
+});
 
 function _rewriteReplaceApi(content: string): string {
   let result = _rewriteFitCalls(content);
