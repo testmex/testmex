@@ -419,7 +419,10 @@ flowchart LR
 - CLI entry point.
 - Wires Scanner, heuristics, and transforms over one `Tree`.
 
+6. Nits
 
+- Move out stuff that have nothing to do in core
+- Split `projectFileTag` accross packs
 
 # Alternatives Considered
 
