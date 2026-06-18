@@ -388,9 +388,9 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 
 ```mermaid
 flowchart LR
-    PR0["PR 0 ✓<br>Core + Tree"]
-    PR1["PR 1 ✓<br>Scanner"]
-    PR2["PR 2 ✓<br>Heuristics"]
+    PR0["PR 0<br>Core + Tree"]
+    PR1["PR 1<br>Scanner"]
+    PR2["PR 2<br>Heuristics"]
     PR3["PR 3<br>Transforms"]
     PR4["PR 4<br>Vitestify +<br>wide test"]
 
