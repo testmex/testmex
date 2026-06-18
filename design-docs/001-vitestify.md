@@ -403,25 +403,7 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 - Act: construct the transform with the `Tree` and apply it.
 - Assert: `tree.maybeReadFile(path)` now contains `vi.mock('./foo')`.
 
-### [ ] Two transforms compose on the same file:
-
-- Arrange: a `Tree` with a test file; findings for both a `jest.mock` rewrite and an import rewrite.
-- Act: apply both transforms in sequence against the same `Tree`.
-- Assert: the file reflects both edits (neither clobbers the other).
-
-### [ ] Agent instruction transform stages Markdown for `needs-agent` findings:
-
-- Arrange: a finding tagged `needs-agent`.
-- Act: apply the agent-instruction transform.
-- Assert: the `Tree` has a staged `create` change with Markdown content.
-
 ## Pipeline
-
-### [ ] Dry-run does not write files:
-
-- Arrange: set up a workspace with a jest config and test files.
-- Act: run the pipeline with `--dry-run`.
-- Assert: `tree.commit()` is never called and no files are modified; staged changes appear in `result.changes`.
 
 ### [ ] Wide test — applies transforms and commits:
 
@@ -483,6 +465,12 @@ flowchart LR
 # Kitchen Sink
 
 ## Future Plans
+
+### Agent Instructions Transforms
+
+Produce agent instruction transforms for non-trivial ones.
+
+### `--dry-run` option
 
 ### Reporter
 
