@@ -32,20 +32,20 @@
 - Examples: "file uses `jest.mock`".
 - They produce **Findings**. Easy to add new ones.
 
-4. **Transforms** — each transform reads and writes through the shared `Tree`.
+1. **Transforms** — each transform reads and writes through the shared `Tree`.
 
 - It receives the `Workspace` and a list of findings.
 - Registered in a simple array.
 - The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
 
-5. **Vitestify** — wires it all together: CLI → Scanner → heuristics → transforms, all sharing one `Tree`.
+1. **Vitestify** — wires it all together: CLI → Scanner → heuristics → transforms, all sharing one `Tree`.
 
 ## Mental Model
 
 **detect → act.**
 
 - The scanner maps the workspace (`WorkspaceInfo`).
-- Vitestify bundles that with a shared `Tree` into a **`Workspace`**.
+- Vitestify bundles that with a shared `Tree` into a `**Workspace`\*\*.
 - Heuristics inspect the `Workspace` and produce **findings** — observations about what needs changing.
 - Heuristics have full access to file content and cross-file context via the `Tree`.
 - **Transforms** act on findings by reading and writing through the same `Tree`.
@@ -398,33 +398,37 @@ flowchart LR
 - `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`).
 - Everything downstream depends on it.
 
-2. [x] **PR 1 — Scanner**:
+1. [x] **PR 1 — Scanner**:
 
 - Workspace detection (Angular CLI vs Nx).
 - `Enricher` interface + `AngularCliEnricher`/`NxEnricher`.
 - Jest config discovery (all forms), test file discovery.
 
-3. [x] **PR 2 — heuristics**:
+1. [x] **PR 2 — heuristics**:
 
 - `Workspace`/`Finding`/`Heuristic` types, tag system.
 - Ships with the `jest.mock` heuristic.
 
-4. [x] **PR 3 — Transforms**:
+1. [x] **PR 3 — Transforms**:
 
 - `Transform`/`Change` union (including rename-on-update).
 - Ships with v1 transforms (e.g. `jest.mock` → `vi.mock` via `@ast-grep/napi`).
 
-5. [x] **PR 4 — Vitestify + wide test**:
+1. [x] **PR 4 — Vitestify + wide test**:
 
 - CLI entry point.
 - Wires Scanner, heuristics, and transforms over one `Tree`.
 
-6. Nits
+1. [x] Nits
 
 - Move out stuff that have nothing to do in core
 - Split `projectFileTag` accross packs
 
 # Alternatives Considered
+
+- **Codemod**:
+  - Vitestify is more complex than a file transform.
+  - There will be many project-wide or workspace-wide rules and commands to run etc...
 
 - **Nx generator instead of standalone CLI**:
   - Would tie the tool to `@nx/devkit`.
