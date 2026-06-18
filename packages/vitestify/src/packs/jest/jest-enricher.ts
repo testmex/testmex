@@ -1,4 +1,4 @@
-import { relative } from 'node:path';
+import { relative } from 'node:path/posix';
 import type { RelativePath } from '../../core/relative-path';
 import {
   projectFileTag,

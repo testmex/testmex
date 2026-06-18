@@ -1,4 +1,10 @@
-import { mkdir, readFile, readdir, rm, writeFile as writeFileFs } from 'node:fs/promises';
+import {
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  writeFile as writeFileFs,
+} from 'node:fs/promises';
 import { dirname, join, relative, sep } from 'node:path';
 import { posix } from 'node:path/posix';
 import type { Dirent } from 'node:fs';
@@ -16,7 +22,7 @@ export class FileSystem {
    * Returns file content or null if the file is not found.
    */
   async maybeReadFile(path: RelativePath): Promise<string | null> {
-    const absolutePath = join(this._workspaceRoot, path);
+    const absolutePath = join(this._workspaceRoot, this._fromPosixPath(path));
 
     try {
       return await readFile(absolutePath, 'utf8');
@@ -88,10 +94,8 @@ export class FileSystem {
 
       if (entry.isFile()) {
         files.push(
-          relativePath(
-            relative(this._workspaceRoot, absolutePath)
-              .split(sep)
-              .join(posix.sep),
+          this._toPosixPath(
+            relativePath(relative(this._workspaceRoot, absolutePath)),
           ),
         );
       }
@@ -107,5 +111,13 @@ export class FileSystem {
       'code' in error &&
       error.code === 'ENOENT'
     );
+  }
+
+  private _toPosixPath(path: RelativePath): RelativePath {
+    return relativePath(path.split(sep).join(posix.sep));
+  }
+
+  private _fromPosixPath(path: RelativePath): RelativePath {
+    return relativePath(path.split(posix.sep).join(sep));
   }
 }
