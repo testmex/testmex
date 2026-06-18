@@ -1,14 +1,14 @@
 import { Lang, parse } from '@ast-grep/napi';
-import type { Transform } from '../../core/models/transform';
-import { findingTypes } from './identifiers';
+import type { Transform } from '../../../core/models/transform';
+import { findingTypes } from '../identifiers';
 
-export const jestMockTransform: Transform = {
+export const jestSetTimeoutTransform: Transform = {
   apply: async ({ findings, workspace }): Promise<void> => {
     const { tree } = workspace;
 
     for (const finding of findings) {
       if (
-        finding.type !== findingTypes.jestMockCall ||
+        finding.type !== findingTypes.jestSetTimeoutCall ||
         finding.file === undefined
       ) {
         continue;
@@ -17,27 +17,24 @@ export const jestMockTransform: Transform = {
       const content = await tree.maybeReadFile(finding.file.path);
 
       if (content != null) {
-        await tree.write(finding.file.path, _rewriteJestMock(content));
+        await tree.write(finding.file.path, _rewriteJestSetTimeout(content));
       }
     }
   },
 };
 
-function _rewriteJestMock(content: string): string {
+function _rewriteJestSetTimeout(content: string): string {
   const root = parse(Lang.TypeScript, content).root();
-  const nodes = root.findAll('jest.mock($$$ARGS)');
+  const nodes = root.findAll('jest.setTimeout($ARG)');
 
   if (nodes.length === 0) {
     return content;
   }
 
   const edits = nodes.map((node) => {
-    const args = node
-      .getMultipleMatches('ARGS')
-      .map((arg) => arg.text())
-      .join('');
+    const arg = node.getMatch('ARG')?.text() ?? '';
 
-    return node.replace(`vi.mock(${args})`);
+    return node.replace(`vi.setConfig({ testTimeout: ${arg} })`);
   });
 
   if (!_hasViImport(root)) {
