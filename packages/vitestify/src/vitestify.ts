@@ -1,8 +1,9 @@
-import { FileSystemImpl } from './infra/file-system.impl';
-import type { FileSystem } from './core/ports/file-system';
 import type { Finding } from './core/models/finding';
 import type { Pack } from './core/models/pack';
-import { CommandRunner } from './infra/command-runner.impl';
+import type { CommandRunner } from './core/ports/command-runner';
+import type { FileSystem } from './core/ports/file-system';
+import { FileSystemImpl } from './infra/file-system.impl';
+import { PooledCommandRunner } from './infra/pooled-command-runner';
 import angularCliPack from './packs/angular-cli';
 import corePack from './packs/core';
 import jestPack from './packs/jest';
@@ -19,7 +20,7 @@ export class Vitestify {
   private readonly _scanner: Scanner;
 
   constructor({
-    commandRunner = new CommandRunner(),
+    commandRunner = new PooledCommandRunner({ maxConcurrent: 10 }),
     fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
   }: { commandRunner?: CommandRunner; fileSystem?: FileSystem } = {}) {
     this._scanner = new Scanner({

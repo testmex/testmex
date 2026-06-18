@@ -3,7 +3,7 @@ import {
   mergeWorkspaceInfo,
   WorkspaceInfo,
 } from '../../core/models/workspace-info';
-import { CommandRunner } from '../../infra/command-runner.impl';
+import type { CommandRunner } from '../../core/ports/command-runner';
 import { Enricher } from '../../core/models/enricher';
 import type { ReadonlyTree } from '../../core/domain/tree';
 

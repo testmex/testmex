@@ -1,4 +1,4 @@
-import type { CommandRunner } from '../../infra/command-runner.impl';
+import type { CommandRunner } from '../ports/command-runner';
 import type { ReadonlyTree } from '../domain/tree';
 import type { WorkspaceInfo } from './workspace-info';
 
