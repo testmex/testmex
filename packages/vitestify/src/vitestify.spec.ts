@@ -5,7 +5,7 @@ import { FileSystemFake } from './core/ports/file-system.fake';
 import { nxWorkspaceMother } from './packs/nx/nx-workspace-infra.mother';
 import { Vitestify } from './vitestify';
 
-describe('Vitestify', () => {
+describe(Vitestify, () => {
   it('applies transforms and commits', async () => {
     const { configureWorkspace, fileSystem, vitestify } = setUp();
 
@@ -22,7 +22,7 @@ describe('Vitestify', () => {
       await fileSystem.maybeReadFile(
         relativePath('apps/my-app/src/app.spec.ts'),
       ),
-    ).toBe("vi.mock('./foo');");
+    ).toBe("import { vi } from 'vitest';\nvi.mock('./foo');");
   });
 });
 

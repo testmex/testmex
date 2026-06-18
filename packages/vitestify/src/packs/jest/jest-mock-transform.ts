@@ -40,5 +40,34 @@ function _rewriteJestMock(content: string): string {
     return node.replace(`vi.mock(${args})`);
   });
 
+  if (!_hasViImport(root)) {
+    edits.unshift({
+      startPos: 0,
+      endPos: 0,
+      insertedText: "import { vi } from 'vitest';\n",
+    });
+  }
+
   return root.commitEdits(edits);
+}
+
+function _hasViImport(root: ReturnType<ReturnType<typeof parse>['root']>) {
+  for (const imp of root.findAll('import { $$$NAMES } from $SOURCE')) {
+    if (
+      imp
+        .getMatch('SOURCE')
+        ?.find({ rule: { kind: 'string_fragment' } })
+        ?.text() !== 'vitest'
+    ) {
+      continue;
+    }
+
+    for (const name of imp.getMultipleMatches('NAMES')) {
+      if (name.text().trim() === 'vi') {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
