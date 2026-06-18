@@ -1,6 +1,6 @@
 import type { Finding } from './finding';
-import type { Tree } from './tree';
+import type { Workspace } from './workspace';
 
 export interface Transform {
-  apply(tree: Tree, findings: Finding[]): Promise<void>;
+  apply(workspace: Workspace, findings: Finding[]): Promise<void>;
 }

@@ -397,7 +397,7 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 
 ## Transforms
 
-### [ ] Rewrites `jest.mock` to `vi.mock` via the Tree:
+### [x] Rewrites `jest.mock` to `vi.mock` via the Tree:
 
 - Arrange: a `Tree` whose test file contains `jest.mock('./foo')`; a matching finding.
 - Act: construct the transform with the `Tree` and apply it.
