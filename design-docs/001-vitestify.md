@@ -20,21 +20,24 @@
 - The tool applies transforms: updates config files, rewrites Jest-specific imports/APIs in test files, updates `package.json` dependencies, etc.
 - Progress is logged to stdout as each step completes.
 - For migrations too complex to automate, agent instruction files are written alongside the migration output.
-- `--path <dir>` — target a specific project or subdirectory instead of the full workspace.
 
 # Design
 
-1. **CLI** — entry point. Parses `--path` flag. Bootstraps **Vitestify**.
+1. **CLI** — entry point. Bootstraps **Vitestify**.
 2. **Scanner** — discovers workspace structure: project type (Angular CLI vs Nx), Jest config files, test files, `package.json` entries.
 3. **Heuristics** — small, composable rules registered in a simple array.
-  - Each **Heuristic** receives the full `Workspace` (`WorkspaceInfo` + `Tree`).
-  - It can inspect individual files, cross-file relationships, or whole projects.
-  - Examples: "file uses `jest.mock`".
-  - They produce **Findings**. Easy to add new ones.
+
+- Each **Heuristic** receives the full `Workspace` (`WorkspaceInfo` + `Tree`).
+- It can inspect individual files, cross-file relationships, or whole projects.
+- Examples: "file uses `jest.mock`".
+- They produce **Findings**. Easy to add new ones.
+
 4. **Transforms** — each transform reads and writes through the shared `Tree`.
-  - It receives the `Workspace` and a list of findings.
-  - Registered in a simple array.
-  - The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
+
+- It receives the `Workspace` and a list of findings.
+- Registered in a simple array.
+- The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
+
 5. **Vitestify** — wires it all together: CLI → Scanner → heuristics → transforms, all sharing one `Tree`.
 
 ## Mental Model
@@ -62,8 +65,6 @@ flowchart LR
     Scan --> Find --> Change --> Commit
 ```
 
-
-
 ## Diagram
 
 ```mermaid
@@ -76,8 +77,8 @@ sequenceDiagram
     participant Transforms
     participant Tree
 
-    User->>CLI: npx @testmex/vitestify [--path]
-    CLI->>Vitestify: run(options)
+    User->>CLI: npx @testmex/vitestify
+    CLI->>Vitestify: run()
     Vitestify->>Scanner: scanWorkspace()
     Scanner-->>Vitestify: WorkspaceInfo (projects, files)
     Vitestify->>Heuristics: inspect(workspace)
@@ -86,8 +87,6 @@ sequenceDiagram
     Transforms->>Tree: maybeReadFile() / write()
     Vitestify->>Tree: commit()
 ```
-
-
 
 ## Implementation Details
 
@@ -266,16 +265,12 @@ Each transform receives the `Workspace` and matching findings.
 ### Vitestify
 
 ```typescript
-interface VitestifyOptions {
-  path?: RelativePath;
-}
-
 interface VitestifyResult {
   changes: Change[];
 }
 
 class Vitestify {
-  async run(options: VitestifyOptions): Promise<VitestifyResult> {}
+  async run(): Promise<VitestifyResult> {}
 }
 ```
 
@@ -398,24 +393,33 @@ flowchart LR
     PR3 --> PR4
 ```
 
-
-
 1. [x] **PR 0 — Core + Tree**:
-  - `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`).
-  - Everything downstream depends on it.
+
+- `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`).
+- Everything downstream depends on it.
+
 2. [x] **PR 1 — Scanner**:
-  - Workspace detection (Angular CLI vs Nx).
-  - `Enricher` interface + `AngularCliEnricher`/`NxEnricher`.
-  - Jest config discovery (all forms), test file discovery.
+
+- Workspace detection (Angular CLI vs Nx).
+- `Enricher` interface + `AngularCliEnricher`/`NxEnricher`.
+- Jest config discovery (all forms), test file discovery.
+
 3. [x] **PR 2 — heuristics**:
-  - `Workspace`/`Finding`/`Heuristic` types, tag system.
-  - Ships with the `jest.mock` heuristic.
+
+- `Workspace`/`Finding`/`Heuristic` types, tag system.
+- Ships with the `jest.mock` heuristic.
+
 4. [x] **PR 3 — Transforms**:
-  - `Transform`/`Change` union (including rename-on-update).
-  - Ships with v1 transforms (e.g. `jest.mock` → `vi.mock` via `@ast-grep/napi`).
-5. [ ] **PR 4 — Vitestify + wide test**:
-  - CLI entry point with `--path`.
-  - Wires Scanner, heuristics, and transforms over one `Tree`.
+
+- `Transform`/`Change` union (including rename-on-update).
+- Ships with v1 transforms (e.g. `jest.mock` → `vi.mock` via `@ast-grep/napi`).
+
+5. [x] **PR 4 — Vitestify + wide test**:
+
+- CLI entry point.
+- Wires Scanner, heuristics, and transforms over one `Tree`.
+
+
 
 # Alternatives Considered
 
@@ -438,6 +442,12 @@ Produce agent instruction transforms for non-trivial ones.
 
 - When ambiguity or choices arise (e.g. multiple projects, unclear config), prompt the user interactively via **inquirer.js**.
 - CLI handles prompts before Vitestify runs heuristics and transforms.
+
+### `--path` option
+
+- `--path <dir>` — target a specific project or subdirectory instead of the full workspace.
+- CLI parses a `--path` flag and passes it to Vitestify.
+- Scanner scopes discovery to the given path; heuristics and transforms run only on the matching project(s).
 
 ### `--dry-run` option
 
