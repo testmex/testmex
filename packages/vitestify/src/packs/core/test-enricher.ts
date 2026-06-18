@@ -1,9 +1,9 @@
 import type { RelativePath } from '../../core/models/relative-path';
 import {
-  projectFileTag,
   type ProjectFile,
   type WorkspaceInfo,
 } from '../../core/models/workspace-info';
+import { projectFileTags } from './identifiers';
 import { Enricher } from '../../core/models/enricher';
 import type { ReadonlyTree } from '../../core/domain/tree';
 
@@ -43,7 +43,7 @@ export class TestEnricher implements Enricher {
       .filter((file) => testFilePattern.test(file))
       .map((path) => ({
         path,
-        tags: [projectFileTag.test],
+        tags: [projectFileTags.test],
       }));
   }
 }

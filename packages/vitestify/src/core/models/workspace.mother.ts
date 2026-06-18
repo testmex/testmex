@@ -63,7 +63,7 @@ class WorkspaceMother {
     const files: ProjectFile[] = Object.keys(this._state.appFiles).map(
       (fileName) => ({
         path: relativePath(`apps/${name}/${fileName}`),
-        tags: fileName.endsWith('.spec.ts') ? [projectFileTag.test] : [],
+        tags: fileName.endsWith('.spec.ts') ? [projectFileTag('test')] : [],
       }),
     );
 

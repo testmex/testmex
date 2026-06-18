@@ -1,6 +1,6 @@
 import { Lang, parse } from '@ast-grep/napi';
 import type { Transform } from '../../core/models/transform';
-import { findingTypes } from './findings';
+import { findingTypes } from './identifiers';
 
 export const jestMockTransform: Transform = {
   apply: async ({ findings, workspace }): Promise<void> => {

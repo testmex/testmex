@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { relativePath } from '../core/models/relative-path';
-import { projectFileTag, type Project } from '../core/models/workspace-info';
+import { type Project } from '../core/models/workspace-info';
 import { angularCliWorkspaceMother } from '../packs/angular-cli/angular-cli-workspace-infra.mother';
 import angularCliPack from '../packs/angular-cli';
 import corePack from '../packs/core';
@@ -58,7 +58,7 @@ describe(Scanner.name, () => {
         files: [
           {
             path: relativePath('apps/my-app/jest.config.ts'),
-            tags: [projectFileTag.jestConfig],
+            tags: ['jest-config'],
           },
         ],
       },
@@ -81,7 +81,7 @@ describe(Scanner.name, () => {
         files: [
           {
             path: relativePath('apps/my-app/src/app.spec.ts'),
-            tags: [projectFileTag.test],
+            tags: ['test'],
           },
         ],
       },

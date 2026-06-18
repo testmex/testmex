@@ -1,7 +1,7 @@
 import type { Finding } from '../../core/models/finding';
 import type { Heuristic } from '../../core/models/heuristic';
-import { projectFileTag } from '../../core/models/workspace-info';
-import { findingTags, findingTypes } from './findings';
+import { projectFileTags as coreProjectFileTags } from '../core/identifiers';
+import { findingTags, findingTypes } from './identifiers';
 
 export const jestMockHeuristic: Heuristic = {
   inspect: async ({ info, tree }): Promise<Finding[]> => {
@@ -9,7 +9,7 @@ export const jestMockHeuristic: Heuristic = {
       info.projects
         .flatMap((project) =>
           project.files
-            .filter((file) => file.tags.includes(projectFileTag.test))
+            .filter((file) => file.tags.includes(coreProjectFileTags.test))
             .map((file) => ({ project, file })),
         )
         .map(async ({ file, project }) => ({

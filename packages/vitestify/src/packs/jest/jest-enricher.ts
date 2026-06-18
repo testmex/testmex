@@ -1,10 +1,10 @@
 import { relative } from 'node:path/posix';
 import type { RelativePath } from '../../core/models/relative-path';
 import {
-  projectFileTag,
   type ProjectFile,
   type WorkspaceInfo,
 } from '../../core/models/workspace-info';
+import { projectFileTags } from './identifiers';
 import { Enricher } from '../../core/models/enricher';
 import type { ReadonlyTree } from '../../core/domain/tree';
 
@@ -50,7 +50,7 @@ export class JestEnricher implements Enricher {
       })
       .map((path) => ({
         path,
-        tags: [projectFileTag.jestConfig],
+        tags: [projectFileTags.jestConfig],
       }));
   }
 }
