@@ -10,10 +10,6 @@ export class Tree {
     this._cachedFileSystem = new CachedFileSystem(fileSystem);
   }
 
-  asReadonly(): ReadonlyTree {
-    return this;
-  }
-
   async maybeReadFile(path: RelativePath): Promise<string | null> {
     const state = this._fileStates.get(path);
 

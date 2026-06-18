@@ -1,6 +1,6 @@
 import type { Finding } from './finding';
-import type { Workspace } from './workspace';
+import type { ReadonlyWorkspace } from './workspace';
 
 export interface Heuristic {
-  inspect(workspace: Workspace): Promise<Finding[]>;
+  inspect(workspace: ReadonlyWorkspace): Promise<Finding[]>;
 }

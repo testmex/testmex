@@ -11,7 +11,7 @@ describe('jestMock', () => {
     const { file, workspace } = setUp();
 
     const findings = await jestMockHeuristic.inspect(workspace);
-    await jestMockTransform.apply(workspace, findings);
+    await jestMockTransform.apply({ findings, workspace });
 
     expect(await workspace.tree.maybeReadFile(file.path)).toBe(
       "vi.mock('./foo');",

@@ -22,7 +22,7 @@ export class Vitestify {
     }
 
     for (const transform of transforms) {
-      await transform.apply(workspace, findings);
+      await transform.apply({ findings, workspace });
     }
 
     await workspace.tree.commit();

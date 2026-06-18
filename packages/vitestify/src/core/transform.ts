@@ -1,6 +1,12 @@
 import type { Finding } from './finding';
-import type { Workspace } from './workspace';
+import type { ReadonlyWorkspace } from './workspace';
 
 export interface Transform {
-  apply(workspace: Workspace, findings: Finding[]): Promise<void>;
+  apply({
+    findings,
+    workspace,
+  }: {
+    findings: Finding[];
+    workspace: ReadonlyWorkspace;
+  }): Promise<void>;
 }

@@ -1,6 +1,5 @@
 import type { Finding } from '../../core/finding';
 import type { Heuristic } from '../../core/heuristic';
-import type { Workspace } from '../../core/workspace';
 import { projectFileTag } from '../../core/workspace-info';
 import { findingTags, findingTypes } from './findings';
 
@@ -13,7 +12,7 @@ export const jestMockHeuristic: Heuristic = {
   /**
    * @deprecated 🚧 work in progress
    */
-  inspect: async ({ info, tree }: Workspace): Promise<Finding[]> => {
+  inspect: async ({ info, tree }): Promise<Finding[]> => {
     const testFiles = await Promise.all(
       info.projects
         .flatMap((project) =>

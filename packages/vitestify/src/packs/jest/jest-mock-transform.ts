@@ -1,11 +1,9 @@
 import { Lang, parse } from '@ast-grep/napi';
-import type { Finding } from '../../core/finding';
 import type { Transform } from '../../core/transform';
-import type { Workspace } from '../../core/workspace';
 import { findingTypes } from './findings';
 
 export const jestMockTransform: Transform = {
-  apply: async (workspace: Workspace, findings: Finding[]): Promise<void> => {
+  apply: async ({ findings, workspace }): Promise<void> => {
     const { tree } = workspace;
 
     for (const finding of findings) {
