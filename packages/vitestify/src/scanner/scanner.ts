@@ -1,32 +1,33 @@
-import { CommandRunner } from 'src/infra/command-runner';
+import type { CommandRunner } from '../infra/command-runner';
+import { Enricher, EnricherFactory } from '../core/enricher';
 import { Tree } from '../core/tree';
 import { defineWorkspace, type Workspace } from '../core/workspace';
 import { createWorkspaceInfo } from '../core/workspace-info';
 import type { FileSystem } from '../infra/file-system';
-import { AngularCliEnricher } from '../packs/angular-cli/angular-cli-enricher';
-import { TestEnricher } from '../packs/core/test-enricher';
-import { JestEnricher } from '../packs/jest/jest-enricher';
-import { NxEnricher } from '../packs/nx/nx-enricher';
-import { Enricher } from '../core/enricher';
 
 export class Scanner {
+  private readonly _commandRunner: CommandRunner;
+  private readonly _enricherFactories: EnricherFactory[];
   private readonly _fileSystem: FileSystem;
-  private _enrichers: Enricher[];
-  constructor(args: { commandRunner: CommandRunner; fileSystem: FileSystem }) {
+
+  constructor(args: {
+    commandRunner: CommandRunner;
+    enricherFactories: EnricherFactory[];
+    fileSystem: FileSystem;
+  }) {
+    this._commandRunner = args.commandRunner;
+    this._enricherFactories = args.enricherFactories;
     this._fileSystem = args.fileSystem;
-    this._enrichers = [
-      new AngularCliEnricher(args),
-      new NxEnricher(args),
-      new JestEnricher(args),
-      new TestEnricher(args),
-    ];
   }
 
   async scanWorkspace(): Promise<Workspace> {
     const tree = new Tree({ fileSystem: this._fileSystem });
+    const enrichers = this._enricherFactories.map((factory) =>
+      factory({ commandRunner: this._commandRunner, tree }),
+    );
 
     let workspaceInfo = createWorkspaceInfo();
-    for (const enricher of this._enrichers) {
+    for (const enricher of enrichers) {
       workspaceInfo = await enricher.enrich(workspaceInfo);
     }
 

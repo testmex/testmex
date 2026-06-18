@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { relativePath } from '../core/relative-path';
 import { projectFileTag, type Project } from '../core/workspace-info';
 import { angularCliWorkspaceMother } from '../packs/angular-cli/angular-cli-workspace-infra.mother';
+import angularCliPack from '../packs/angular-cli';
+import corePack from '../packs/core';
+import jestPack from '../packs/jest';
+import nxPack from '../packs/nx';
 import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
 import { CommandRunnerFake } from '../infra/command-runner.fake';
 import { FileSystemFake } from '../infra/file-system.fake';
@@ -102,6 +106,9 @@ function setUp() {
     },
     scanner: new Scanner({
       commandRunner,
+      enricherFactories: [angularCliPack, nxPack, jestPack, corePack].flatMap(
+        (pack) => pack.enricherFactories,
+      ),
       fileSystem,
     }),
   };

@@ -5,14 +5,14 @@ import {
   type ProjectFile,
   type WorkspaceInfo,
 } from '../../core/workspace-info';
-import { FileSystem } from '../../infra/file-system';
 import { Enricher } from '../../core/enricher';
+import type { ReadonlyTree } from '../../core/tree';
 
 export class JestEnricher implements Enricher {
-  private readonly _fileSystem: FileSystem;
+  private readonly _tree: ReadonlyTree;
 
-  constructor({ fileSystem }: { fileSystem: FileSystem }) {
-    this._fileSystem = fileSystem;
+  constructor({ tree }: { tree: ReadonlyTree }) {
+    this._tree = tree;
   }
 
   async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
@@ -37,7 +37,7 @@ export class JestEnricher implements Enricher {
   private async _discoverJestConfigFiles(
     projectRoot: RelativePath,
   ): Promise<ProjectFile[]> {
-    const files = await this._fileSystem.scanDirectory(projectRoot);
+    const files = await this._tree.scanDirectory(projectRoot);
     const jestConfigPattern = /^jest\.config\.(ts|js|mjs|cjs)$/;
 
     return files

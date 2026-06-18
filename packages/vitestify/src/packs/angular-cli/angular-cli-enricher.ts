@@ -4,18 +4,18 @@ import {
   type Project,
   WorkspaceInfo,
 } from '../../core/workspace-info';
-import { FileSystem } from '../../infra/file-system';
 import { Enricher } from '../../core/enricher';
+import type { ReadonlyTree } from '../../core/tree';
 
 export class AngularCliEnricher implements Enricher {
-  private readonly _fileSystem: FileSystem;
+  private readonly _tree: ReadonlyTree;
 
-  constructor({ fileSystem }: { fileSystem: FileSystem }) {
-    this._fileSystem = fileSystem;
+  constructor({ tree }: { tree: ReadonlyTree }) {
+    this._tree = tree;
   }
 
   async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
-    const angularJson = await this._fileSystem.maybeReadFile(
+    const angularJson = await this._tree.maybeReadFile(
       relativePath('angular.json'),
     );
 

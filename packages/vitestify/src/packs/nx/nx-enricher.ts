@@ -1,21 +1,22 @@
 import { relativePath } from '../../core/relative-path';
 import { mergeWorkspaceInfo, WorkspaceInfo } from '../../core/workspace-info';
 import { CommandRunner } from '../../infra/command-runner';
-import { FileSystem } from '../../infra/file-system';
 import { Enricher } from '../../core/enricher';
+import type { ReadonlyTree } from '../../core/tree';
 
 export class NxEnricher implements Enricher {
   private readonly _commandRunner: CommandRunner;
-  private readonly _fileSystem: FileSystem;
+  private readonly _tree: ReadonlyTree;
+
   constructor({
     commandRunner,
-    fileSystem,
+    tree,
   }: {
     commandRunner: CommandRunner;
-    fileSystem: FileSystem;
+    tree: ReadonlyTree;
   }) {
     this._commandRunner = commandRunner;
-    this._fileSystem = fileSystem;
+    this._tree = tree;
   }
 
   async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
@@ -41,7 +42,7 @@ export class NxEnricher implements Enricher {
   }
 
   private async _isNx(): Promise<boolean> {
-    const packageJsonString = await this._fileSystem.maybeReadFile(
+    const packageJsonString = await this._tree.maybeReadFile(
       relativePath('package.json'),
     );
 

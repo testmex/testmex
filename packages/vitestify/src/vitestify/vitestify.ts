@@ -1,27 +1,35 @@
 import type { Finding } from '../core/finding';
+import type { Pack } from '../core/pack';
 import type { CommandRunner } from '../infra/command-runner';
 import type { FileSystem } from '../infra/file-system';
-import { heuristics } from '../packs/jest/index';
+import angularCliPack from '../packs/angular-cli';
+import corePack from '../packs/core';
+import jestPack from '../packs/jest';
+import nxPack from '../packs/nx';
 import { Scanner } from '../scanner/scanner';
-import { transforms } from '../transforms/index';
 
 export class Vitestify {
+  private readonly _packs: Pack[] = [angularCliPack, nxPack, jestPack, corePack];
   private readonly _scanner: Scanner;
 
   constructor(args: { commandRunner: CommandRunner; fileSystem: FileSystem }) {
     const { commandRunner, fileSystem } = args;
-    this._scanner = new Scanner({ commandRunner, fileSystem });
+    this._scanner = new Scanner({
+      commandRunner,
+      enricherFactories: this._packs.flatMap((pack) => pack.enricherFactories),
+      fileSystem,
+    });
   }
 
   async run(): Promise<void> {
     const workspace = await this._scanner.scanWorkspace();
 
     const findings: Finding[] = [];
-    for (const heuristic of heuristics) {
+    for (const heuristic of this._packs.flatMap((pack) => pack.heuristics)) {
       findings.push(...(await heuristic.inspect(workspace)));
     }
 
-    for (const transform of transforms) {
+    for (const transform of this._packs.flatMap((pack) => pack.transforms)) {
       await transform.apply({ findings, workspace });
     }
 

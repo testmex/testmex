@@ -1,4 +1,11 @@
-import type { Heuristic } from '../../core/heuristic';
+import { definePack } from '../../core/pack';
+import { JestEnricher } from './jest-enricher';
 import { jestMockHeuristic } from './jest-mock-heuristic';
+import { jestMockTransform } from './jest-mock-transform';
 
-export const heuristics: Heuristic[] = [jestMockHeuristic];
+export default definePack({
+  name: 'jest',
+  enricherFactories: [(args) => new JestEnricher(args)],
+  heuristics: [jestMockHeuristic],
+  transforms: [jestMockTransform],
+});
