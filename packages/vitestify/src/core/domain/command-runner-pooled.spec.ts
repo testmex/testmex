@@ -1,7 +1,7 @@
 import type { CommandRunner } from '../core/ports/command-runner';
-import { PooledCommandRunner } from './pooled-command-runner';
+import { CommandRunnerPooled } from './command-runner-pooled';
 
-describe(PooledCommandRunner, () => {
+describe(CommandRunnerPooled, () => {
   it('limits concurrent runs to maxConcurrent', async () => {
     const { commandRunner, inner } = setUp();
 
@@ -29,7 +29,7 @@ function setUp() {
   const inner = new TrackingCommandRunner();
   return {
     inner,
-    commandRunner: new PooledCommandRunner({
+    commandRunner: new CommandRunnerPooled({
       inner,
       maxConcurrent: 10,
     }),

@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { relativePath } from '../core/models/relative-path';
-import { CachedFileSystem } from '../core/domain/cached-file-system';
-import { FileSystemFake } from '../core/ports/file-system.fake';
+import { relativePath } from '../models/relative-path';
+import { FileSystemCached } from './file-system-cached';
+import { FileSystemFake } from '../ports/file-system.fake';
 
-describe(CachedFileSystem.name, () => {
+describe(FileSystemCached.name, () => {
   it('caches file reads', async () => {
     const inner = new CountingFileSystemFake();
     inner.configure({
       [relativePath('apps/my-app/main.ts')]: 'console.log("hello");',
     });
-    const fileSystem = new CachedFileSystem(inner);
+    const fileSystem = new FileSystemCached(inner);
 
     expect
       .soft(await fileSystem.maybeReadFile(relativePath('apps/my-app/main.ts')))
@@ -22,7 +22,7 @@ describe(CachedFileSystem.name, () => {
 
   it('updates cache on write', async () => {
     const inner = new FileSystemFake();
-    const fileSystem = new CachedFileSystem(inner);
+    const fileSystem = new FileSystemCached(inner);
 
     await fileSystem.writeFile(
       relativePath('apps/my-app/main.ts'),
@@ -42,7 +42,7 @@ describe(CachedFileSystem.name, () => {
     inner.configure({
       [relativePath('apps/my-app/main.ts')]: 'console.log("hello");',
     });
-    const fileSystem = new CachedFileSystem(inner);
+    const fileSystem = new FileSystemCached(inner);
 
     await fileSystem.maybeReadFile(relativePath('apps/my-app/main.ts'));
     await fileSystem.deleteFile(relativePath('apps/my-app/main.ts'));

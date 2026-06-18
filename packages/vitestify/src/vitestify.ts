@@ -3,7 +3,7 @@ import type { Pack } from './core/models/pack';
 import type { CommandRunner } from './core/ports/command-runner';
 import type { FileSystem } from './core/ports/file-system';
 import { FileSystemImpl } from './infra/file-system.impl';
-import { PooledCommandRunner } from './infra/pooled-command-runner';
+import { CommandRunnerPooled } from './infra/command-runner-pooled';
 import angularCliPack from './packs/angular-cli';
 import corePack from './packs/core';
 import jestPack from './packs/jest';
@@ -23,7 +23,7 @@ export class Vitestify {
   private readonly _transformer: Transformer;
 
   constructor({
-    commandRunner = new PooledCommandRunner({ maxConcurrent: 10 }),
+    commandRunner = new CommandRunnerPooled({ maxConcurrent: 10 }),
     fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
   }: { commandRunner?: CommandRunner; fileSystem?: FileSystem } = {}) {
     this._scanner = new Scanner({

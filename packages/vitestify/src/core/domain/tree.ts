@@ -1,13 +1,13 @@
-import { CachedFileSystem } from './cached-file-system';
+import { FileSystemCached } from './file-system-cached';
 import type { FileSystem } from '../ports/file-system';
 import type { RelativePath } from '../models/relative-path';
 
 export class Tree {
-  private readonly _cachedFileSystem: CachedFileSystem;
+  private readonly _fileSystemCached: FileSystemCached;
   private readonly _fileStates = new Map<RelativePath, FileState>();
 
   constructor({ fileSystem }: { fileSystem: FileSystem }) {
-    this._cachedFileSystem = new CachedFileSystem(fileSystem);
+    this._fileSystemCached = new FileSystemCached(fileSystem);
   }
 
   async maybeReadFile(path: RelativePath): Promise<string | null> {
@@ -21,15 +21,15 @@ export class Tree {
       return state.content;
     }
 
-    return this._cachedFileSystem.maybeReadFile(path);
+    return this._fileSystemCached.maybeReadFile(path);
   }
 
   async scanDirectory(path: RelativePath): Promise<RelativePath[]> {
-    return this._cachedFileSystem.scanDirectory(path);
+    return this._fileSystemCached.scanDirectory(path);
   }
 
   async write(path: RelativePath, content: string): Promise<void> {
-    const exists = (await this._cachedFileSystem.maybeReadFile(path)) !== null;
+    const exists = (await this._fileSystemCached.maybeReadFile(path)) !== null;
 
     this._fileStates.set(path, {
       type: exists ? 'update' : 'create',
@@ -44,7 +44,7 @@ export class Tree {
     const state = this._fileStates.get(originalPath);
     const content = isCreatedOrUpdated(state)
       ? state.content
-      : await this._cachedFileSystem.maybeReadFile(originalPath);
+      : await this._fileSystemCached.maybeReadFile(originalPath);
 
     if (content === null) {
       throw new Error(`Tree: cannot rename missing file "${originalPath}"`);
@@ -75,14 +75,14 @@ export class Tree {
   async commit(): Promise<void> {
     for (const change of this.changes()) {
       if (change.type === 'delete') {
-        await this._cachedFileSystem.deleteFile(change.path);
+        await this._fileSystemCached.deleteFile(change.path);
         continue;
       }
 
-      await this._cachedFileSystem.writeFile(change.path, change.content);
+      await this._fileSystemCached.writeFile(change.path, change.content);
 
       if (change.type === 'update' && change.originalPath !== undefined) {
-        await this._cachedFileSystem.deleteFile(change.originalPath);
+        await this._fileSystemCached.deleteFile(change.originalPath);
       }
     }
 

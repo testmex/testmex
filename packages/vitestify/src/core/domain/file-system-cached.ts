@@ -4,7 +4,7 @@ import type { FileSystem } from '../ports/file-system';
 /**
  * Caches reads from a delegate {@link FileSystem}.
  */
-export class CachedFileSystem implements FileSystem {
+export class FileSystemCached implements FileSystem {
   private readonly _cache = new Map<RelativePath, string>();
   private readonly _inner: FileSystem;
 

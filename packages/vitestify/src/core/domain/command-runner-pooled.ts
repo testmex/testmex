@@ -1,7 +1,7 @@
-import type { CommandRunner } from '../core/ports/command-runner';
-import { CommandRunnerImpl } from './command-runner.impl';
+import { CommandRunnerImpl } from '../../infra/command-runner.impl';
+import { CommandRunner } from '../ports/command-runner';
 
-export class PooledCommandRunner implements CommandRunner {
+export class CommandRunnerPooled implements CommandRunner {
   private readonly _inner: CommandRunner;
   private readonly _maxConcurrent: number;
   private readonly _queue: Array<() => void> = [];
