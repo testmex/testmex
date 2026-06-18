@@ -350,37 +350,37 @@ The reporter behavior:
 
 Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk I/O.
 
-### [ ] Staged write is visible to subsequent reads without committing:
+### [x] Staged write is visible to subsequent reads without committing:
 
 - Arrange: a `Tree` over a `FileSystemFake` with an existing file.
 - Act: `tree.write(path, newContent)` then `tree.maybeReadFile(path)`.
 - Assert: `maybeReadFile` returns `newContent`; `FileSystemFake` still has the original content.
 
-### [ ] Staged create is readable before commit:
+### [x] Staged create is readable before commit:
 
 - Arrange: a `Tree` over an empty `FileSystemFake`.
 - Act: `tree.write(newPath, content)`.
 - Assert: `tree.maybeReadFile(newPath)` returns `content`; `changes()` has one `create`.
 
-### [ ] Staged delete hides file from reads:
+### [x] Staged delete hides file from reads:
 
 - Arrange: a `Tree` over a `FileSystemFake` with one file.
 - Act: `tree.delete(path)`.
 - Assert: `tree.maybeReadFile(path)` is null; `changes()` has one `delete`; `FileSystemFake` still has the file until commit.
 
-### [ ] Sequential writes to the same file compose:
+### [x] Sequential writes to the same file compose:
 
 - Arrange: a `Tree` with an existing file.
 - Act: `tree.write(path, 'first')` then `tree.write(path, 'second')`.
 - Assert: `tree.maybeReadFile(path)` returns `'second'`; `changes()` has one `update`.
 
-### [ ] Rename via `originalPath` on write:
+### [x] Rename via `originalPath` on write:
 
 - Arrange: a `Tree` with `old/path.ts` on disk.
 - Act: `tree.write('new/path.ts', content, { originalPath: 'old/path.ts' })`.
 - Assert: `changes()` has one `update` with `path: 'new/path.ts'` and `originalPath: 'old/path.ts'`; `tree.maybeReadFile('old/path.ts')` is null and `tree.maybeReadFile('new/path.ts')` returns `content`.
 
-### [ ] `commit()` flushes all staged changes to FileSystem:
+### [x] `commit()` flushes all staged changes to FileSystem:
 
 - Arrange: a `Tree` with staged create, update, and delete.
 - Act: `tree.commit()`.
