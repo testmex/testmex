@@ -30,14 +30,14 @@
 2. **Scanner** — discovers workspace structure: project type (Angular CLI vs Nx), Jest config files, test files, `package.json` entries.
 3. **Analyzer** — the engine. Runs registered heuristics over the `Workspace` and collects findings.
 4. **Heuristics** — small, composable rules registered in a simple array.
-   - Each **Heuristic** receives the full `Workspace` (`WorkspaceInfo` + `Tree`).
-   - It can inspect individual files, cross-file relationships, or whole projects.
-   - Examples: "file uses `jest.mock`".
-   - They produce **Findings**. Easy to add new ones.
+  - Each **Heuristic** receives the full `Workspace` (`WorkspaceInfo` + `Tree`).
+  - It can inspect individual files, cross-file relationships, or whole projects.
+  - Examples: "file uses `jest.mock`".
+  - They produce **Findings**. Easy to add new ones.
 5. **Transforms** — each transform is constructed with the shared `Tree`.
-   - It receives a list of findings, reads source from the `Tree`, and writes edits back to it.
-   - Registered in a simple array.
-   - The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
+  - It receives a list of findings, reads source from the `Tree`, and writes edits back to it.
+  - Registered in a simple array.
+  - The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
 6. **Pipeline** — wires it all together: CLI → Scanner → Analyzer → Transforms, all sharing one `Tree`. Respects `--dry-run` by skipping the `Tree` commit.
 
 ## Mental Model
@@ -45,7 +45,7 @@
 **detect → act.**
 
 - The scanner maps the workspace (`WorkspaceInfo`).
-- The pipeline bundles that with a shared `Tree` into a **`Workspace`**.
+- The pipeline bundles that with a shared `Tree` into a `**Workspace`**.
 - Heuristics inspect the `Workspace` and produce **findings** — observations about what needs changing.
 - Heuristics have full access to file content and cross-file context via the `Tree`.
 - **Transforms** act on findings by reading and writing through the same `Tree`.
@@ -64,6 +64,8 @@ flowchart LR
 
     Scan --> Find --> Change --> Commit
 ```
+
+
 
 ## Diagram
 
@@ -93,6 +95,8 @@ sequenceDiagram
     Transforms->>Tree: maybeReadFile() / write()
     Pipeline->>Tree: commit() (unless --dry-run)
 ```
+
+
 
 ## Implementation Details
 
@@ -443,27 +447,29 @@ flowchart LR
     PR3 --> PR4
 ```
 
+
+
 1. [x] **PR 0 — Core + Tree**:
-   - `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`).
-   - Everything downstream depends on it.
-   - Tests included.
+  - `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`).
+  - Everything downstream depends on it.
+  - Tests included.
 2. [x] **PR 1 — Scanner**:
-   - Workspace detection (Angular CLI vs Nx).
-   - `Enricher` interface + `AngularCliEnricher`/`NxEnricher`.
-   - Jest config discovery (all forms), test file discovery.
-   - Tests included.
-3. [ ] **PR 2 — Analyzer + heuristics**:
-   - Analyzer engine, `Workspace`/`Finding`/`Heuristic` types, tag system.
-   - Ships with the `jest.mock` heuristic.
-   - Tests included.
+  - Workspace detection (Angular CLI vs Nx).
+  - `Enricher` interface + `AngularCliEnricher`/`NxEnricher`.
+  - Jest config discovery (all forms), test file discovery.
+  - Tests included.
+3. [x] **PR 2 — heuristics**:
+  - `Workspace`/`Finding`/`Heuristic` types, tag system.
+  - Ships with the `jest.mock` heuristic.
+  - Tests included.
 4. [ ] **PR 3 — Transform engine + transforms**:
-   - `Transform`/`TransformFactory`/`Change` union (including rename-on-update), transform runner over the `Tree`.
-   - Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift, Nx/Angular runner-wiring transform, agent-instruction transform).
-   - Tests included.
-5. [ ] **PR 4 — Pipeline + wide test**:
-   - CLI entry point with `--dry-run`, `--path`, inquirer.js prompts.
-   - Wires Scanner + Analyzer + Transforms over one `Tree`.
-   - Wide integration test.
+  - `Transform`/`TransformFactory`/`Change` union (including rename-on-update), transform runner over the `Tree`.
+  - Ships with all v1 transforms (e.g. `jest.mock` → `vi.mock` via jscodeshift, Nx/Angular runner-wiring transform, agent-instruction transform).
+  - Tests included.
+5. [ ] **PR 4 — Analyzer + Pipeline + wide test**:
+  - CLI entry point with `--dry-run`, `--path`, inquirer.js prompts.
+  - Wires Scanner + Analyzer + Transforms over one `Tree`.
+  - Wide integration test.
 
 # Alternatives Considered
 
@@ -501,3 +507,4 @@ Pipeline integration:
 
 - Runs after transforms: `CLI → Scanner → Analyzer → Transforms → Reporter → commit`.
 - At the end of a migration, a Markdown summary report is written to disk listing all changes made.
+

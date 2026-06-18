@@ -24,9 +24,7 @@ class WorkspaceMother {
     }
 
     if (appName !== this._state.name) {
-      throw new Error(
-        `WorkspaceMother: app "${appName}" does not exist`,
-      );
+      throw new Error(`WorkspaceMother: app "${appName}" does not exist`);
     }
 
     return new WorkspaceMother({
