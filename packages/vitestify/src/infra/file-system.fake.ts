@@ -1,5 +1,5 @@
 import type { RelativePath } from '../core/relative-path';
-import { FileSystem } from './file-system';
+import type { FileSystem } from './file-system';
 
 export class FileSystemFake implements FileSystem {
   private readonly _files = new Map<RelativePath, string>();

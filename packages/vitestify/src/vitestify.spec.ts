@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { relativePath } from '../core/relative-path';
-import { CommandRunnerFake } from '../infra/command-runner.fake';
-import { FileSystemFake } from '../infra/file-system.fake';
-import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
-import { Vitestify } from './vitestify';
+import { relativePath } from './core/relative-path';
+import { CommandRunnerFake } from './infra/command-runner.fake';
+import { FileSystemFake } from './infra/file-system.fake';
+import { nxWorkspaceMother } from './packs/nx/nx-workspace-infra.mother';
+import { Vitestify } from './vitestify/vitestify';
 
 describe('Vitestify', () => {
   it('applies transforms and commits', async () => {

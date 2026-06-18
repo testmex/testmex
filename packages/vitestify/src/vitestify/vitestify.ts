@@ -1,7 +1,6 @@
 import type { Finding } from '../core/finding';
 import type { Pack } from '../core/pack';
-import type { CommandRunner } from '../infra/command-runner';
-import type { FileSystem } from '../infra/file-system';
+import { CommandRunner } from '../infra/command-runner';
 import angularCliPack from '../packs/angular-cli';
 import corePack from '../packs/core';
 import jestPack from '../packs/jest';
@@ -9,11 +8,18 @@ import nxPack from '../packs/nx';
 import { Scanner } from '../scanner/scanner';
 
 export class Vitestify {
-  private readonly _packs: Pack[] = [angularCliPack, nxPack, jestPack, corePack];
+  private readonly _packs: Pack[] = [
+    angularCliPack,
+    nxPack,
+    jestPack,
+    corePack,
+  ];
   private readonly _scanner: Scanner;
 
-  constructor(args: { commandRunner: CommandRunner; fileSystem: FileSystem }) {
-    const { commandRunner, fileSystem } = args;
+  constructor({ workspaceRoot }: { workspaceRoot: string }) {
+    const commandRunner = new CommandRunner();
+    const fileSystem = new FileSystem({ workspaceRoot });
+
     this._scanner = new Scanner({
       commandRunner,
       enricherFactories: this._packs.flatMap((pack) => pack.enricherFactories),

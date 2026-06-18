@@ -1,11 +1,10 @@
+import { Vitestify } from './vitestify';
+
 main(process.argv.slice(2)).catch((error) => {
   console.error(error);
   process.exit(1);
 });
 
-/**
- * @deprecated 🚧 work in progress
- */
-async function main(_argv: string[]): Promise<void> {
-  throw new Error('🚧 work in progress');
+async function main(argv: string[]): Promise<void> {
+  await new Vitestify({ workspaceRoot: process.cwd() }).run();
 }

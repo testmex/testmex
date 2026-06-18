@@ -1,1 +1,1 @@
-export { Vitestify } from './vitestify/vitestify';
+export { Vitestify } from './vitestify';
