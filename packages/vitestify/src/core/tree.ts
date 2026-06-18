@@ -10,6 +10,10 @@ export class Tree {
     this._cachedFileSystem = new CachedFileSystem(fileSystem);
   }
 
+  asReadonly(): ReadonlyTree {
+    return this;
+  }
+
   async maybeReadFile(path: RelativePath): Promise<string | null> {
     const state = this._fileStates.get(path);
 
@@ -22,6 +26,10 @@ export class Tree {
     }
 
     return this._cachedFileSystem.maybeReadFile(path);
+  }
+
+  async scanDirectory(path: RelativePath): Promise<RelativePath[]> {
+    return this._cachedFileSystem.scanDirectory(path);
   }
 
   async write(path: RelativePath, content: string): Promise<void> {
@@ -85,6 +93,8 @@ export class Tree {
     this._fileStates.clear();
   }
 }
+
+export type ReadonlyTree = Pick<Tree, 'maybeReadFile' | 'scanDirectory'>;
 
 export type Change = { path: RelativePath } & (
   | CreateState
