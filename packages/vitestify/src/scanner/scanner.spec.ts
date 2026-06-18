@@ -13,10 +13,10 @@ describe(Scanner.name, () => {
 
     configureWorkspace(angularCliWorkspaceMother.withApp('my-app'));
 
-    const { projects, workspaceType } = await scanner.scanWorkspace();
+    const { info } = await scanner.scanWorkspace();
 
-    expect.soft(workspaceType).toBe('angular-cli');
-    expect.soft(projects).toMatchObject([
+    expect.soft(info.workspaceType).toBe('angular-cli');
+    expect.soft(info.projects).toMatchObject([
       {
         name: 'my-app',
         path: relativePath('apps/my-app'),
@@ -29,10 +29,10 @@ describe(Scanner.name, () => {
 
     configureWorkspace(nxWorkspaceMother.withApp('my-app'));
 
-    const { projects, workspaceType } = await scanner.scanWorkspace();
+    const { info } = await scanner.scanWorkspace();
 
-    expect.soft(workspaceType).toBe('nx');
-    expect.soft(projects).toMatchObject([
+    expect.soft(info.workspaceType).toBe('nx');
+    expect.soft(info.projects).toMatchObject([
       {
         name: 'my-app',
         path: relativePath('apps/my-app'),
@@ -49,9 +49,9 @@ describe(Scanner.name, () => {
         .withAppFile('my-app', 'jest.config.ts', 'export default {}'),
     );
 
-    const { projects } = await scanner.scanWorkspace();
+    const { info } = await scanner.scanWorkspace();
 
-    expect(projects).toMatchObject([
+    expect(info.projects).toMatchObject([
       {
         files: [
           {
@@ -72,9 +72,9 @@ describe(Scanner.name, () => {
         .withAppFile('my-app', 'src/app.spec.ts', 'it("works", () => {})'),
     );
 
-    const { projects } = await scanner.scanWorkspace();
+    const { info } = await scanner.scanWorkspace();
 
-    expect(projects).toMatchObject([
+    expect(info.projects).toMatchObject([
       {
         files: [
           {
