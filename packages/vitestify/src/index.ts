@@ -1,1 +1,4 @@
-export * from './vitestify';
+export {
+  Vitestify,
+  type VitestifyOptions,
+} from './vitestify/vitestify';

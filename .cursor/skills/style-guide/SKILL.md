@@ -42,3 +42,5 @@ Apply the same pattern to `FindingTag`, `FindingType`, and similar domain string
 ## Test names
 
 Start test descriptions in lower case: `it('staged write is visible…')`.
+
+Use `Class` or `function` for `describe` suite names — do not use `Class.name` or `function.name` (e.g. `describe(Vitestify, …)` not `describe(Vitestify.name, …)`).
