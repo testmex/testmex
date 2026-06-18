@@ -32,7 +32,7 @@
 4. **Heuristics** — small, composable rules registered in a simple array.
    - Each **Heuristic** receives the full `Workspace` (`WorkspaceInfo` + `Tree`).
    - It can inspect individual files, cross-file relationships, or whole projects.
-   - Examples: "file uses `jest.mock`", "per-project `jest.config.ts` extends the Nx `jest.preset.js`".
+   - Examples: "file uses `jest.mock`".
    - They produce **Findings**. Easy to add new ones.
 5. **Transforms** — each transform is constructed with the shared `Tree`.
    - It receives a list of findings, reads source from the `Tree`, and writes edits back to it.
@@ -87,7 +87,7 @@ sequenceDiagram
     User-->>CLI: answers
     Pipeline->>Analyzer: analyze(workspace, heuristics)
     Analyzer->>Heuristics: inspect(workspace)
-    Heuristics-->>Analyzer: HeuristicResult[]
+    Heuristics-->>Analyzer: Finding[]
     Analyzer-->>Pipeline: Finding[]
     Pipeline->>Transforms: apply(findings)
     Transforms->>Tree: maybeReadFile() / write()
@@ -224,25 +224,23 @@ The analyzer runs every registered `Heuristic` against the `Workspace`.
 
 - Each heuristic decides what to inspect — a single file, a whole project, or cross-file relationships.
 - It uses `workspace.info` and `workspace.tree`.
-- It returns `HeuristicResult`s stamped with the relevant `project` (and optional `file`).
-- The analyzer collects them as `Finding`s.
+- It returns `Finding`s stamped with the relevant `project` (and optional `file`).
+- The analyzer collects them.
 
 ### Heuristics & Findings
 
 ```typescript
 interface Heuristic {
-  inspect(workspace: Workspace): Promise<HeuristicResult[]>;
+  inspect(workspace: Workspace): Promise<Finding[]>;
 }
 
-interface HeuristicResult {
+interface Finding {
   type: FindingType;
   tags: FindingTag[];
   description: string;
   project: Project; // the heuristic supplies the project context
   file?: ProjectFile; // when the finding relates to a specific file
 }
-
-interface Finding extends HeuristicResult {}
 
 type FindingType = string; // e.g. 'jest-mock-call', 'nx-jest-executor' — defined per heuristic
 
@@ -254,8 +252,7 @@ Each heuristic receives the full `Workspace`.
 - It can inspect individual files (via `workspace.tree.maybeReadFile`).
 - It can inspect whole projects (via `workspace.info.projects`).
 - It can inspect cross-file relationships — e.g. a per-project `jest.config.ts` that extends the Nx `jest.preset.js`, or imports that must be reconciled with `tsconfig` paths.
-- Heuristics return `HeuristicResult`s stamped with the relevant `project` (and optional `file`).
-- The analyzer passes them through as `Finding`s.
+- Heuristics return `Finding`s stamped with the relevant `project` (and optional `file`).
 - `FindingType` identifies the specific pattern detected.
 - `FindingTag` groups related findings for filtering and reporting.
 - Tags are open so new heuristics never edit a central union.
@@ -464,8 +461,8 @@ flowchart LR
    - Jest config discovery (all forms), test file discovery.
    - Tests included.
 3. [ ] **PR 2 — Analyzer + heuristics**:
-   - Analyzer engine, `Workspace`/`Finding`/`HeuristicResult`/`Heuristic` types, tag system.
-   - Ships with all v1 heuristics.
+   - Analyzer engine, `Workspace`/`Finding`/`Heuristic` types, tag system.
+   - Ships with the `jest.mock` heuristic.
    - Tests included.
 4. [ ] **PR 3 — Transform engine + transforms**:
    - `Transform`/`TransformFactory`/`Change` union (including rename-on-update), transform runner over the `Tree`.
