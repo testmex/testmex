@@ -1,7 +1,7 @@
 import { FileSystemFake } from '../infra/file-system.fake';
 import { relativePath, type RelativePath } from './relative-path';
 import { Tree } from './tree';
-import { createWorkspace, type Workspace } from './workspace';
+import { defineWorkspace, type Workspace } from './workspace';
 import {
   projectFileTag,
   type ProjectFile,
@@ -91,5 +91,8 @@ export function createTestingWorkspace(mother: WorkspaceMother): Workspace {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(mother.buildFiles());
 
-  return createWorkspace(mother.buildWorkspaceInfo(), new Tree({ fileSystem }));
+  return defineWorkspace({
+    info: mother.buildWorkspaceInfo(),
+    tree: new Tree({ fileSystem }),
+  });
 }

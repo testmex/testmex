@@ -6,9 +6,12 @@ export interface Workspace {
   tree: Tree;
 }
 
-export function createWorkspace(
-  info: WorkspaceInfo,
-  tree: Tree,
-): Workspace {
+export function defineWorkspace({
+  info,
+  tree,
+}: {
+  info: WorkspaceInfo;
+  tree: Tree;
+}): Workspace {
   return { info, tree };
 }
