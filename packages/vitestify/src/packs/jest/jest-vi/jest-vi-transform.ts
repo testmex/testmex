@@ -1,4 +1,4 @@
-import { Lang, parse } from '@ast-grep/napi';
+import { Lang, parse, type SgNode } from '@ast-grep/napi';
 import type { Transform } from '../../../core/models/transform';
 import { findingTypes } from '../identifiers';
 
@@ -115,9 +115,7 @@ function _rewriteJestVi(content: string): string {
   return result.replace(/^\n+/, '');
 }
 
-type SgNode = NonNullable<ReturnType<ReturnType<typeof parse>['root']>['find']>;
-
-function _collectJestCalls(root: ReturnType<ReturnType<typeof parse>['root']>) {
+function _collectJestCalls(root: SgNode) {
   const calls: Array<{ call: SgNode; method: string }> = [];
 
   for (const member of root.findAll('jest.$METHOD')) {
@@ -189,7 +187,7 @@ function _markEnclosingFunctionAsync(
   });
 }
 
-function _hasViImport(root: ReturnType<ReturnType<typeof parse>['root']>) {
+function _hasViImport(root: SgNode) {
   for (const imp of root.findAll('import { $$$NAMES } from $SOURCE')) {
     if (
       imp
