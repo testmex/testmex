@@ -27,18 +27,13 @@ export class NxEnricher implements Enricher {
       return workspaceInfo;
     }
 
-    const projectNames = await this._runNxJsonCommand('show projects');
-    const projects = await Promise.all(
-      projectNames.map((projectName) =>
-        this._runNxJsonCommand('show project', projectName),
-      ),
-    );
+    const graph = await this._runNxGraphCommand();
 
     return mergeWorkspaceInfo(workspaceInfo, {
       workspaceType: 'nx',
-      projects: projects.map((project) => ({
-        name: project.name,
-        path: relativePath(project.root),
+      projects: Object.values(graph.graph.nodes).map((node) => ({
+        name: node.name,
+        path: relativePath(node.data.root),
         files: [],
       })),
     });
@@ -62,30 +57,21 @@ export class NxEnricher implements Enricher {
     );
   }
 
-  private async _runNxJsonCommand(
-    command: 'show projects',
-    ...args: []
-  ): Promise<string[]>;
-  private async _runNxJsonCommand(
-    command: 'show project',
-    ...args: [string]
-  ): Promise<{
-    name: string;
-    root: string;
-  }>;
-  private async _runNxJsonCommand(
-    command: string,
-    ...args: string[]
-  ): Promise<unknown> {
+  private async _runNxGraphCommand(): Promise<NxGraph> {
     const raw = await this._commandRunner.run([
       'npx',
       'nx',
-      ...command.split(' '),
-      ...args,
-      '--json',
+      'graph',
+      '--print',
     ]);
     return JSON.parse(raw);
   }
+}
+
+interface NxGraph {
+  graph: {
+    nodes: Record<string, { name: string; data: { root: string } }>;
+  };
 }
 
 interface PackageJson {

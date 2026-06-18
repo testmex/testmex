@@ -67,10 +67,12 @@ class NxWorkspaceInfraMother {
     const root = `apps/${name}`;
 
     return {
-      ['npx nx show projects --json']: JSON.stringify([name]),
-      [`npx nx show project ${name} --json`]: JSON.stringify({
-        name,
-        root,
+      ['npx nx graph --print']: JSON.stringify({
+        graph: {
+          nodes: {
+            [name]: { name, data: { root } },
+          },
+        },
       }),
     };
   }
