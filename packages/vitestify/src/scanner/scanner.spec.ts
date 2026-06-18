@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { relativePath } from '../core/relative-path';
 import { projectFileTag, type Project } from '../core/workspace-info';
-import { angularCliWorkspaceMother } from '../infra/angular-cli-workspace-infra.mother';
-import { nxWorkspaceMother } from '../infra/nx-workspace-infra.mother';
+import { angularCliWorkspaceMother } from '../packs/angular-cli/angular-cli-workspace-infra.mother';
+import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
 import { CommandRunnerFake } from '../infra/command-runner.fake';
 import { FileSystemFake } from '../infra/file-system.fake';
 import { Scanner } from './scanner';

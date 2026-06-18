@@ -1,13 +1,14 @@
-import type { RelativePath } from '../core/relative-path';
+import { relative } from 'node:path';
+import type { RelativePath } from '../../core/relative-path';
 import {
   projectFileTag,
   type ProjectFile,
   type WorkspaceInfo,
-} from '../core/workspace-info';
-import { FileSystem } from '../infra/file-system';
-import { Enricher } from './enricher';
+} from '../../core/workspace-info';
+import { FileSystem } from '../../infra/file-system';
+import { Enricher } from '../../scanner/enricher';
 
-export class TestEnricher implements Enricher {
+export class JestEnricher implements Enricher {
   private readonly _fileSystem: FileSystem;
 
   constructor({ fileSystem }: { fileSystem: FileSystem }) {
@@ -26,24 +27,30 @@ export class TestEnricher implements Enricher {
           ...project,
           files: [
             ...project.files,
-            ...(await this._discoverTestFiles(project.path)),
+            ...(await this._discoverJestConfigFiles(project.path)),
           ],
         })),
       ),
     };
   }
 
-  private async _discoverTestFiles(
+  private async _discoverJestConfigFiles(
     projectRoot: RelativePath,
   ): Promise<ProjectFile[]> {
     const files = await this._fileSystem.scanDirectory(projectRoot);
-    const testFilePattern = /\.spec\.ts$/;
+    const jestConfigPattern = /^jest\.config\.(ts|js|mjs|cjs)$/;
 
     return files
-      .filter((file) => testFilePattern.test(file))
+      .filter((file) => {
+        const relativeToProject = relative(projectRoot, file);
+        return (
+          !relativeToProject.includes('/') &&
+          jestConfigPattern.test(relativeToProject)
+        );
+      })
       .map((path) => ({
         path,
-        tags: [projectFileTag.test],
+        tags: [projectFileTag.jestConfig],
       }));
   }
 }

@@ -1,11 +1,11 @@
-import { relativePath } from '../core/relative-path';
+import { relativePath } from '../../core/relative-path';
 import {
   mergeWorkspaceInfo,
   type Project,
   WorkspaceInfo,
-} from '../core/workspace-info';
-import { FileSystem } from '../infra/file-system';
-import { Enricher } from './enricher';
+} from '../../core/workspace-info';
+import { FileSystem } from '../../infra/file-system';
+import { Enricher } from '../../scanner/enricher';
 
 export class AngularCliEnricher implements Enricher {
   private readonly _fileSystem: FileSystem;

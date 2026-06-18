@@ -1,5 +1,5 @@
-import { angularJsonMother } from '../core/angular-json.mother';
-import { relativePath, type RelativePath } from '../core/relative-path';
+import { angularJsonMother } from '../../core/angular-json.mother';
+import { relativePath, type RelativePath } from '../../core/relative-path';
 
 class AngularCliWorkspaceInfraMother {
   constructor(private readonly _state: State = {}) {}

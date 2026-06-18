@@ -1,8 +1,8 @@
-import { relativePath } from '../core/relative-path';
-import { mergeWorkspaceInfo, WorkspaceInfo } from '../core/workspace-info';
-import { CommandRunner } from '../infra/command-runner';
-import { FileSystem } from '../infra/file-system';
-import { Enricher } from './enricher';
+import { relativePath } from '../../core/relative-path';
+import { mergeWorkspaceInfo, WorkspaceInfo } from '../../core/workspace-info';
+import { CommandRunner } from '../../infra/command-runner';
+import { FileSystem } from '../../infra/file-system';
+import { Enricher } from '../../scanner/enricher';
 
 export class NxEnricher implements Enricher {
   private readonly _commandRunner: CommandRunner;

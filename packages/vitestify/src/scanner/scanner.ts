@@ -1,11 +1,11 @@
 import { CommandRunner } from 'src/infra/command-runner';
 import { createWorkspaceInfo, WorkspaceInfo } from '../core/workspace-info';
 import type { FileSystem } from '../infra/file-system';
-import { AngularCliEnricher } from './angular-cli-enricher';
+import { AngularCliEnricher } from '../packs/angular-cli/angular-cli-enricher';
+import { TestEnricher } from '../packs/core/test-enricher';
+import { JestEnricher } from '../packs/jest/jest-enricher';
+import { NxEnricher } from '../packs/nx/nx-enricher';
 import { Enricher } from './enricher';
-import { JestEnricher } from './jest-enricher';
-import { NxEnricher } from './nx-enricher';
-import { TestEnricher } from './test-enricher';
 
 /**
  * @deprecated 🚧 work in progress
