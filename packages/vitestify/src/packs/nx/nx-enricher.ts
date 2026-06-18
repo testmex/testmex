@@ -26,8 +26,8 @@ export class NxEnricher implements Enricher {
 
     const projectNames = await this._runNxJsonCommand('show projects');
     const projects = await Promise.all(
-      projectNames.projects.map((project) =>
-        this._runNxJsonCommand('show project', project.name),
+      projectNames.map((projectName) =>
+        this._runNxJsonCommand('show project', projectName),
       ),
     );
 
@@ -62,12 +62,7 @@ export class NxEnricher implements Enricher {
   private async _runNxJsonCommand(
     command: 'show projects',
     ...args: []
-  ): Promise<{
-    projects: {
-      name: string;
-      root: string;
-    }[];
-  }>;
+  ): Promise<string[]>;
   private async _runNxJsonCommand(
     command: 'show project',
     ...args: [string]
