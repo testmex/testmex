@@ -428,12 +428,6 @@ Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk
 - Act: run the heuristic.
 - Assert: returns a result of type `jest-mock-call` with tag `"jest"`.
 
-### [ ] Heuristic detects config extending the Nx preset (cross-file):
-
-- Arrange: a `Workspace` with a `jest.preset.js` and a per-project `jest.config.ts` that `require`s the preset.
-- Act: run the heuristic.
-- Assert: returns a result referencing both files (proving multi-file rules work).
-
 ## Transforms
 
 ### [ ] Rewrites `jest.mock` to `vi.mock` via the Tree:
