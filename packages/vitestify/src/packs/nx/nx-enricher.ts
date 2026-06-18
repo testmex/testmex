@@ -1,8 +1,11 @@
-import { relativePath } from '../../core/relative-path';
-import { mergeWorkspaceInfo, WorkspaceInfo } from '../../core/workspace-info';
-import { CommandRunner } from '../../infra/command-runner';
-import { Enricher } from '../../core/enricher';
-import type { ReadonlyTree } from '../../core/tree';
+import { relativePath } from '../../core/models/relative-path';
+import {
+  mergeWorkspaceInfo,
+  WorkspaceInfo,
+} from '../../core/models/workspace-info';
+import { CommandRunner } from '../../infra/command-runner.impl';
+import { Enricher } from '../../core/models/enricher';
+import type { ReadonlyTree } from '../../core/domain/tree';
 
 export class NxEnricher implements Enricher {
   private readonly _commandRunner: CommandRunner;

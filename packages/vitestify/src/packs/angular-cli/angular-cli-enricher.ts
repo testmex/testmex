@@ -1,11 +1,11 @@
-import { relativePath } from '../../core/relative-path';
+import { relativePath } from '../../core/models/relative-path';
 import {
   mergeWorkspaceInfo,
   type Project,
   WorkspaceInfo,
-} from '../../core/workspace-info';
-import { Enricher } from '../../core/enricher';
-import type { ReadonlyTree } from '../../core/tree';
+} from '../../core/models/workspace-info';
+import { Enricher } from '../../core/models/enricher';
+import type { ReadonlyTree } from '../../core/domain/tree';
 
 export class AngularCliEnricher implements Enricher {
   private readonly _tree: ReadonlyTree;

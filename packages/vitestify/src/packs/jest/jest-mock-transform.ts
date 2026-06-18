@@ -1,5 +1,5 @@
 import { Lang, parse } from '@ast-grep/napi';
-import type { Transform } from '../../core/transform';
+import type { Transform } from '../../core/models/transform';
 import { findingTypes } from './findings';
 
 export const jestMockTransform: Transform = {

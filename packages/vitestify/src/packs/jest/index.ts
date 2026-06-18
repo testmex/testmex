@@ -1,4 +1,4 @@
-import { definePack } from '../../core/pack';
+import { definePack } from '../../core/models/pack';
 import { JestEnricher } from './jest-enricher';
 import { jestMockHeuristic } from './jest-mock-heuristic';
 import { jestMockTransform } from './jest-mock-transform';

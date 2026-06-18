@@ -1,4 +1,4 @@
-import { findingTag, findingType } from '../../core/finding';
+import { findingTag, findingType } from '../../core/models/finding';
 
 export const findingTypes = {
   jestMockCall: findingType('jest-mock-call'),

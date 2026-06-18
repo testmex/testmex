@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { relativePath } from '../core/relative-path';
-import { CachedFileSystem } from './cached-file-system';
-import { FileSystemFake } from './file-system.fake';
+import { relativePath } from '../core/models/relative-path';
+import { CachedFileSystem } from '../core/domain/cached-file-system';
+import { FileSystemFake } from '../core/ports/file-system.fake';
 
 describe(CachedFileSystem.name, () => {
   it('caches file reads', async () => {

@@ -1,7 +1,7 @@
-import { FileSystemFake } from '../infra/file-system.fake';
+import { FileSystemFake } from '../../core/ports/file-system.fake';
 import { relativePath, type RelativePath } from './relative-path';
-import { Tree } from './tree';
-import { defineWorkspace, type Workspace } from './workspace';
+import { Tree } from '../domain/tree';
+import { defineWorkspace, type Workspace } from '../domain/workspace';
 import {
   projectFileTag,
   type ProjectFile,

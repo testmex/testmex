@@ -1,5 +1,5 @@
-import type { RelativePath } from '../core/relative-path';
-import type { FileSystem } from './file-system';
+import type { RelativePath } from '../models/relative-path';
+import type { FileSystem } from '../ports/file-system';
 
 /**
  * Caches reads from a delegate {@link FileSystem}.

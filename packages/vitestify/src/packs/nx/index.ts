@@ -1,4 +1,4 @@
-import { definePack } from '../../core/pack';
+import { definePack } from '../../core/models/pack';
 import { NxEnricher } from './nx-enricher';
 
 export default definePack({

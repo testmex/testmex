@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { relativePath } from './core/relative-path';
-import { CommandRunnerFake } from './infra/command-runner.fake';
-import { FileSystemFake } from './infra/file-system.fake';
+import { relativePath } from './core/models/relative-path';
+import { CommandRunnerFake } from './core/ports/command-runner.fake';
+import { FileSystemFake } from './core/ports/file-system.fake';
 import { nxWorkspaceMother } from './packs/nx/nx-workspace-infra.mother';
 import { Vitestify } from './vitestify';
 

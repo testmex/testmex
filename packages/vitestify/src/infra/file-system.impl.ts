@@ -1,3 +1,4 @@
+import type { Dirent } from 'node:fs';
 import {
   mkdir,
   readFile,
@@ -7,14 +8,11 @@ import {
 } from 'node:fs/promises';
 import { dirname, join, relative, sep } from 'node:path';
 import { posix } from 'node:path/posix';
-import type { Dirent } from 'node:fs';
-import type { RelativePath } from '../core/relative-path';
-import { relativePath } from '../core/relative-path';
-import type { Public } from '../shared/public';
+import type { RelativePath } from '../core/models/relative-path';
+import { relativePath } from '../core/models/relative-path';
+import type { FileSystem } from '../core/ports/file-system';
 
-export type FileSystem = Public<FileSystemImpl>;
-
-export class FileSystemImpl {
+export class FileSystemImpl implements FileSystem {
   private readonly _workspaceRoot: string;
 
   constructor(args: { workspaceRoot: string }) {

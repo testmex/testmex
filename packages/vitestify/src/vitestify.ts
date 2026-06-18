@@ -1,7 +1,8 @@
-import { FileSystem, FileSystemImpl } from './infra/file-system';
-import type { Finding } from './core/finding';
-import type { Pack } from './core/pack';
-import { CommandRunner } from './infra/command-runner';
+import { FileSystemImpl } from './infra/file-system.impl';
+import type { FileSystem } from './core/ports/file-system';
+import type { Finding } from './core/models/finding';
+import type { Pack } from './core/models/pack';
+import { CommandRunner } from './infra/command-runner.impl';
 import angularCliPack from './packs/angular-cli';
 import corePack from './packs/core';
 import jestPack from './packs/jest';

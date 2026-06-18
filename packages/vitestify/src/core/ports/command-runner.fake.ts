@@ -1,4 +1,6 @@
-export class CommandRunnerFake {
+import { CommandRunner } from './command-runner';
+
+export class CommandRunnerFake implements CommandRunner {
   private readonly _responses = new Map<string, string>();
 
   configure(entries: Record<string, string>): void {

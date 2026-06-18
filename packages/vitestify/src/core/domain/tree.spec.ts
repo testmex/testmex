@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { relativePath } from './relative-path';
-import { FileSystemFake } from '../infra/file-system.fake';
-import { Tree } from './tree';
+import { relativePath } from '../models/relative-path';
+import { FileSystemFake } from '../ports/file-system.fake';
+import { Tree } from '../domain/tree';
 
 describe(Tree.name, () => {
   it('staged write is visible to subsequent reads without committing', async () => {

@@ -1,4 +1,4 @@
-import { definePack } from '../../core/pack';
+import { definePack } from '../../core/models/pack';
 import { AngularCliEnricher } from './angular-cli-enricher';
 
 export default definePack({

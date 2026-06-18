@@ -1,6 +1,6 @@
-import type { Finding } from '../../core/finding';
-import type { Heuristic } from '../../core/heuristic';
-import { projectFileTag } from '../../core/workspace-info';
+import type { Finding } from '../../core/models/finding';
+import type { Heuristic } from '../../core/models/heuristic';
+import { projectFileTag } from '../../core/models/workspace-info';
 import { findingTags, findingTypes } from './findings';
 
 export const jestMockHeuristic: Heuristic = {

@@ -1,5 +1,5 @@
 import type { ReadonlyTree, Tree } from './tree';
-import type { WorkspaceInfo } from './workspace-info';
+import type { WorkspaceInfo } from '../models/workspace-info';
 
 export interface Workspace {
   info: WorkspaceInfo;

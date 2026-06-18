@@ -1,12 +1,12 @@
 import { relative } from 'node:path/posix';
-import type { RelativePath } from '../../core/relative-path';
+import type { RelativePath } from '../../core/models/relative-path';
 import {
   projectFileTag,
   type ProjectFile,
   type WorkspaceInfo,
-} from '../../core/workspace-info';
-import { Enricher } from '../../core/enricher';
-import type { ReadonlyTree } from '../../core/tree';
+} from '../../core/models/workspace-info';
+import { Enricher } from '../../core/models/enricher';
+import type { ReadonlyTree } from '../../core/domain/tree';
 
 export class JestEnricher implements Enricher {
   private readonly _tree: ReadonlyTree;

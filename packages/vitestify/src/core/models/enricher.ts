@@ -1,5 +1,5 @@
-import type { CommandRunner } from '../infra/command-runner';
-import type { ReadonlyTree } from './tree';
+import type { CommandRunner } from '../../infra/command-runner.impl';
+import type { ReadonlyTree } from '../domain/tree';
 import type { WorkspaceInfo } from './workspace-info';
 
 export interface Enricher {

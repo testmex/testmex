@@ -1,4 +1,4 @@
-import type { RelativePath } from '../core/relative-path';
+import type { RelativePath } from '../models/relative-path';
 import type { FileSystem } from './file-system';
 
 export class FileSystemFake implements FileSystem {

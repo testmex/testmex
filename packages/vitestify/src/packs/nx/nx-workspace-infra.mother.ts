@@ -1,4 +1,7 @@
-import { relativePath, type RelativePath } from '../../core/relative-path';
+import {
+  relativePath,
+  type RelativePath,
+} from '../../core/models/relative-path';
 
 class NxWorkspaceInfraMother {
   constructor(private readonly _state: State = { appFiles: {} }) {}

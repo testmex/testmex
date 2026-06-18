@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createTestingWorkspace,
   workspaceMother,
-} from '../../core/workspace.mother';
+} from '../../core/models/workspace.mother';
 import { jestMockHeuristic } from './jest-mock-heuristic';
 import { jestMockTransform } from './jest-mock-transform';
 

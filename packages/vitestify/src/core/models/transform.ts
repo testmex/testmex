@@ -1,5 +1,5 @@
 import type { Finding } from './finding';
-import type { Workspace } from './workspace';
+import type { Workspace } from '../domain/workspace';
 
 export interface Transform {
   apply({

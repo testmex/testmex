@@ -1,9 +1,9 @@
-import { EnricherFactory } from '../core/enricher';
-import { Tree } from '../core/tree';
-import { defineWorkspace, type Workspace } from '../core/workspace';
-import { createWorkspaceInfo } from '../core/workspace-info';
-import type { CommandRunner } from '../infra/command-runner';
-import type { FileSystem } from '../infra/file-system';
+import { EnricherFactory } from '../core/models/enricher';
+import { Tree } from '../core/domain/tree';
+import { defineWorkspace, type Workspace } from '../core/domain/workspace';
+import { createWorkspaceInfo } from '../core/models/workspace-info';
+import type { CommandRunner } from '../infra/command-runner.impl';
+import type { FileSystem } from '../core/ports/file-system';
 
 export class Scanner {
   private readonly _commandRunner: CommandRunner;
