@@ -10,8 +10,11 @@ import { posix } from 'node:path/posix';
 import type { Dirent } from 'node:fs';
 import type { RelativePath } from '../core/relative-path';
 import { relativePath } from '../core/relative-path';
+import type { Public } from '../shared/public';
 
-export class FileSystem {
+export type FileSystem = Public<FileSystemImpl>;
+
+export class FileSystemImpl {
   private readonly _workspaceRoot: string;
 
   constructor(args: { workspaceRoot: string }) {

@@ -1,4 +1,4 @@
-import { FileSystem } from './infra/file-system';
+import { FileSystem, FileSystemImpl } from './infra/file-system';
 import type { Finding } from './core/finding';
 import type { Pack } from './core/pack';
 import { CommandRunner } from './infra/command-runner';
@@ -19,7 +19,7 @@ export class Vitestify {
 
   constructor({
     commandRunner = new CommandRunner(),
-    fileSystem = new FileSystem({ workspaceRoot: process.cwd() }),
+    fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
   }: { commandRunner?: CommandRunner; fileSystem?: FileSystem } = {}) {
     this._scanner = new Scanner({
       commandRunner,

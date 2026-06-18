@@ -1,8 +1,8 @@
-import type { CommandRunner } from '../infra/command-runner';
-import { Enricher, EnricherFactory } from '../core/enricher';
+import { EnricherFactory } from '../core/enricher';
 import { Tree } from '../core/tree';
 import { defineWorkspace, type Workspace } from '../core/workspace';
 import { createWorkspaceInfo } from '../core/workspace-info';
+import type { CommandRunner } from '../infra/command-runner';
 import type { FileSystem } from '../infra/file-system';
 
 export class Scanner {
