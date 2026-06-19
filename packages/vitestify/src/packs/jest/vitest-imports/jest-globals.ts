@@ -1,4 +1,5 @@
 export const jestGlobals = [
+<<<<<<< Updated upstream
   'describe',
   'it',
   'test',
@@ -7,4 +8,14 @@ export const jestGlobals = [
   'afterEach',
   'beforeAll',
   'afterAll',
+=======
+  'afterAll',
+  'afterEach',
+  'beforeAll',
+  'beforeEach',
+  'describe',
+  'expect',
+  'it',
+  'test',
+>>>>>>> Stashed changes
 ] as const;
