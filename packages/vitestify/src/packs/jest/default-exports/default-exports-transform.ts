@@ -3,6 +3,7 @@ import { defineFileTransform } from '../../../core/domain/define-file-transform'
 import { noIntermediateOfKind } from '../../../infra/ast/ast-utils';
 import { SgEditor } from '../../../infra/ast/sg-editor';
 import { findingTypes } from '../identifiers';
+import { ensureVitestSymbol } from '../../../infra/ast/vitest-ast-utils';
 
 export const defaultExportsTransform = defineFileTransform({
   findingType: findingTypes.defaultExportMockFactory,
@@ -48,10 +49,11 @@ function _rewriteDefaultExportMocks(content: string): string {
       }
       _rewriteJestCalleeToVi(call, editor);
     } else if (!_objectExpressionHasDefaultProperty(body)) {
+      const vi = ensureVitestSymbol({ symbol: 'vi', editor });
       /* jest.mock(…, () => (…)) */
       editor.replaceNode(
         call,
-        `vi.${methodTxt}(${moduleTxt}, () => ({ default: ${bodyTxt} }))`,
+        `${vi}.${methodTxt}(${moduleTxt}, () => ({ default: ${bodyTxt} }))`,
       );
     }
   }
@@ -67,7 +69,7 @@ function _rewriteJestCalleeToVi(call: SgNode, editor: SgEditor): void {
 
   const jestId = callee.child(0);
   if (jestId?.text() === 'jest') {
-    editor.replaceNode(jestId, 'vi');
+    editor.replaceNode(jestId, ensureVitestSymbol({ symbol: 'vi', editor }));
   }
 }
 

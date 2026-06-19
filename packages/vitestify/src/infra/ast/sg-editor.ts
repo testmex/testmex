@@ -12,9 +12,24 @@ export class SgEditor {
     return this.root.commitEdits(this._edits);
   }
 
+  insertAtTop(text: string): void {
+    // TODO: improve this
+    const leadingCommentPattern = /^(\s*(?:\/\*[\s\S]*?\*\/|\/\/[^\n]*\n|\s)+)/;
+
+    const match = leadingCommentPattern.exec(this.root.text());
+
+    const position = match?.[1].length ?? 0;
+
+    this._edits.push({
+      startPos: position,
+      endPos: position,
+      insertedText: text,
+    });
+  }
+
   replaceNode(node: SgNode, replacement: string): void {
     this._edits.push(node.replace(replacement));
   }
 }
 
-type SgRootNode = ReturnType<ReturnType<typeof parse>['root']>;
+export type SgRootNode = ReturnType<ReturnType<typeof parse>['root']>;

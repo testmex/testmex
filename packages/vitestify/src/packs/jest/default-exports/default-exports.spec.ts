@@ -5,9 +5,10 @@ import { defaultExportsTransform } from './default-exports-transform';
 
 describe('defaultExports', () => {
   it('wraps concise arrow mock factory returning a value as `{ default: … }`', async () => {
-    expect(
-      await transformTestFile(`jest.mock('./logger', () => jest.fn());`),
-    ).toContain(`vi.mock('./logger', () => ({ default: jest.fn() }));`);
+    expect(await transformTestFile(`jest.mock('./logger', () => jest.fn());`))
+      .toBe(`\
+import { vi } from 'vitest';
+vi.mock('./logger', () => ({ default: jest.fn() }));`);
   });
 
   it('wraps block-body mock factory final return as `{ default: … }`', async () => {

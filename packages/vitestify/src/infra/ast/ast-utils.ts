@@ -1,5 +1,6 @@
 import { SgNode } from '@ast-grep/napi';
 import { Kinds, TypesMap } from '@ast-grep/napi/types/staticTypes';
+import { SgEditor, SgRootNode } from './sg-editor';
 
 /**
  * Returns whether `node` sits under `ancestor` (or is the same node) without any intermediate node
@@ -65,4 +66,53 @@ export function noIntermediateOfKind(
   }
 
   return false;
+}
+
+export function ensureSymbol(args: {
+  symbol: string;
+  module: string;
+  editor: SgEditor;
+}): string {
+  const { symbol, module, editor } = args;
+
+  const moduleImports = _findModuleImports(editor.root, module);
+
+  /* Found it. */
+  if (moduleImports.some(({ symbols }) => symbols.includes(symbol))) {
+    return symbol;
+  }
+
+  /* Module is imported, but the symbol is not. Let's edit the import. */
+  if (moduleImports.length > 0) {
+    editor.replaceNode(
+      moduleImports[0].node,
+      `import { ${moduleImports[0].symbols.join(', ')}, ${symbol} } from '${module}';`,
+    );
+  } else {
+    /* Module is not imported. Let's create it. */
+    editor.insertAtTop(`import { ${symbol} } from '${module}';\n`);
+  }
+
+  return symbol;
+}
+
+function _findModuleImports(
+  root: SgRootNode,
+  module: string,
+): Array<{ node: SgNode; symbols: string[] }> {
+  return root
+    .findAll('import { $$$NAMES } from $SOURCE')
+    .filter(
+      (imp) =>
+        imp
+          .getMatch('SOURCE')
+          ?.find({ rule: { kind: 'string_fragment' } })
+          ?.text() === module,
+    )
+    .map((imp) => ({
+      node: imp,
+      symbols: imp
+        .getMultipleMatches('NAMES')
+        .map((name) => name.text().trim()),
+    }));
 }
