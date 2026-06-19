@@ -11,7 +11,6 @@ describe('suite', () => {});
 `),
     ).toBe(`\
 import { describe } from 'vitest';
-
 describe('suite', () => {});
 `);
   });
@@ -23,7 +22,6 @@ it('case', () => {});
 `),
     ).toBe(`\
 import { it } from 'vitest';
-
 it('case', () => {});
 `);
   });
@@ -35,7 +33,6 @@ test('case', () => {});
 `),
     ).toBe(`\
 import { test } from 'vitest';
-
 test('case', () => {});
 `);
   });
@@ -47,7 +44,6 @@ expect(true).toBe(true);
 `),
     ).toBe(`\
 import { expect } from 'vitest';
-
 expect(true).toBe(true);
 `);
   });
@@ -59,7 +55,6 @@ beforeAll(() => {});
 `),
     ).toBe(`\
 import { beforeAll } from 'vitest';
-
 beforeAll(() => {});
 `);
   });
@@ -71,7 +66,6 @@ afterAll(() => {});
 `),
     ).toBe(`\
 import { afterAll } from 'vitest';
-
 afterAll(() => {});
 `);
   });
@@ -83,7 +77,6 @@ beforeEach(() => {});
 `),
     ).toBe(`\
 import { beforeEach } from 'vitest';
-
 beforeEach(() => {});
 `);
   });
@@ -95,7 +88,6 @@ afterEach(() => {});
 `),
     ).toBe(`\
 import { afterEach } from 'vitest';
-
 afterEach(() => {});
 `);
   });
@@ -107,7 +99,6 @@ it.todo('implement later');
 `),
     ).toBe(`\
 import { it } from 'vitest';
-
 it.todo('implement later');
 `);
   });
@@ -119,7 +110,6 @@ test.todo('also later');
 `),
     ).toBe(`\
 import { test } from 'vitest';
-
 test.todo('also later');
 `);
   });
@@ -131,7 +121,6 @@ it.concurrent('runs in parallel', async () => { /* … */ });
 `),
     ).toBe(`\
 import { it } from 'vitest';
-
 it.concurrent('runs in parallel', async () => { /* … */ });
 `);
   });
@@ -143,7 +132,6 @@ test.concurrent('also parallel', async () => { /* … */ });
 `),
     ).toBe(`\
 import { test } from 'vitest';
-
 test.concurrent('also parallel', async () => { /* … */ });
 `);
   });
@@ -155,7 +143,6 @@ describe.skip('legacy suite', () => { /* … */ });
 `),
     ).toBe(`\
 import { describe } from 'vitest';
-
 describe.skip('legacy suite', () => { /* … */ });
 `);
   });
@@ -167,7 +154,6 @@ describe.only('focused suite', () => { /* … */ });
 `),
     ).toBe(`\
 import { describe } from 'vitest';
-
 describe.only('focused suite', () => { /* … */ });
 `);
   });
@@ -176,14 +162,11 @@ describe.only('focused suite', () => { /* … */ });
     expect(
       await transformTestFile(`\
 const cases = [1, 2];
-
 describe.each(cases)('case %s', (input) => { /* … */ });
 `),
     ).toBe(`\
 import { describe } from 'vitest';
-
 const cases = [1, 2];
-
 describe.each(cases)('case %s', (input) => { /* … */ });
 `);
   });

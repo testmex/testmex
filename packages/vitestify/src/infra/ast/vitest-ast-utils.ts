@@ -4,7 +4,16 @@ export function ensureVitestSymbol({
   symbol,
   editor,
 }: {
-  symbol: 'vi';
+  symbol:
+    | 'afterAll'
+    | 'afterEach'
+    | 'beforeAll'
+    | 'beforeEach'
+    | 'describe'
+    | 'expect'
+    | 'it'
+    | 'test'
+    | 'vi';
   editor: SgEditor;
 }) {
   return editor.ensureSymbol({ symbol, module: 'vitest' });
