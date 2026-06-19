@@ -1,9 +1,8 @@
 import { definePack } from '../../core/models/pack';
-import { jestMockDefaultExportsTransform } from './jest-mock-default-exports/jest-mock-default-exports-transform';
-import { jestSetMockTransform } from './jest-set-mock/jest-set-mock-transform';
 import { JestEnricher } from './jest-enricher';
 import { jestGlobalsImportTransform } from './jest-globals-import/jest-globals-import-transform';
-import { jestMockTransform } from './jest-mock/jest-mock-transform';
+import { jestMockDefaultExportsTransform } from './jest-mock-default-exports/jest-mock-default-exports-transform';
+import { jestSetMockTransform } from './jest-set-mock/jest-set-mock-transform';
 import { jestSetTimeoutTransform } from './jest-set-timeout/jest-set-timeout-transform';
 import { jestSymbolHeuristic } from './jest-symbol/jest-symbol-heuristic';
 import { jestTypesTransform } from './jest-types/jest-types-transform';
@@ -30,7 +29,6 @@ export default definePack({
     replaceApiTransform,
     jestSetMockTransform,
     jestMockDefaultExportsTransform,
-    jestMockTransform,
     jestViTransform,
     jestSetTimeoutTransform,
     jestTypesTransform,

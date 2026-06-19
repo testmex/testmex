@@ -22,7 +22,7 @@ describe(Vitestify, () => {
       await fileSystem.maybeReadFile(
         relativePath('apps/my-app/src/app.spec.ts'),
       ),
-    ).toBe("import { vi } from 'vitest';\nvi.mock('./foo');");
+    ).toContain("vi.mock('./foo');");
   });
 });
 

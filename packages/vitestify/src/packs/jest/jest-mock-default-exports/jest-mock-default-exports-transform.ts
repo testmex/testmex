@@ -12,40 +12,49 @@ export const jestMockDefaultExportsTransform = defineFileTransform({
 
 function _rewriteDefaultExportMocks(content: string): string {
   const editor = new SgEditor(content);
-  const mockCalls = editor.root.findAll('jest.mock($MODULE, () => $BODY)');
+  const mockCalls = [
+    ...editor.root.findAll('jest.mock($MODULE)'),
+    ...editor.root.findAll('jest.mock($MODULE, () => $BODY)'),
+  ];
 
   for (const call of mockCalls) {
     const body = call.getMatch('BODY');
     const bodyTxt = body?.text();
     const moduleTxt = call.getMatch('MODULE')?.text();
-    if (body == null || bodyTxt == null || moduleTxt == null) {
+    if (moduleTxt == null) {
       continue;
     }
 
-    /* jest.mock(…, () => { … }) */
-    if (body.kind() === 'statement_block') {
-      for (const returnStmt of body.findAll('return $RETURN')) {
-        const returnTxt = returnStmt.getMatch('RETURN')?.text();
-        if (
-          returnTxt != null &&
-          noIntermediateOfKind(returnStmt, body, [
-            'arrow_function',
-            'function_expression',
-            'function_declaration',
-          ]) &&
-          !_objectExpressionHasDefaultProperty(returnStmt)
-        ) {
-          editor.replaceNode(returnStmt, `return { default: ${returnTxt} };`);
-        }
-      }
-      _rewriteJestCalleeToVi(call, editor);
-    } else if (!_objectExpressionHasDefaultProperty(body)) {
+    /* jest.mock(…) */
+    if (body == null || bodyTxt == null) {
       const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
-      /* jest.mock(…, () => (…)) */
-      editor.replaceNode(
-        call,
-        `${vi}.mock(${moduleTxt}, () => ({ default: ${bodyTxt} }))`,
-      );
+      editor.replaceNode(call, `${vi}.mock(${moduleTxt})`);
+    } else {
+      /* jest.mock(…, () => { … }) */
+      if (body.kind() === 'statement_block') {
+        for (const returnStmt of body.findAll('return $RETURN')) {
+          const returnTxt = returnStmt.getMatch('RETURN')?.text();
+          if (
+            returnTxt != null &&
+            noIntermediateOfKind(returnStmt, body, [
+              'arrow_function',
+              'function_expression',
+              'function_declaration',
+            ]) &&
+            !_objectExpressionHasDefaultProperty(returnStmt)
+          ) {
+            editor.replaceNode(returnStmt, `return { default: ${returnTxt} };`);
+          }
+        }
+        _rewriteJestCalleeToVi(call, editor);
+      } else if (!_objectExpressionHasDefaultProperty(body)) {
+        const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
+        /* jest.mock(…, () => (…)) */
+        editor.replaceNode(
+          call,
+          `${vi}.mock(${moduleTxt}, () => ({ default: ${bodyTxt} }))`,
+        );
+      }
     }
   }
 
