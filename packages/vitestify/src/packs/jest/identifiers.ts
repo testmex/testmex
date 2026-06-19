@@ -1,14 +1,9 @@
-import { findingTag, findingType } from '../../core/models/finding';
+import { findingType } from '../../core/models/finding';
 import { projectFileTag } from '../../core/models/workspace-info';
 
 export const findingTypes = {
   jestSymbol: findingType('jest-symbol'),
   vitestImportsNeeded: findingType('vitest-imports-needed'),
-} as const;
-
-export const findingTags = {
-  jest: findingTag('jest'),
-  vitestImports: findingTag('vitest-imports'),
 } as const;
 
 export const projectFileTags = {

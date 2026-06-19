@@ -2,7 +2,7 @@ import type { Finding } from '../../../core/models/finding';
 import type { Heuristic } from '../../../core/models/heuristic';
 import type { Project, ProjectFile } from '../../../core/models/workspace-info';
 import { projectFileTags as coreProjectFileTags } from '../../core/identifiers';
-import { findingTags, findingTypes } from '../identifiers';
+import { findingTypes } from '../identifiers';
 
 export const vitestGlobals = [
   'describe',
@@ -68,8 +68,6 @@ function _collectVitestImportsFindings(
 
     findings.push({
       type: findingTypes.vitestImportsNeeded,
-      tags: [findingTags.vitestImports],
-      description: `vitest imports needed in ${file.path}`,
       project,
       file,
     });

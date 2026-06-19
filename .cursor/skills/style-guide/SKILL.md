@@ -37,7 +37,7 @@ export function relativePath(path: string): RelativePath {
 declare const __relativePathBrand: unique symbol;
 ```
 
-Apply the same pattern to `FindingTag`, `FindingType`, and similar domain strings. Use `findingTag()` and `findingType()` at call sites.
+Apply the same pattern to `FindingType` and similar domain strings. Use `findingType()` at call sites.
 
 ## Test names
 

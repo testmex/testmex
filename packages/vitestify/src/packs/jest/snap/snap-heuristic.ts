@@ -1,7 +1,7 @@
 import type { Finding } from '../../../core/models/finding';
 import type { Heuristic } from '../../../core/models/heuristic';
 import type { Project, ProjectFile } from '../../../core/models/workspace-info';
-import { findingTags, findingTypes } from '../identifiers';
+import { findingTypes } from '../identifiers';
 
 interface SnapFileEntry {
   file: ProjectFile;
@@ -44,8 +44,6 @@ function _collectSnapFindings(snapFiles: SnapFileEntry[]): Finding[] {
     )
     .map(({ file, project }) => ({
       type: findingTypes.jestSymbol,
-      tags: [findingTags.jest],
-      description: `Jest snapshot format in ${file.path}`,
       project,
       file,
     }));

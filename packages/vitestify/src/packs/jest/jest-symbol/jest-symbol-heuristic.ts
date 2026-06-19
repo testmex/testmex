@@ -1,7 +1,7 @@
 import type { Finding } from '../../../core/models/finding';
 import type { Heuristic } from '../../../core/models/heuristic';
 import { projectFileTags as coreProjectFileTags } from '../../core/identifiers';
-import { findingTags, findingTypes } from '../identifiers';
+import { findingTypes } from '../identifiers';
 
 export const jestSymbolHeuristic: Heuristic = {
   inspect: async ({ info, tree }): Promise<Finding[]> => {
@@ -22,8 +22,6 @@ export const jestSymbolHeuristic: Heuristic = {
 
       findings.push({
         type: findingTypes.jestSymbol,
-        tags: [findingTags.jest],
-        description: `jest symbol usage`,
         project,
         file,
       });

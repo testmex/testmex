@@ -104,10 +104,6 @@ sequenceDiagram
   - JS/TS configs are edited via AST.
   - The `package.json` field is edited via structured JSON edit.
   - Migrating from Karma/Jasmine configs remains out of scope.
-- **Finding tags**:
-  - Each `Finding` carries a `tags` property used for grouping and reporting.
-  - The type allows known tags (e.g. `"jest"`, `"testing-library"`, `"needs-agent"`) for autocomplete while staying open to new tags.
-  - Adding a heuristic never requires editing a central union.
 - **Test runner wiring**:
   - Changing config files is not enough — the runner has to invoke Vitest.
   - A heuristic detects how tests are currently run.
@@ -211,15 +207,11 @@ interface Heuristic {
 
 interface Finding {
   type: FindingType;
-  tags: FindingTag[];
-  description: string;
   project: Project; // the heuristic supplies the project context
   file?: ProjectFile; // when the finding relates to a specific file
 }
 
 type FindingType = string; // e.g. 'jest-mock-call', 'nx-jest-executor' — defined per heuristic
-
-type FindingTag = 'jest' | 'testing-library' | 'needs-agent' | (string & {});
 ```
 
 Each heuristic receives the full `Workspace`.
@@ -229,8 +221,6 @@ Each heuristic receives the full `Workspace`.
 - It can inspect cross-file relationships — e.g. a per-project `jest.config.ts` that extends the Nx `jest.preset.js`, or imports that must be reconciled with `tsconfig` paths.
 - Heuristics return `Finding`s stamped with the relevant `project` (and optional `file`).
 - `FindingType` identifies the specific pattern detected.
-- `FindingTag` groups related findings for filtering and reporting.
-- Tags are open so new heuristics never edit a central union.
 
 ### Transforms & Changes
 

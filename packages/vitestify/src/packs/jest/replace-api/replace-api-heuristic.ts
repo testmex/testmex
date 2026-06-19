@@ -1,7 +1,7 @@
 import type { Finding } from '../../../core/models/finding';
 import type { Heuristic } from '../../../core/models/heuristic';
 import { projectFileTags as coreProjectFileTags } from '../../core/identifiers';
-import { findingTags, findingTypes } from '../identifiers';
+import { findingTypes } from '../identifiers';
 
 const replaceApiPattern =
   /\bfit\s*(?:\(|\.)|(?:it|test)\.(?:only|skip)\.failing\b|(?:it|test)\.failing\b|\bxit\s*\(|\bxdescribe\s*\(|\bxtest\s*\(|\bfdescribe\s*\(/;
@@ -28,8 +28,6 @@ export const replaceApiHeuristic: Heuristic = {
       )
       .map(({ file, project }) => ({
         type: findingTypes.jestSymbol,
-        tags: [findingTags.jest],
-        description: `legacy Jest test API in ${file.path}`,
         project,
         file,
       }));
