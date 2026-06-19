@@ -1,6 +1,6 @@
 import { SgNode } from '@ast-grep/napi';
-import { Kinds, TypesMap } from '@ast-grep/napi/types/staticTypes';
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
+import { noIntermediateOfKind } from '../../../infra/ast/ast-utils';
 import { SgEditor } from '../../../infra/ast/sg-editor';
 import { findingTypes } from '../identifiers';
 
@@ -36,7 +36,7 @@ function _rewriteDefaultExportMocks(content: string): string {
         const returnTxt = returnStmt.getMatch('RETURN')?.text();
         if (
           returnTxt != null &&
-          _noIntermediateOfKind(returnStmt, body, [
+          noIntermediateOfKind(returnStmt, body, [
             'arrow_function',
             'function_expression',
             'function_declaration',
@@ -58,41 +58,6 @@ function _rewriteDefaultExportMocks(content: string): string {
   return editor.commit();
 }
 
-/**
- * Checks if a return statement is in the scope of a block,
- * or in an a nested function.
- */
-function _noIntermediateOfKind(
-  node: SgNode,
-  parent: SgNode,
-  kinds: Kinds<TypesMap>[],
-): boolean {
-  let current: SgNode | null = node;
-
-  while (current != null) {
-    if (_isSameNode(current, parent)) {
-      return true;
-    }
-
-    const kind = current.kind();
-
-    if (kinds.includes(kind)) {
-      return false;
-    }
-
-    current = current.parent();
-  }
-
-  return false;
-}
-
-function _isSameNode(node1: SgNode, node2?: SgNode | null): boolean {
-  return (
-    node1.range().start.index === node2?.range().start.index &&
-    node1.range().end.index === node2?.range().end.index
-  );
-}
-
 function _objectExpressionHasDefaultProperty(node: SgNode): boolean {
   if (
     node.kind() !== 'return_statement' &&
@@ -109,6 +74,6 @@ function _objectExpressionHasDefaultProperty(node: SgNode): boolean {
     ...node.findAll('{default: $DEFAULT}'),
     ...node.findAll('{default: $DEFAULT, $$$REST}'),
   ].some((property) => {
-    return _noIntermediateOfKind(property, objectExpression, ['object']);
+    return noIntermediateOfKind(property, objectExpression, ['object']);
   });
 }
