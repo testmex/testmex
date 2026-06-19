@@ -21,7 +21,8 @@ function _rewriteDefaultExportMocks(content: string): string {
     const body = jestMockCall.getMatch('BODY');
 
     /**
-     * Skip: jest.mock(…, () => ({ default: … }))
+     * Skip when `default` property is already present:
+     * `jest.mock(…, () => ({ default: … }))`
      */
     if (
       body?.kind() === 'parenthesized_expression' &&
@@ -31,11 +32,15 @@ function _rewriteDefaultExportMocks(content: string): string {
     }
 
     if (body != null) {
-      /* jest.mock(…, () => { … }) */
       if (body.kind() === 'statement_block') {
+        /**
+         * `() => { return 42; }` -> `() => { ret`urn { default: 42; } }`
+         */
         _rewriteReturnStatements({ body, editor });
       } else {
-        /* jest.mock(…, () => (…)) */
+        /**
+         * `() => (42)` -> `() => ({ default: 42 })`
+         */
         _rewriteInlineArrow({ body, editor });
       }
     }
