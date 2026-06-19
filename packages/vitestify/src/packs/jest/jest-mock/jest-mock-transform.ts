@@ -19,24 +19,28 @@ function _rewriteDefaultExportMocks(content: string): string {
 
   for (const jestMockCall of mockCalls) {
     const body = jestMockCall.getMatch('BODY');
-    const moduleTxt = jestMockCall.getMatch('MODULE')?.text();
-    if (moduleTxt == null) {
+
+    /**
+     * Skip: jest.mock(…, () => ({ default: … }))
+     */
+    if (
+      body?.kind() === 'parenthesized_expression' &&
+      _objectExpressionHasDefaultProperty(body)
+    ) {
       continue;
     }
 
-    /* jest.mock(…) without body. */
-    if (body == null) {
-      const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
-      editor.replaceNode(jestMockCall, `${vi}.mock(${moduleTxt})`);
-    } else {
+    if (body != null) {
       /* jest.mock(…, () => { … }) */
       if (body.kind() === 'statement_block') {
-        _rewriteReturnStatements({ body, jestMockCall, editor });
-      } else if (!_objectExpressionHasDefaultProperty(body)) {
+        _rewriteReturnStatements({ body, editor });
+      } else {
         /* jest.mock(…, () => (…)) */
-        _rewriteInlineArrow({ jestMockCall, editor, body });
+        _rewriteInlineArrow({ body, editor });
       }
     }
+
+    _rewriteJestCalleeToVi({ jestMockCall, editor });
   }
 
   return editor.commit();
@@ -44,11 +48,9 @@ function _rewriteDefaultExportMocks(content: string): string {
 
 function _rewriteReturnStatements({
   body,
-  jestMockCall,
   editor,
 }: {
   body: SgNode;
-  jestMockCall: SgNode;
   editor: SgEditor;
 }): void {
   for (const returnStmt of body.findAll('return $RETURN')) {
@@ -65,20 +67,16 @@ function _rewriteReturnStatements({
       editor.replaceNode(returnStmt, `return { default: ${returnTxt} };`);
     }
   }
-  _rewriteJestCalleeToVi({ jestMockCall, editor });
 }
 
 function _rewriteInlineArrow({
-  jestMockCall,
-  editor,
   body,
+  editor,
 }: {
-  jestMockCall: SgNode;
-  editor: SgEditor;
   body: SgNode;
+  editor: SgEditor;
 }): void {
   editor.replaceNode(body, `({ default: ${body.text()} })`);
-  _rewriteJestCalleeToVi({ jestMockCall, editor });
 }
 
 function _rewriteJestCalleeToVi({
