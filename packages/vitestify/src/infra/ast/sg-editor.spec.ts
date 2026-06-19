@@ -9,7 +9,7 @@ describe(SgEditor, () => {
 // blablabla
 const foo = 1;`);
 
-      editor.insertAtTop("import { vi } from 'vitest';\n");
+      editor._insertAtTop("import { vi } from 'vitest';\n");
 
       expect(editor.commit()).toBe(
         `\
@@ -65,6 +65,49 @@ describe("suite", () => {});`,
       editor.replaceNode(editor.root.find('42')!, '43');
 
       expect(editor.commit()).toBe('const bar = 43;');
+    });
+  });
+
+  describe('ensureSymbol', () => {
+    it('ensures that a symbol is imported', () => {
+      const editor = new SgEditor('foo();');
+
+      editor.ensureSymbol({ symbol: 'foo', module: './foo' });
+
+      expect(editor.commit()).toBe(
+        `\
+import { foo } from './foo';
+foo();`,
+      );
+    });
+
+    it('adds the import once', () => {
+      const editor = new SgEditor('foo();');
+
+      editor.ensureSymbol({ symbol: 'foo', module: './foo' });
+      editor.ensureSymbol({ symbol: 'foo', module: './foo' });
+
+      expect(editor.commit()).toBe(
+        `\
+import { foo } from './foo';
+foo();`,
+      );
+    });
+
+    it('adds the symbol to the import if it is already imported', () => {
+      const editor = new SgEditor(`\
+import { something } from './foo';
+foo();
+`);
+
+      editor.ensureSymbol({ symbol: 'foo', module: './foo' });
+
+      expect(editor.commit()).toBe(
+        `\
+import { something, foo } from './foo';
+foo();
+`,
+      );
     });
   });
 });
