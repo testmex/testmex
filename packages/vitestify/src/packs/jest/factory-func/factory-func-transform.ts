@@ -1,6 +1,7 @@
-import { Lang, parse } from '@ast-grep/napi';
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
+import { SgEditor } from '../../../infra/ast/sg-editor';
 import { findingTypes } from '../identifiers';
+import { ensureVitestSymbol } from '../../../infra/ast/vitest-ast-utils';
 
 export const factoryFuncTransform = defineFileTransform({
   findingType: findingTypes.factoryFuncSetMock,
@@ -8,31 +9,22 @@ export const factoryFuncTransform = defineFileTransform({
 });
 
 function _wrapSetMockObjectLiteral(content: string): string {
-  const root = parse(Lang.TypeScript, content).root();
-  const nodes = root.findAll('jest.setMock($$$ARGS)');
+  const editor = new SgEditor(content);
+  const nodes = editor.root.findAll('jest.setMock($MODULE, $VALUE)');
 
-  if (nodes.length === 0) {
-    return content;
-  }
-
-  const edits = nodes.flatMap((node) => {
-    const args = node
-      .getMultipleMatches('ARGS')
-      .filter((arg) => arg.kind() !== ',');
-
-    if (args.length < 2 || args[1].kind() !== 'object') {
-      return [];
+  for (const node of nodes) {
+    const module = node.getMatch('MODULE');
+    const value = node.getMatch('VALUE');
+    if (module == null || value == null) {
+      continue;
     }
 
-    const moduleArg = args[0].text();
-    const objectLiteral = args[1].text();
-
-    return [node.replace(`jest.setMock(${moduleArg}, () => (${objectLiteral}))`)];
-  });
-
-  if (edits.length === 0) {
-    return content;
+    const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
+    editor.replaceNode(
+      node,
+      `${vi}.mock(${module.text()}, () => (${value.text()}))`,
+    );
   }
 
-  return root.commitEdits(edits);
+  return editor.commit();
 }

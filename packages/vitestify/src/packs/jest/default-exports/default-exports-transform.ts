@@ -49,7 +49,7 @@ function _rewriteDefaultExportMocks(content: string): string {
       }
       _rewriteJestCalleeToVi(call, editor);
     } else if (!_objectExpressionHasDefaultProperty(body)) {
-      const vi = ensureVitestSymbol({ symbol: 'vi', editor });
+      const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
       /* jest.mock(…, () => (…)) */
       editor.replaceNode(
         call,
@@ -69,7 +69,7 @@ function _rewriteJestCalleeToVi(call: SgNode, editor: SgEditor): void {
 
   const jestId = callee.child(0);
   if (jestId?.text() === 'jest') {
-    editor.replaceNode(jestId, ensureVitestSymbol({ symbol: 'vi', editor }));
+    editor.replaceNode(jestId, ensureVitestSymbol({ editor, symbol: 'vi' }));
   }
 }
 

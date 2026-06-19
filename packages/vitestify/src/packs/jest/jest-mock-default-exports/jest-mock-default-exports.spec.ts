@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol-heuristic';
 import { transformTestFile as runTransformTestFile } from '../testing';
-import { defaultExportsTransform } from './default-exports-transform';
+import { jestMockDefaultExportsTransform } from './jest-mock-default-exports-transform';
 
-describe('defaultExports', () => {
+describe('jestMockDefaultExports', () => {
   it('wraps concise arrow mock factory returning a value as `{ default: … }`', async () => {
     expect(await transformTestFile(`jest.mock('./logger', () => jest.fn());`))
       .toBe(`\
@@ -77,6 +77,6 @@ vi.mock('./mod', () => {
 function transformTestFile(content: string) {
   return runTransformTestFile(content, {
     heuristics: [jestSymbolHeuristic],
-    transforms: [defaultExportsTransform],
+    transforms: [jestMockDefaultExportsTransform],
   });
 }

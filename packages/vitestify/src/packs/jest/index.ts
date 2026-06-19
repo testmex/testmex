@@ -1,5 +1,5 @@
 import { definePack } from '../../core/models/pack';
-import { defaultExportsTransform } from './default-exports/default-exports-transform';
+import { jestMockDefaultExportsTransform } from './jest-mock-default-exports/jest-mock-default-exports-transform';
 import { factoryFuncTransform } from './factory-func/factory-func-transform';
 import { JestEnricher } from './jest-enricher';
 import { jestGlobalsImportTransform } from './jest-globals-import/jest-globals-import-transform';
@@ -29,7 +29,7 @@ export default definePack({
     jestGlobalsImportTransform,
     replaceApiTransform,
     factoryFuncTransform,
-    defaultExportsTransform,
+    jestMockDefaultExportsTransform,
     jestMockTransform,
     jestViTransform,
     jestSetTimeoutTransform,
