@@ -110,4 +110,95 @@ foo();
       );
     });
   });
+
+  describe('ensureTypeSymbol', () => {
+    it('ensures that a type is imported', () => {
+      const editor = new SgEditor('const mock: Mock = vi.fn();');
+
+      editor.ensureTypeSymbol({ symbol: 'Mock', module: 'vitest' });
+
+      expect(editor.commit()).toBe(
+        `\
+import type { Mock } from 'vitest';
+const mock: Mock = vi.fn();`,
+      );
+    });
+
+    it('adds the import once', () => {
+      const editor = new SgEditor('const mock: Mock = vi.fn();');
+
+      editor.ensureTypeSymbol({ symbol: 'Mock', module: 'vitest' });
+      editor.ensureTypeSymbol({ symbol: 'Mock', module: 'vitest' });
+
+      expect(editor.commit()).toBe(
+        `\
+import type { Mock } from 'vitest';
+const mock: Mock = vi.fn();`,
+      );
+    });
+
+    it('adds the type to the import if it is already imported', () => {
+      const editor = new SgEditor(`\
+import type { MockedFunction } from 'vitest';
+const mock: Mock = vi.fn();
+`);
+
+      editor.ensureTypeSymbol({ symbol: 'Mock', module: 'vitest' });
+
+      expect(editor.commit()).toBe(
+        `\
+import type { MockedFunction, Mock } from 'vitest';
+const mock: Mock = vi.fn();
+`,
+      );
+    });
+
+    it('merges a type import into an existing value import', () => {
+      const editor = new SgEditor(`\
+import { vi } from 'vitest';
+const mock: Mock = vi.fn();
+`);
+
+      editor.ensureTypeSymbol({ symbol: 'Mock', module: 'vitest' });
+
+      expect(editor.commit()).toBe(
+        `\
+import { vi, type Mock } from 'vitest';
+const mock: Mock = vi.fn();
+`,
+      );
+    });
+
+    it('merges value and type imports from separate statements', () => {
+      const editor = new SgEditor(`\
+import { vi } from 'vitest';
+import type { Mock } from 'vitest';
+const mock: Mock = vi.fn();
+`);
+
+      editor.ensureTypeSymbol({ symbol: 'MockedFunction', module: 'vitest' });
+
+      expect(editor.commit()).toBe(
+        `\
+import { vi, type Mock, type MockedFunction } from 'vitest';
+
+const mock: Mock = vi.fn();
+`,
+      );
+    });
+
+    it('merges value and type imports when both are ensured', () => {
+      const editor = new SgEditor('const mock: Mock = vi.fn();');
+
+      editor.ensureSymbol({ symbol: 'vi', module: 'vitest' });
+      editor.ensureTypeSymbol({ symbol: 'Mock', module: 'vitest' });
+
+      expect(editor.commit()).toBe(
+        `\
+import { vi, type Mock } from 'vitest';
+const mock: Mock = vi.fn();`,
+      );
+    });
+  });
+
 });
