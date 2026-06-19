@@ -1,6 +1,7 @@
-import { Edit, Lang, parse, SgNode } from '@ast-grep/napi';
+import { SgNode } from '@ast-grep/napi';
 import { Kinds, TypesMap } from '@ast-grep/napi/types/staticTypes';
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
+import { SgEditor } from '../../../infra/ast/sg-editor';
 import { findingTypes } from '../identifiers';
 
 export const defaultExportsTransform = defineFileTransform({
@@ -9,10 +10,10 @@ export const defaultExportsTransform = defineFileTransform({
 });
 
 function _rewriteDefaultExportMocks(content: string): string {
-  const root = parse(Lang.TypeScript, content).root();
-  const mockCalls = root.findAll('jest.$MOCK_METHOD($MODULE, () => $BODY)');
-
-  const edits: Edit[] = [];
+  const editor = new SgEditor(content);
+  const mockCalls = editor.root.findAll(
+    'jest.$MOCK_METHOD($MODULE, () => $BODY)',
+  );
 
   for (const call of mockCalls) {
     const body = call.getMatch('BODY');
@@ -42,24 +43,19 @@ function _rewriteDefaultExportMocks(content: string): string {
           ]) &&
           !_objectExpressionHasDefaultProperty(returnStmt)
         ) {
-          edits.push({
-            startPos: returnStmt.range().start.index,
-            endPos: returnStmt.range().end.index,
-            insertedText: `return { default: ${returnTxt} };`,
-          });
+          editor.replaceNode(returnStmt, `return { default: ${returnTxt} };`);
         }
       }
     } else if (!_objectExpressionHasDefaultProperty(body)) {
       /* jest.mock(…, () => (…)) */
-      edits.push({
-        startPos: call.range().start.index,
-        endPos: call.range().end.index,
-        insertedText: `jest.${methodTxt}(${moduleTxt}, () => ({ default: ${bodyTxt} }))`,
-      });
+      editor.replaceNode(
+        call,
+        `jest.${methodTxt}(${moduleTxt}, () => ({ default: ${bodyTxt} }))`,
+      );
     }
   }
 
-  return root.commitEdits(edits);
+  return editor.commit();
 }
 
 /**
@@ -89,6 +85,7 @@ function _noIntermediateOfKind(
 
   return false;
 }
+
 function _isSameNode(node1: SgNode, node2?: SgNode | null): boolean {
   return (
     node1.range().start.index === node2?.range().start.index &&
