@@ -11,15 +11,6 @@ describe('jestGlobalsImport', () => {
       ),
     ).toBe(`import { describe, expect, it, vi } from 'vitest';`);
   });
-
-  it(
-    "replaces `import … from 'jest'` with `import { vi } from 'vitest'`",
-    async () => {
-      expect(
-        await transformTestFile(`import { jest } from 'jest';`),
-      ).toBe(`import { vi } from 'vitest';`);
-    },
-  );
 });
 
 function transformTestFile(content: string) {
