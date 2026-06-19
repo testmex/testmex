@@ -57,11 +57,14 @@ export class SgEditor {
     const fileSymbols = new Set(existingImports.flatMap((i) => i.symbols));
     const fileTypes = new Set(existingImports.flatMap((i) => i.types));
 
-    if (!(kind === 'value' ? fileSymbols.has(symbol) : fileTypes.has(symbol))) {
-      this._syncModuleImport(module);
+    if (kind === 'value' ? fileSymbols.has(symbol) : fileTypes.has(symbol)) {
+      ensured.add(symbol);
+      return symbol;
     }
-    
+
     ensured.add(symbol);
+    this._syncModuleImport(module);
+
     return symbol;
   }
 
