@@ -56,12 +56,10 @@ export class SgEditor {
   }
 
   private _insertAtTop(text: string): void {
-    // TODO: improve this
-    const leadingCommentPattern = /^(\s*(?:\/\*[\s\S]*?\*\/|\/\/[^\n]*\n|\s)+)/;
-
-    const match = leadingCommentPattern.exec(this.root.text());
-
-    const position = match?.[1].length ?? 0;
+    const firstNonCommentStatement = this.root
+      .children()
+      .find((child) => child.kind() !== 'comment');
+    const position = firstNonCommentStatement?.range().start.index ?? 0;
 
     this._edits.push({
       startPos: position,
