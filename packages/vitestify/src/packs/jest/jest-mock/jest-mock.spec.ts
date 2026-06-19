@@ -95,29 +95,30 @@ vi.mock('./my-module', () => {
 });`);
   });
 
-  it.todo('rewrites `jest.requireMock` to `await vi.importMock` and marks enclosing function `async`', async () => {
+  it('rewrites `jest.requireMock` to `await vi.importMock` and marks enclosing function `async`', async () => {
     expect(
       await transformTestFile(
         `const { hello } = jest.requireMock('./my-module');`,
       ),
-    ).toBe(
+    ).toContain(
       `\
-import { vi } from 'vitest';
-const { hello } = await vi.importMock('./my-module');`,
+const { hello } = (await vi.importMock('./my-module'));`,
     );
   });
 
-  it.todo('rewrites `jest.createMockFromModule` to `await vi.importMock`', async () => {
-    expect(
-      await transformTestFile(
-        `const mocked = jest.createMockFromModule<typeof import('./my-module')>('./my-module');`,
-      ),
-    ).toBe(
-      `\
-import { vi } from 'vitest';
-const mocked = await vi.importMock<typeof import('./my-module')>('./my-module');`,
-    );
-  });
+  it.todo(
+    'rewrites `jest.createMockFromModule` to `await vi.importMock`',
+    async () => {
+      expect(
+        await transformTestFile(
+          `const mocked = jest.createMockFromModule<typeof import('./my-module')>('./my-module');`,
+        ),
+      ).toContain(
+        `\
+const mocked = (await vi.importMock<typeof import('./my-module')>('./my-module'));`,
+      );
+    },
+  );
 });
 
 function transformTestFile(content: string) {

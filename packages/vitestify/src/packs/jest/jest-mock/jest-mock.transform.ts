@@ -14,8 +14,21 @@ export const jestMockTransform = defineFileTransform({
   apply: _rewriteDefaultExportMocks,
 });
 
+const jestToVitestAsyncApi = {
+  createMockFromModule: 'importMock',
+  requireMock: 'importMock',
+  requireActual: 'importActual',
+} as const;
+
 function _rewriteDefaultExportMocks(content: string): string {
   const editor = new SgEditor(content);
+
+  for (const [jestApi, vitestAsyncApi] of Object.entries(
+    jestToVitestAsyncApi,
+  )) {
+    _replaceJestWithVitestAsyncApi({ editor, jestApi, vitestAsyncApi });
+  }
+
   const mockCalls = [
     ...editor.root.findAll('jest.mock($MODULE)'),
     ...editor.root.findAll('jest.mock($MODULE, () => $BODY)'),
@@ -37,8 +50,6 @@ function _rewriteDefaultExportMocks(content: string): string {
     }
 
     if (factory != null && body != null) {
-      _replaceRequireActual({ editor });
-
       if (body.kind() === 'statement_block') {
         /**
          * `() => { return 42; }` -> `() => { ret`urn { default: 42; } }`
@@ -58,15 +69,23 @@ function _rewriteDefaultExportMocks(content: string): string {
   return editor.commit();
 }
 
-function _replaceRequireActual({ editor }: { editor: SgEditor }): void {
-  for (const jestRequireActual of editor.root.findAll(
-    'jest.requireActual($MODULE)',
+function _replaceJestWithVitestAsyncApi({
+  editor,
+  jestApi,
+  vitestAsyncApi,
+}: {
+  editor: SgEditor;
+  jestApi: string;
+  vitestAsyncApi: string;
+}): void {
+  for (const jestCall of editor.root.findAll(
+    `jest.${jestApi}($MODULE)`,
   )) {
     const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
-    const importActual = `(await ${vi}.importActual(${jestRequireActual.getMatch('MODULE')?.text()}))`;
-    editor.replaceNode(jestRequireActual, importActual);
+    const importActual = `(await ${vi}.${vitestAsyncApi}(${jestCall.getMatch('MODULE')?.text()}))`;
+    editor.replaceNode(jestCall, importActual);
 
-    const enclosing = findEnclosingCallable(jestRequireActual);
+    const enclosing = findEnclosingCallable(jestCall);
     if (enclosing != null) {
       markCallableAsync({ callable: enclosing, editor });
     }
