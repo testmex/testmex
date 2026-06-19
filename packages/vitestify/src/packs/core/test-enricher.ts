@@ -1,11 +1,11 @@
+import type { ReadonlyTree } from '../../core/domain/tree';
+import { Enricher } from '../../core/models/enricher';
 import type { RelativePath } from '../../core/models/relative-path';
 import {
   type ProjectFile,
   type WorkspaceInfo,
 } from '../../core/models/workspace-info';
 import { projectFileTags } from './identifiers';
-import { Enricher } from '../../core/models/enricher';
-import type { ReadonlyTree } from '../../core/domain/tree';
 
 export class TestEnricher implements Enricher {
   private readonly _tree: ReadonlyTree;
@@ -37,7 +37,6 @@ export class TestEnricher implements Enricher {
     projectRoot: RelativePath,
   ): Promise<ProjectFile[]> {
     const files = await this._tree.scanDirectory(projectRoot);
-    const testFilePattern = /\.spec\.tsx?$/;
 
     return files
       .filter((file) => file.endsWith('.spec.ts') || file.endsWith('.spec.tsx'))

@@ -1,1 +1,1 @@
-export { Vitestify } from './vitestify';
+export { Vitestify } from './pipeline/vitestify';

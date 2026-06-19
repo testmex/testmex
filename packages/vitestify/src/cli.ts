@@ -1,4 +1,4 @@
-import { Vitestify } from './vitestify';
+import { Vitestify } from './pipeline/vitestify';
 
 main(process.argv.slice(2)).catch((error) => {
   console.error(error);
