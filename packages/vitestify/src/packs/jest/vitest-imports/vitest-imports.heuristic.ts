@@ -13,7 +13,6 @@ export const vitestGlobals = [
   'afterEach',
   'beforeAll',
   'afterAll',
-  'vi',
 ] as const;
 
 type VitestGlobal = (typeof vitestGlobals)[number];

@@ -100,18 +100,6 @@ afterEach(() => {});
 `);
   });
 
-  it('adds import for vi', async () => {
-    expect(
-      await transformTestFile(`\
-vi.fn();
-`),
-    ).toBe(`\
-import { vi } from 'vitest';
-
-vi.fn();
-`);
-  });
-
   it('does not rewrite it.todo (imports it only)', async () => {
     expect(
       await transformTestFile(`\
