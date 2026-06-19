@@ -2,8 +2,8 @@ import { SgNode } from '@ast-grep/napi';
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
 import { noIntermediateOfKind } from '../../../infra/ast/ast-utils';
 import { SgEditor } from '../../../infra/ast/sg-editor';
-import { findingTypes } from '../identifiers';
 import { ensureVitestSymbol } from '../../../infra/ast/vitest-ast-utils';
+import { findingTypes } from '../identifiers';
 
 export const jestMockTransform = defineFileTransform({
   findingType: findingTypes.jestSymbol,
@@ -35,7 +35,7 @@ function _rewriteDefaultExportMocks(content: string): string {
         _rewriteReturnStatements({ body, jestMockCall, editor });
       } else if (!_objectExpressionHasDefaultProperty(body)) {
         /* jest.mock(…, () => (…)) */
-        _rewriteInlineArrow({ jestMockCall, editor, moduleTxt, bodyTxt });
+        _rewriteInlineArrow({ jestMockCall, editor, body });
       }
     }
   }
@@ -72,20 +72,14 @@ function _rewriteReturnStatements({
 function _rewriteInlineArrow({
   jestMockCall,
   editor,
-  moduleTxt,
-  bodyTxt,
+  body,
 }: {
   jestMockCall: SgNode;
   editor: SgEditor;
-  moduleTxt: string;
-  bodyTxt: string;
+  body: SgNode;
 }): void {
-  const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
-  /* jest.mock(…, () => (…)) */
-  editor.replaceNode(
-    jestMockCall,
-    `${vi}.mock(${moduleTxt}, () => ({ default: ${bodyTxt} }))`,
-  );
+  editor.replaceNode(body, `({ default: ${body.text()} })`);
+  _rewriteJestCalleeToVi({ jestMockCall, editor });
 }
 
 function _rewriteJestCalleeToVi({
