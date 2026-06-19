@@ -8,65 +8,38 @@ export const replaceApiTransform = defineFileTransform({
 });
 
 function _rewriteReplaceApi(content: string): string {
-  let result = _rewriteFitCalls(content);
-  result = _rewriteFailingCalls(result);
-  return _rewriteLegacySkipAndFocusCalls(result);
-}
-
-function _rewriteFitCalls(content: string): string {
   const editor = new SgEditor(content);
-  const fitSites = [
+
+  for (const node of [
     ...editor.root.findAll('fit($$$ARGS)'),
     ...editor.root.findAll('fit.$PROP'),
-  ];
-
-  if (fitSites.length === 0) {
-    return content;
+  ]) {
+    editor.replaceNode(
+      node,
+      node
+        .text()
+        .replace(/^fit.failing\b/, 'it.only.fails')
+        .replace(/^fit\b/, 'it.only'),
+    );
   }
 
-  for (const node of fitSites) {
-    editor.replaceNode(node, node.text().replace(/^fit\b/, 'it.only'));
-  }
-
-  return editor.commit();
-}
-
-function _rewriteFailingCalls(content: string): string {
-  const editor = new SgEditor(content);
-  const failingCalls = [
+  for (const node of [
     ...editor.root.findAll('it.failing($$$ARGS)'),
     ...editor.root.findAll('test.failing($$$ARGS)'),
     ...editor.root.findAll('it.only.failing($$$ARGS)'),
     ...editor.root.findAll('it.skip.failing($$$ARGS)'),
     ...editor.root.findAll('test.only.failing($$$ARGS)'),
     ...editor.root.findAll('test.skip.failing($$$ARGS)'),
-  ];
-
-  if (failingCalls.length === 0) {
-    return content;
-  }
-
-  for (const node of failingCalls) {
+  ]) {
     editor.replaceNode(node, node.text().replace(/\.failing\b/, '.fails'));
   }
 
-  return editor.commit();
-}
-
-function _rewriteLegacySkipAndFocusCalls(content: string): string {
-  const editor = new SgEditor(content);
-  const legacyCalls = [
+  for (const node of [
     ...editor.root.findAll('xit($$$ARGS)'),
     ...editor.root.findAll('xdescribe($$$ARGS)'),
     ...editor.root.findAll('xtest($$$ARGS)'),
     ...editor.root.findAll('fdescribe($$$ARGS)'),
-  ];
-
-  if (legacyCalls.length === 0) {
-    return content;
-  }
-
-  for (const node of legacyCalls) {
+  ]) {
     editor.replaceNode(
       node,
       node
