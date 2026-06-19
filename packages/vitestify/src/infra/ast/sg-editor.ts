@@ -42,6 +42,33 @@ export class SgEditor {
     return symbol;
   }
 
+  ensureTypeSymbol(args: { symbol: string; module: string }): string {
+    const { symbol, module } = args;
+    const key = `type:${symbol}`;
+    if (this._ensuredSymbols.has(key)) {
+      return symbol;
+    }
+
+    const moduleImports = _findModuleTypeImports(this.root, module);
+
+    if (moduleImports.some(({ symbols }) => symbols.includes(symbol))) {
+      return symbol;
+    }
+
+    if (moduleImports.length > 0) {
+      this.replaceNode(
+        moduleImports[0].node,
+        `import type { ${moduleImports[0].symbols.join(', ')}, ${symbol} } from '${module}';`,
+      );
+    } else {
+      this._insertAtTop(`import type { ${symbol} } from '${module}';\n`);
+    }
+
+    this._ensuredSymbols.add(key);
+
+    return symbol;
+  }
+
   insertBefore(node: SgNode, text: string): void {
     const start = node.range().start.index;
     this._edits.push({
@@ -75,8 +102,23 @@ function _findModuleImports(
   root: SgRootNode,
   module: string,
 ): Array<{ node: SgNode; symbols: string[] }> {
+  return _findImports(root, module, 'import { $$$NAMES } from $SOURCE');
+}
+
+function _findModuleTypeImports(
+  root: SgRootNode,
+  module: string,
+): Array<{ node: SgNode; symbols: string[] }> {
+  return _findImports(root, module, 'import type { $$$NAMES } from $SOURCE');
+}
+
+function _findImports(
+  root: SgRootNode,
+  module: string,
+  pattern: string,
+): Array<{ node: SgNode; symbols: string[] }> {
   return root
-    .findAll('import { $$$NAMES } from $SOURCE')
+    .findAll(pattern)
     .filter(
       (imp) =>
         imp

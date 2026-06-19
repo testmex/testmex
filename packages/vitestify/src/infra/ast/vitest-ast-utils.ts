@@ -9,3 +9,13 @@ export function ensureVitestSymbol({
 }) {
   return editor.ensureSymbol({ symbol, module: 'vitest' });
 }
+
+export function ensureVitestTypeSymbol({
+  symbol,
+  editor,
+}: {
+  symbol: 'Mock' | 'MockedFunction';
+  editor: SgEditor;
+}) {
+  return editor.ensureTypeSymbol({ symbol, module: 'vitest' });
+}
