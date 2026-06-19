@@ -10,24 +10,21 @@ describe('jestMock', () => {
     );
   });
 
-  it.todo(
-    'rewrites partial mocks with jest.requireActual spread to async vi.importActual',
-    async () => {
-      expect(
-        await transformTestFile(`\
+  it('rewrites partial mocks with jest.requireActual spread to async vi.importActual', async () => {
+    expect(
+      await transformTestFile(`\
 jest.mock('./my-module', () => ({
   ...jest.requireActual('./my-module'),
   canCook: () => true,
 }));`),
-      ).toContain(
-        `\
+    ).toContain(
+      `\
 vi.mock('./my-module', async () => ({
   ...(await vi.importActual('./my-module')),
   canCook: () => true,
 }));`,
-      );
-    },
-  );
+    );
+  });
 
   it('wraps concise arrow mock factory returning a value as `{ default: … }`', async () => {
     expect(await transformTestFile(`jest.mock('./logger', () => jest.fn());`))

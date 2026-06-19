@@ -32,7 +32,7 @@ function _rewriteDefaultExportMocks(content: string): string {
       continue;
     }
 
-    if (body != null) {
+    if (factory != null && body != null) {
       _replaceRequireActual({ body, factory, editor });
 
       if (body.kind() === 'statement_block') {
@@ -63,11 +63,15 @@ function _replaceRequireActual({
   editor: SgEditor;
   factory: SgNode;
 }): void {
+  let markedAsync = false;
   for (const jestRequireActual of body.findAll('jest.requireActual($MODULE)')) {
     const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
     const importActual = `(await ${vi}.importActual(${jestRequireActual.getMatch('MODULE')?.text()}))`;
-    editor.replaceNode(factory, `async ${factory.text()}`);
     editor.replaceNode(jestRequireActual, importActual);
+    if (!markedAsync) {
+      editor.prepend(factory, 'async ');
+      markedAsync = true;
+    }
   }
 }
 
