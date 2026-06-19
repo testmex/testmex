@@ -22,7 +22,7 @@ const genericAsyncApiPattern =
   /\bjest\.(createMockFromModule|genMockFromModule)(\s*<[^>]+>)?\s*\(/g;
 
 export const jestViTransform = defineFileTransform({
-  findingType: findingTypes.jestViCall,
+  findingType: findingTypes.jestSymbol,
   apply: _rewriteJestVi,
 });
 

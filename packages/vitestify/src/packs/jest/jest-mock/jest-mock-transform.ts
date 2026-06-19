@@ -3,7 +3,7 @@ import { defineFileTransform } from '../../../core/domain/define-file-transform'
 import { findingTypes } from '../identifiers';
 
 export const jestMockTransform = defineFileTransform({
-  findingType: findingTypes.jestMockCall,
+  findingType: findingTypes.jestSymbol,
   apply: _rewriteJestMock,
 });
 

@@ -27,7 +27,7 @@ export const replaceApiHeuristic: Heuristic = {
         ({ content }) => content !== null && replaceApiPattern.test(content),
       )
       .map(({ file, project }) => ({
-        type: findingTypes.replaceApiUsage,
+        type: findingTypes.jestSymbol,
         tags: [findingTags.jest],
         description: `legacy Jest test API in ${file.path}`,
         project,

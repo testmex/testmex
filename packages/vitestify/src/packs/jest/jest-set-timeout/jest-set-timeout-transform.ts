@@ -3,7 +3,7 @@ import { defineFileTransform } from '../../../core/domain/define-file-transform'
 import { findingTypes } from '../identifiers';
 
 export const jestSetTimeoutTransform = defineFileTransform({
-  findingType: findingTypes.jestSetTimeoutCall,
+  findingType: findingTypes.jestSymbol,
   apply: _rewriteJestSetTimeout,
 });
 

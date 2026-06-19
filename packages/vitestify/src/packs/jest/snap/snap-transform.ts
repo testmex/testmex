@@ -2,7 +2,7 @@ import { defineFileTransform } from '../../../core/domain/define-file-transform'
 import { findingTypes } from '../identifiers';
 
 export const snapTransform = defineFileTransform({
-  findingType: findingTypes.jestSnapshotFile,
+  findingType: findingTypes.jestSymbol,
   apply: _rewriteSnap,
 });
 

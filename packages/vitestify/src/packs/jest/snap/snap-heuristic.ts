@@ -43,7 +43,7 @@ function _collectSnapFindings(snapFiles: SnapFileEntry[]): Finding[] {
       ({ content }) => content !== null && jestSnapshotPattern.test(content),
     )
     .map(({ file, project }) => ({
-      type: findingTypes.jestSnapshotFile,
+      type: findingTypes.jestSymbol,
       tags: [findingTags.jest],
       description: `Jest snapshot format in ${file.path}`,
       project,

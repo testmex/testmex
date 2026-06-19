@@ -3,19 +3,21 @@ import { SgEditor } from '../../../infra/ast/sg-editor';
 import { findingTypes } from '../identifiers';
 
 export const jestGlobalsImportTransform = defineFileTransform({
-  findingType: findingTypes.jestGlobalsImportFromGlobals,
+  findingType: findingTypes.jestSymbol,
   apply: _rewriteJestGlobalsImport,
 });
 
 function _rewriteJestGlobalsImport(content: string): string {
   const editor = new SgEditor(content);
-  const imports = editor.root.findAll(
-    "import { $$$NAMES } from '@jest/globals';",
-  );
-
-  if (imports.length === 0) {
-    return content;
-  }
+  const imports = editor.root
+    .findAll('import { $$$NAMES } from $SOURCE')
+    .filter(
+      (imp) =>
+        imp
+          .getMatch('SOURCE')
+          ?.find({ rule: { kind: 'string_fragment' } })
+          ?.text() === '@jest/globals',
+    );
 
   for (const imp of imports) {
     const specifiers = imp

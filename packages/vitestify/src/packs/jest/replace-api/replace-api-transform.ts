@@ -3,7 +3,7 @@ import { defineFileTransform } from '../../../core/domain/define-file-transform'
 import { findingTypes } from '../identifiers';
 
 export const replaceApiTransform = defineFileTransform({
-  findingType: findingTypes.replaceApiUsage,
+  findingType: findingTypes.jestSymbol,
   apply: _rewriteReplaceApi,
 });
 
