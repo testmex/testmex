@@ -1,6 +1,6 @@
 import { definePack } from '../../core/models/pack';
 import { jestMockDefaultExportsTransform } from './jest-mock-default-exports/jest-mock-default-exports-transform';
-import { factoryFuncTransform } from './factory-func/factory-func-transform';
+import { jestSetMockTransform } from './jest-set-mock/jest-set-mock-transform';
 import { JestEnricher } from './jest-enricher';
 import { jestGlobalsImportTransform } from './jest-globals-import/jest-globals-import-transform';
 import { jestMockTransform } from './jest-mock/jest-mock-transform';
@@ -28,7 +28,7 @@ export default definePack({
     vitestImportsTransform,
     jestGlobalsImportTransform,
     replaceApiTransform,
-    factoryFuncTransform,
+    jestSetMockTransform,
     jestMockDefaultExportsTransform,
     jestMockTransform,
     jestViTransform,

@@ -3,7 +3,7 @@ import { projectFileTag } from '../../core/models/workspace-info';
 
 export const findingTypes = {
   defaultExportMockFactory: findingType('default-export-mock-factory'),
-  factoryFuncSetMock: findingType('factory-func-set-mock'),
+  jestSetMockCall: findingType('jest-set-mock-call'),
   jestGlobalsImportFromGlobals: findingType('jest-globals-import-from-globals'),
   jestGlobalsImportFromJest: findingType('jest-globals-import-from-jest'),
   jestMockCall: findingType('jest-mock-call'),

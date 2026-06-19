@@ -50,7 +50,7 @@ function collectJestSymbolFindings({
 
   if (jestSetMockPattern.test(content)) {
     findings.push({
-      type: findingTypes.factoryFuncSetMock,
+      type: findingTypes.jestSetMockCall,
       tags: [findingTags.jest],
       description: `jest.setMock call in ${file.path}`,
       project,
