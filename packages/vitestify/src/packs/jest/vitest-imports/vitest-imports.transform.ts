@@ -4,7 +4,7 @@ import { findingTypes } from '../identifiers';
 import {
   _collectUsedVitestGlobals,
   vitestGlobals,
-} from './vitest-imports-heuristic';
+} from './vitest-imports.heuristic';
 
 export const vitestImportsTransform = defineFileTransform({
   findingType: findingTypes.vitestImportsNeeded,

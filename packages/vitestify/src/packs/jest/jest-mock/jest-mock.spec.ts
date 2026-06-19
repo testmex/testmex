@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol-heuristic';
+import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol.heuristic';
 import { transformTestFile as runTransformTestFile } from '../testing';
-import { jestMockTransform } from './jest-mock-transform';
+import { jestMockTransform } from './jest-mock.transform';
 
 describe('jestMock', () => {
   it('detects and rewrites `jest.mock` to `vi.mock`', async () => {

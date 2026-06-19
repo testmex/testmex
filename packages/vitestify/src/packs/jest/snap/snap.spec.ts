@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { transformTestFile as runTransformTestFile } from '../testing';
-import { snapHeuristic } from './snap-heuristic';
-import { snapTransform } from './snap-transform';
+import { snapHeuristic } from './snap.heuristic';
+import { snapTransform } from './snap.transform';
 
 describe('snap', () => {
   it(

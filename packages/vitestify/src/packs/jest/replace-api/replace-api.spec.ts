@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { transformTestFile as runTransformTestFile } from '../testing';
-import { replaceApiHeuristic } from './replace-api-heuristic';
-import { replaceApiTransform } from './replace-api-transform';
+import { replaceApiHeuristic } from './replace-api.heuristic';
+import { replaceApiTransform } from './replace-api.transform';
 
 describe('replaceApi', () => {
   it('rewrites `fit(` → `it.only(`', async () => {

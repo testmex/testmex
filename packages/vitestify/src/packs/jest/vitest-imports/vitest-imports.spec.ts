@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { transformTestFile as runTransformTestFile } from '../testing';
-import { vitestImportsHeuristic } from './vitest-imports-heuristic';
-import { vitestImportsTransform } from './vitest-imports-transform';
+import { vitestImportsHeuristic } from './vitest-imports.heuristic';
+import { vitestImportsTransform } from './vitest-imports.transform';
 
 describe('vitestImports', () => {
   it('adds named imports from vitest for globals used in a file', async () => {

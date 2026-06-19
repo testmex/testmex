@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol-heuristic';
+import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol.heuristic';
 import { transformTestFile as runTransformTestFile } from '../testing';
-import { jestGlobalsImportTransform } from './jest-globals-import-transform';
+import { jestGlobalsImportTransform } from './jest-globals-import.transform';
 
 describe('jest-globals-import', () => {
   it('replaces `@jest/globals` imports with vitest imports', async () => {
