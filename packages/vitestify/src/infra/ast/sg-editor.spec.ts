@@ -2,12 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { SgEditor } from './sg-editor';
 
 describe(SgEditor, () => {
-  it('returns the original content when no edits were made', () => {
-    const content = 'const foo = 1;';
-
-    expect(new SgEditor(content).commit()).toBe(content);
-  });
-
   describe('insertAtTop', () => {
     it('inserts after a leading block comment', () => {
       const editor = new SgEditor(`\
@@ -57,6 +51,11 @@ describe("suite", () => {});`,
   });
 
   describe('commit', () => {
+    it('returns the original content when no edits were made', () => {
+      const content = 'const foo = 1;';
+
+      expect(new SgEditor(content).commit()).toBe(content);
+    });
     it('applies multiple edits in one commit', () => {
       const editor = new SgEditor('const foo = 42;');
 
