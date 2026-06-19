@@ -1,6 +1,10 @@
 import { SgNode } from '@ast-grep/napi';
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
-import { noIntermediateOfKind } from '../../../infra/ast/ast-utils';
+import {
+  findEnclosingCallable,
+  markCallableAsync,
+  noIntermediateOfKind,
+} from '../../../infra/ast/ast-utils';
 import { SgEditor } from '../../../infra/ast/sg-editor';
 import { ensureVitestSymbol } from '../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../identifiers';
@@ -33,7 +37,7 @@ function _rewriteDefaultExportMocks(content: string): string {
     }
 
     if (factory != null && body != null) {
-      _replaceRequireActual({ body, factory, editor });
+      _replaceRequireActual({ editor });
 
       if (body.kind() === 'statement_block') {
         /**
@@ -54,23 +58,17 @@ function _rewriteDefaultExportMocks(content: string): string {
   return editor.commit();
 }
 
-function _replaceRequireActual({
-  body,
-  editor,
-  factory,
-}: {
-  body: SgNode;
-  editor: SgEditor;
-  factory: SgNode;
-}): void {
-  let markedAsync = false;
-  for (const jestRequireActual of body.findAll('jest.requireActual($MODULE)')) {
+function _replaceRequireActual({ editor }: { editor: SgEditor }): void {
+  for (const jestRequireActual of editor.root.findAll(
+    'jest.requireActual($MODULE)',
+  )) {
     const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
     const importActual = `(await ${vi}.importActual(${jestRequireActual.getMatch('MODULE')?.text()}))`;
     editor.replaceNode(jestRequireActual, importActual);
-    if (!markedAsync) {
-      editor.insertBefore(factory, 'async ');
-      markedAsync = true;
+
+    const enclosing = findEnclosingCallable(jestRequireActual);
+    if (enclosing != null) {
+      markCallableAsync({ callable: enclosing, editor });
     }
   }
 }

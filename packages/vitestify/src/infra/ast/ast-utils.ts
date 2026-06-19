@@ -1,5 +1,6 @@
 import { SgNode } from '@ast-grep/napi';
 import { Kinds, TypesMap } from '@ast-grep/napi/types/staticTypes';
+import { SgEditor } from './sg-editor';
 
 /**
  * Returns whether `node` sits under `ancestor` (or is the same node) without any intermediate node
@@ -65,4 +66,35 @@ export function noIntermediateOfKind(
   }
 
   return false;
+}
+
+export function findEnclosingCallable(node: SgNode): SgNode | null {
+  let current: SgNode | null = node.parent();
+  while (current != null && !enclosingCallableKinds.includes(current.kind())) {
+    current = current.parent();
+  }
+
+  return current;
+}
+
+const enclosingCallableKinds: Kinds<TypesMap>[] = [
+  'arrow_function',
+  'function_expression',
+  'function_declaration',
+  'method_definition',
+];
+
+export function markCallableAsync({
+  callable,
+  editor,
+}: {
+  callable: SgNode;
+  editor: SgEditor;
+}): void {
+  const params = callable.field('parameters');
+  if (params == null) {
+    return;
+  }
+
+  editor.insertBefore(params, 'async ');
 }
