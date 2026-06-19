@@ -106,19 +106,27 @@ const { hello } = (await vi.importMock('./my-module'));`,
     );
   });
 
-  it.todo(
-    'rewrites `jest.createMockFromModule` to `await vi.importMock`',
-    async () => {
-      expect(
-        await transformTestFile(
-          `const mocked = jest.createMockFromModule<typeof import('./my-module')>('./my-module');`,
-        ),
-      ).toContain(
-        `\
+  it('rewrites `jest.createMockFromModule` to `await vi.importMock`', async () => {
+    expect(
+      await transformTestFile(
+        `const mocked = jest.createMockFromModule('./my-module');`,
+      ),
+    ).toContain(
+      `\
+const mocked = (await vi.importMock('./my-module'));`,
+    );
+  });
+
+  it.todo('rewrites typed `jest.createMockFromModule` to `await vi.importMock`', async () => {
+    expect(
+      await transformTestFile(
+        `const mocked = jest.createMockFromModule<typeof import('./my-module')>('./my-module');`,
+      ),
+    ).toContain(
+      `\
 const mocked = (await vi.importMock<typeof import('./my-module')>('./my-module'));`,
-      );
-    },
-  );
+    );
+  });
 });
 
 function transformTestFile(content: string) {

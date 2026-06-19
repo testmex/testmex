@@ -78,11 +78,18 @@ function _replaceJestWithVitestAsyncApi({
   jestApi: string;
   vitestAsyncApi: string;
 }): void {
-  for (const jestCall of editor.root.findAll(
-    `jest.${jestApi}($MODULE)`,
-  )) {
+  for (const jestCall of [
+    ...editor.root.findAll(`jest.${jestApi}($MODULE)`),
+    ...editor.root.findAll(
+      `jest.${jestApi}<$TYPE_PARAMS>($MODULE, () => $BODY)`,
+    ),
+  ]) {
     const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
-    const importActual = `(await ${vi}.${vitestAsyncApi}(${jestCall.getMatch('MODULE')?.text()}))`;
+
+    const typeParamsMatch = jestCall.getMatch('TYPE_PARAMS');
+    const typeParams = typeParamsMatch ? `<${typeParamsMatch.text()}>` : '';
+    const importActual = `(await ${vi}.${vitestAsyncApi}${typeParams}(${jestCall.getMatch('MODULE')?.text()}))`;
+
     editor.replaceNode(jestCall, importActual);
 
     const enclosing = findEnclosingCallable(jestCall);
