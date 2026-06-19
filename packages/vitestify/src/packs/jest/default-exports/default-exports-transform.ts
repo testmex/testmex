@@ -46,16 +46,29 @@ function _rewriteDefaultExportMocks(content: string): string {
           editor.replaceNode(returnStmt, `return { default: ${returnTxt} };`);
         }
       }
+      _rewriteJestCalleeToVi(call, editor);
     } else if (!_objectExpressionHasDefaultProperty(body)) {
       /* jest.mock(…, () => (…)) */
       editor.replaceNode(
         call,
-        `jest.${methodTxt}(${moduleTxt}, () => ({ default: ${bodyTxt} }))`,
+        `vi.${methodTxt}(${moduleTxt}, () => ({ default: ${bodyTxt} }))`,
       );
     }
   }
 
   return editor.commit();
+}
+
+function _rewriteJestCalleeToVi(call: SgNode, editor: SgEditor): void {
+  const callee = call.child(0);
+  if (callee?.kind() !== 'member_expression') {
+    return;
+  }
+
+  const jestId = callee.child(0);
+  if (jestId?.text() === 'jest') {
+    editor.replaceNode(jestId, 'vi');
+  }
 }
 
 function _objectExpressionHasDefaultProperty(node: SgNode): boolean {

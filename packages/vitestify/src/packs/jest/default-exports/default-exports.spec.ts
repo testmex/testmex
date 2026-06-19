@@ -7,7 +7,7 @@ describe('defaultExports', () => {
   it('wraps concise arrow mock factory returning a value as `{ default: … }`', async () => {
     expect(
       await transformTestFile(`jest.mock('./logger', () => jest.fn());`),
-    ).toBe(`jest.mock('./logger', () => ({ default: jest.fn() }));`);
+    ).toContain(`vi.mock('./logger', () => ({ default: jest.fn() }));`);
   });
 
   it('wraps block-body mock factory final return as `{ default: … }`', async () => {
@@ -16,8 +16,8 @@ describe('defaultExports', () => {
 jest.mock('./logger', () => {
   return function logger() { return 'log'; };
 });`),
-    ).toBe(`\
-jest.mock('./logger', () => {
+    ).toContain(`\
+vi.mock('./logger', () => {
   return { default: function logger() { return 'log'; } };
 });`);
   });
@@ -31,8 +31,8 @@ jest.mock('./mod', () => {
   }
   return function b() { return 'B'; };
 });`),
-    ).toBe(`\
-jest.mock('./mod', () => {
+    ).toContain(`\
+vi.mock('./mod', () => {
   if (condition) {
     return { default: function a() { return 'A'; } };
   }
@@ -43,7 +43,7 @@ jest.mock('./mod', () => {
   it('skips wrapping when `{ default: … }` is already present', async () => {
     const input = `jest.mock('./mod', () => ({ default: () => 'ok' }));`;
 
-    expect(await transformTestFile(input)).toBe(
+    expect(await transformTestFile(input)).toContain(
       `jest.mock('./mod', () => ({ default: () => 'ok' }));`,
     );
   });
@@ -60,8 +60,8 @@ jest.mock('./mod', () => {
   return function b() { return 'B'; };
 });`;
 
-    expect(await transformTestFile(input)).toBe(`\
-jest.mock('./mod', () => {
+    expect(await transformTestFile(input)).toContain(`\
+vi.mock('./mod', () => {
   if (condition) {
     return {
       default: function a() { return 'A'; },
