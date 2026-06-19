@@ -19,14 +19,13 @@ function _rewriteDefaultExportMocks(content: string): string {
 
   for (const jestMockCall of mockCalls) {
     const body = jestMockCall.getMatch('BODY');
-    const bodyTxt = body?.text();
     const moduleTxt = jestMockCall.getMatch('MODULE')?.text();
     if (moduleTxt == null) {
       continue;
     }
 
     /* jest.mock(…) without body. */
-    if (body == null || bodyTxt == null) {
+    if (body == null) {
       const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
       editor.replaceNode(jestMockCall, `${vi}.mock(${moduleTxt})`);
     } else {
