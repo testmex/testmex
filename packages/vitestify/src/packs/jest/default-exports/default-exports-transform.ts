@@ -1,4 +1,5 @@
-import { Lang, parse, type SgNode } from '@ast-grep/napi';
+import { Edit, Lang, parse, SgNode } from '@ast-grep/napi';
+import { Kinds, TypesMap } from '@ast-grep/napi/types/staticTypes';
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
 import { findingTypes } from '../identifiers';
 
@@ -9,141 +10,108 @@ export const defaultExportsTransform = defineFileTransform({
 
 function _rewriteDefaultExportMocks(content: string): string {
   const root = parse(Lang.TypeScript, content).root();
-  const mockCalls = [
-    ...root.findAll('jest.mock($$$ARGS)'),
-    ...root.findAll('jest.setMock($$$ARGS)'),
-  ];
+  const mockCalls = root.findAll('jest.$MOCK_METHOD($MODULE, () => $BODY)');
 
-  if (mockCalls.length === 0) {
-    return content;
-  }
-
-  const edits = [];
+  const edits: Edit[] = [];
 
   for (const call of mockCalls) {
-    const edit = _rewriteMockCall(call);
-
-    if (edit != null) {
-      edits.push(edit);
+    const body = call.getMatch('BODY');
+    const bodyTxt = body?.text();
+    const methodTxt = call.getMatch('MOCK_METHOD')?.text();
+    const moduleTxt = call.getMatch('MODULE')?.text();
+    if (
+      body == null ||
+      bodyTxt == null ||
+      methodTxt == null ||
+      moduleTxt == null ||
+      !['mock', 'setMock'].includes(methodTxt)
+    ) {
+      continue;
     }
-  }
 
-  if (edits.length === 0) {
-    return content;
+    /* jest.mock(…, () => { … }) */
+    if (body.kind() === 'statement_block') {
+      for (const returnStmt of body.findAll('return $RETURN')) {
+        const returnTxt = returnStmt.getMatch('RETURN')?.text();
+        if (
+          returnTxt != null &&
+          _noIntermediateOfKind(returnStmt, body, [
+            'arrow_function',
+            'function_expression',
+            'function_declaration',
+          ]) &&
+          !_objectExpressionHasDefaultProperty(returnStmt)
+        ) {
+          edits.push({
+            startPos: returnStmt.range().start.index,
+            endPos: returnStmt.range().end.index,
+            insertedText: `return { default: ${returnTxt} };`,
+          });
+        }
+      }
+    } else if (!_objectExpressionHasDefaultProperty(body)) {
+      /* jest.mock(…, () => (…)) */
+      edits.push({
+        startPos: call.range().start.index,
+        endPos: call.range().end.index,
+        insertedText: `jest.${methodTxt}(${moduleTxt}, () => ({ default: ${bodyTxt} }))`,
+      });
+    }
   }
 
   return root.commitEdits(edits);
 }
 
-function _rewriteMockCall(
-  call: SgNode,
-): { startPos: number; endPos: number; insertedText: string } | null {
-  const argsNode = call.field('arguments');
-  const args =
-    argsNode
-      ?.children()
-      .filter(
-        (child) =>
-          child.kind() !== '(' && child.kind() !== ')' && child.kind() !== ',',
-      ) ?? [];
+/**
+ * Checks if a return statement is in the scope of a block,
+ * or in an a nested function.
+ */
+function _noIntermediateOfKind(
+  node: SgNode,
+  parent: SgNode,
+  kinds: Kinds<TypesMap>[],
+): boolean {
+  let current: SgNode | null = node;
 
-  if (args.length < 2) {
-    return null;
-  }
-
-  const factory = args[1];
-
-  if (
-    factory.kind() !== 'arrow_function' &&
-    factory.kind() !== 'function_expression'
-  ) {
-    return null;
-  }
-
-  if (factory.kind() === 'arrow_function') {
-    const body = factory.field('body');
-
-    if (body == null) {
-      return null;
-    }
-
-    if (body.kind() === 'statement_block') {
-      return _rewriteBlockFactory(factory);
-    }
-
-    if (_mockReturnAlreadyHasDefault(body)) {
-      return null;
-    }
-
-    const params = factory.field('parameters')?.text() ?? '()';
-
-    return factory.replace(`${params} => ({ default: ${body.text()} })`);
-  }
-
-  return _rewriteBlockFactory(factory);
-}
-
-function _rewriteBlockFactory(
-  factory: SgNode,
-): { startPos: number; endPos: number; insertedText: string } | null {
-  const body = factory.field('body');
-
-  if (body == null || body.kind() !== 'statement_block') {
-    return null;
-  }
-
-  const returnStatement = body
-    .children()
-    .filter((child) => child.kind() === 'return_statement')
-    .at(-1);
-
-  if (returnStatement == null) {
-    return null;
-  }
-
-  const returnValue = returnStatement
-    .children()
-    .find((child) => child.kind() !== 'return' && child.kind() !== ';');
-
-  if (returnValue == null) {
-    return null;
-  }
-
-  if (_objectExpressionHasDefaultProperty(returnValue)) {
-    return null;
-  }
-
-  return returnValue.replace(`{ default: ${returnValue.text()} }`);
-}
-
-function _unwrapParentheses(node: SgNode): SgNode {
-  if (node.kind() !== 'parenthesized_expression') {
-    return node;
-  }
-
-  const inner = node
-    .children()
-    .find((child) => child.kind() !== '(' && child.kind() !== ')');
-
-  return inner == null ? node : _unwrapParentheses(inner);
-}
-
-function _mockReturnAlreadyHasDefault(node: SgNode): boolean {
-  return _objectExpressionHasDefaultProperty(_unwrapParentheses(node));
-}
-
-function _objectExpressionHasDefaultProperty(node: SgNode): boolean {
-  if (node.kind() !== 'object') {
-    return false;
-  }
-
-  for (const property of node.findAll({ rule: { kind: 'pair' } })) {
-    const key = property.field('key');
-
-    if (key?.text() === 'default') {
+  while (current != null) {
+    if (_isSameNode(current, parent)) {
       return true;
     }
+
+    const kind = current.kind();
+
+    if (kinds.includes(kind)) {
+      return false;
+    }
+
+    current = current.parent();
   }
 
   return false;
+}
+function _isSameNode(node1: SgNode, node2?: SgNode | null): boolean {
+  return (
+    node1.range().start.index === node2?.range().start.index &&
+    node1.range().end.index === node2?.range().end.index
+  );
+}
+
+function _objectExpressionHasDefaultProperty(node: SgNode): boolean {
+  if (
+    node.kind() !== 'return_statement' &&
+    node.kind() !== 'parenthesized_expression'
+  ) {
+    return false;
+  }
+  const objectExpression = node.child(1);
+  if (objectExpression == null || objectExpression.kind() !== 'object') {
+    return false;
+  }
+
+  return [
+    ...node.findAll('{default: $DEFAULT}'),
+    ...node.findAll('{default: $DEFAULT, $$$REST}'),
+  ].some((property) => {
+    return _noIntermediateOfKind(property, objectExpression, ['object']);
+  });
 }

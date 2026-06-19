@@ -22,12 +22,54 @@ jest.mock('./logger', () => {
 });`);
   });
 
+  it('wraps block-body mock factory multiple returns as `{ default: … }`', async () => {
+    expect(
+      await transformTestFile(`\
+jest.mock('./mod', () => {
+  if (condition) {
+    return function a() { return 'A'; };
+  }
+  return function b() { return 'B'; };
+});`),
+    ).toBe(`\
+jest.mock('./mod', () => {
+  if (condition) {
+    return { default: function a() { return 'A'; } };
+  }
+  return { default: function b() { return 'B'; } };
+});`);
+  });
+
   it('skips wrapping when `{ default: … }` is already present', async () => {
     const input = `jest.mock('./mod', () => ({ default: () => 'ok' }));`;
 
     expect(await transformTestFile(input)).toBe(
       `jest.mock('./mod', () => ({ default: () => 'ok' }));`,
     );
+  });
+
+  it('skips wrapping when `{ default: … }` is returned', async () => {
+    const input = `\
+jest.mock('./mod', () => {
+  if (condition) {
+    return {
+      default: function a() { return 'A'; },
+      xyz: 42,
+    };
+  }
+  return function b() { return 'B'; };
+});`;
+
+    expect(await transformTestFile(input)).toBe(`\
+jest.mock('./mod', () => {
+  if (condition) {
+    return {
+      default: function a() { return 'A'; },
+      xyz: 42,
+    };
+  }
+  return { default: function b() { return 'B'; } };
+});`);
   });
 });
 
