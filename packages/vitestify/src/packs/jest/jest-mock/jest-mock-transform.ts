@@ -19,6 +19,7 @@ function _rewriteDefaultExportMocks(content: string): string {
 
   for (const jestMockCall of mockCalls) {
     const body = jestMockCall.getMatch('BODY');
+    const factory = body?.parent();
 
     /**
      * Skip when `default` property is already present:
@@ -32,12 +33,14 @@ function _rewriteDefaultExportMocks(content: string): string {
     }
 
     if (body != null) {
+      _replaceRequireActual({ body, factory, editor });
+
       if (body.kind() === 'statement_block') {
         /**
          * `() => { return 42; }` -> `() => { ret`urn { default: 42; } }`
          */
         _rewriteReturnStatements({ body, editor });
-      } else {
+      } else if (!_isObjectLiteralReturn(body)) {
         /**
          * `() => (42)` -> `() => ({ default: 42 })`
          */
@@ -49,6 +52,35 @@ function _rewriteDefaultExportMocks(content: string): string {
   }
 
   return editor.commit();
+}
+
+function _replaceRequireActual({
+  body,
+  editor,
+  factory,
+}: {
+  body: SgNode;
+  editor: SgEditor;
+  factory: SgNode;
+}): void {
+  for (const jestRequireActual of body.findAll('jest.requireActual($MODULE)')) {
+    const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
+    const importActual = `(await ${vi}.importActual(${jestRequireActual.getMatch('MODULE')?.text()}))`;
+    editor.replaceNode(factory, `async ${factory.text()}`);
+    editor.replaceNode(jestRequireActual, importActual);
+  }
+}
+
+function _isObjectLiteralReturn(body: SgNode): boolean {
+  if (body.kind() === 'object') {
+    return true;
+  }
+
+  if (body.kind() === 'parenthesized_expression') {
+    return body.child(1)?.kind() === 'object';
+  }
+
+  return false;
 }
 
 function _rewriteReturnStatements({
