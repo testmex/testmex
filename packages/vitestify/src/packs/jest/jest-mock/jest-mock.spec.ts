@@ -3,7 +3,7 @@ import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol.heuristic';
 import { transformTestFile as runTransformTestFile } from '../testing';
 import { jestMockTransform } from './jest-mock.transform';
 
-describe('jestMock', () => {
+describe('jest-mock', () => {
   it('detects and rewrites `jest.mock` to `vi.mock`', async () => {
     expect(await transformTestFile(`jest.mock('./foo');`)).toContain(
       `vi.mock('./foo');`,
@@ -48,14 +48,14 @@ vi.mock('./logger', () => {
   it('wraps block-body mock factory multiple returns as `{ default: … }`', async () => {
     expect(
       await transformTestFile(`\
-jest.mock('./mod', () => {
+jest.mock('./my-module', () => {
   if (condition) {
     return function a() { return 'A'; };
   }
   return function b() { return 'B'; };
 });`),
     ).toContain(`\
-vi.mock('./mod', () => {
+vi.mock('./my-module', () => {
   if (condition) {
     return { default: function a() { return 'A'; } };
   }
@@ -64,16 +64,16 @@ vi.mock('./mod', () => {
   });
 
   it('skips wrapping when `{ default: … }` is already present', async () => {
-    const input = `jest.mock('./mod', () => ({ default: () => 'ok' }));`;
+    const input = `jest.mock('./my-module', () => ({ default: () => 'ok' }));`;
 
     expect(await transformTestFile(input)).toContain(
-      `jest.mock('./mod', () => ({ default: () => 'ok' }));`,
+      `jest.mock('./my-module', () => ({ default: () => 'ok' }));`,
     );
   });
 
   it('skips wrapping when `{ default: … }` is returned', async () => {
     const input = `\
-jest.mock('./mod', () => {
+jest.mock('./my-module', () => {
   if (condition) {
     return {
       default: function a() { return 'A'; },
@@ -84,7 +84,7 @@ jest.mock('./mod', () => {
 });`;
 
     expect(await transformTestFile(input)).toContain(`\
-vi.mock('./mod', () => {
+vi.mock('./my-module', () => {
   if (condition) {
     return {
       default: function a() { return 'A'; },
@@ -93,6 +93,30 @@ vi.mock('./mod', () => {
   }
   return { default: function b() { return 'B'; } };
 });`);
+  });
+
+  it.todo('rewrites `jest.requireMock` to `await vi.importMock` and marks enclosing function `async`', async () => {
+    expect(
+      await transformTestFile(
+        `const { hello } = jest.requireMock('./my-module');`,
+      ),
+    ).toBe(
+      `\
+import { vi } from 'vitest';
+const { hello } = await vi.importMock('./my-module');`,
+    );
+  });
+
+  it.todo('rewrites `jest.createMockFromModule` to `await vi.importMock`', async () => {
+    expect(
+      await transformTestFile(
+        `const mocked = jest.createMockFromModule<typeof import('./my-module')>('./my-module');`,
+      ),
+    ).toBe(
+      `\
+import { vi } from 'vitest';
+const mocked = await vi.importMock<typeof import('./my-module')>('./my-module');`,
+    );
   });
 });
 

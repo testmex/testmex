@@ -7,7 +7,6 @@ import { findingTypes } from '../identifiers';
 const apiNamesRecord: Record<string, string> = {
   createMockFromModule: 'importMock',
   deepUnmock: 'unmock',
-  genMockFromModule: 'importMock',
   requireActual: 'importActual',
   requireMock: 'importMock',
   setMock: 'mock',
@@ -15,7 +14,6 @@ const apiNamesRecord: Record<string, string> = {
 
 const apiNamesToMakeAsync = new Set([
   'createMockFromModule',
-  'genMockFromModule',
   'requireActual',
   'requireMock',
 ]);
@@ -99,7 +97,11 @@ function _collectJestCalls(root: SgNode) {
 
   for (const member of root.findAll('jest.$METHOD')) {
     const method = member.getMatch('METHOD')?.text();
-    if (method == null || method === 'disableAutomock' || method === 'enableAutomock') {
+    if (
+      method == null ||
+      method === 'disableAutomock' ||
+      method === 'enableAutomock'
+    ) {
       continue;
     }
 
@@ -116,12 +118,14 @@ function _collectJestCalls(root: SgNode) {
     calls.push({ call: parent, method });
   }
 
-  return calls.sort(
-    (a, b) => a.call.text().length - b.call.text().length,
-  );
+  return calls.sort((a, b) => a.call.text().length - b.call.text().length);
 }
 
-function _replaceJestCall(text: string, method: string, viMethod: string): string {
+function _replaceJestCall(
+  text: string,
+  method: string,
+  viMethod: string,
+): string {
   return text.replace(`jest.${method}`, `vi.${viMethod}`);
 }
 

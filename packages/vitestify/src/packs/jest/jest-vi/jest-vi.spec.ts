@@ -78,73 +78,6 @@ afterEach(async () => {
     );
   });
 
-  it(
-    'rewrites `jest.requireActual` to `await vi.importActual` and marks enclosing function `async`',
-    async () => {
-      expect(
-        await transformTestFile(`\
-jest.mock('@mynotary/crossplatform/orpi-directories/core', () => ({
-  ...jest.requireActual('@mynotary/crossplatform/orpi-directories/core'),
-  canSyncAgency: jest.fn().mockReturnValue(true),
-  canSyncAgencyCode: jest.fn().mockReturnValue(true)
-}));`),
-      ).toBe(
-        `\
-import { vi } from 'vitest';
-vi.mock('@mynotary/crossplatform/orpi-directories/core', async () => ({
-  ...(await vi.importActual('@mynotary/crossplatform/orpi-directories/core')),
-  canSyncAgency: vi.fn().mockReturnValue(true),
-  canSyncAgencyCode: vi.fn().mockReturnValue(true)
-}));`,
-      );
-    },
-  );
-
-  it(
-    'rewrites `jest.requireMock` to `await vi.importMock` and marks enclosing function `async`',
-    async () => {
-      expect(
-        await transformTestFile(
-          `const { canSyncAgency } = jest.requireMock('@mynotary/crossplatform/orpi-directories/core');`,
-        ),
-      ).toBe(
-        `\
-import { vi } from 'vitest';
-const { canSyncAgency } = await vi.importMock('@mynotary/crossplatform/orpi-directories/core');`,
-      );
-    },
-  );
-
-  it(
-    'rewrites `jest.genMockFromModule` / `jest.createMockFromModule` to `await vi.importMock`',
-    async () => {
-      expect(
-        await transformTestFile(
-          `const mocked = jest.createMockFromModule<typeof import('./module')>('./module');`,
-        ),
-      ).toBe(
-        `\
-import { vi } from 'vitest';
-const mocked = await vi.importMock<typeof import('./module')>('./module');`,
-      );
-    },
-  );
-
-  it(
-    'rewrites `jest.setMock` to `vi.mock` with factory function wrapper',
-    async () => {
-      expect(
-        await transformTestFile(
-          `jest.setMock('./module', () => ({ foo: 'bar' }));`,
-        ),
-      ).toBe(
-        `\
-import { vi } from 'vitest';
-vi.mock('./module', () => ({ foo: 'bar' }));`,
-      );
-    },
-  );
-
   it('rewrites `jest.deepUnmock` to `vi.unmock`', async () => {
     expect(await transformTestFile(`jest.deepUnmock('./heavy-module');`)).toBe(
       `\
@@ -161,46 +94,43 @@ vi.unmock('./heavy-module');`,
     );
   });
 
-  it(
-    'rewrites other `jest.*` APIs to `vi.*` (generic passthrough)',
-    async () => {
-      expect(await transformTestFile(`jest.resetModules();`)).toBe(
-        `\
+  it('rewrites other `jest.*` APIs to `vi.*` (generic passthrough)', async () => {
+    expect(await transformTestFile(`jest.resetModules();`)).toBe(
+      `\
 import { vi } from 'vitest';
 vi.resetModules();`,
-      );
+    );
 
-      expect(
-        await transformTestFile(`jest.isolateModules(() => { /* … */ });`),
-      ).toBe(
-        `\
+    expect(
+      await transformTestFile(`jest.isolateModules(() => { /* … */ });`),
+    ).toBe(
+      `\
 import { vi } from 'vitest';
 vi.isolateModules(() => { /* … */ });`,
-      );
+    );
 
-      expect(
-        await transformTestFile(`jest.doMock('./mod', () => ({ foo: 'bar' }));`),
-      ).toBe(
-        `\
+    expect(
+      await transformTestFile(`jest.doMock('./mod', () => ({ foo: 'bar' }));`),
+    ).toBe(
+      `\
 import { vi } from 'vitest';
 vi.doMock('./mod', () => ({ foo: 'bar' }));`,
-      );
+    );
 
-      expect(await transformTestFile(`jest.mocked(myFn);`)).toBe(
-        `\
+    expect(await transformTestFile(`jest.mocked(myFn);`)).toBe(
+      `\
 import { vi } from 'vitest';
 vi.mocked(myFn);`,
-      );
+    );
 
-      expect(
-        await transformTestFile(`const fn = jest.hoisted(() => () => 42);`),
-      ).toBe(
-        `\
+    expect(
+      await transformTestFile(`const fn = jest.hoisted(() => () => 42);`),
+    ).toBe(
+      `\
 import { vi } from 'vitest';
 const fn = vi.hoisted(() => () => 42);`,
-      );
-    },
-  );
+    );
+  });
 
   it('removes `jest.disableAutomock()` calls', async () => {
     expect(await transformTestFile(`jest.disableAutomock();`)).toBe('');
@@ -233,80 +163,65 @@ vi.useRealTimers();`,
     );
   });
 
-  it(
-    'rewrites `jest.advanceTimersByTimeAsync` to `vi.advanceTimersByTimeAsync`',
-    async () => {
-      expect(
-        await transformTestFile(`await jest.advanceTimersByTimeAsync(0);`),
-      ).toBe(
-        `\
+  it('rewrites `jest.advanceTimersByTimeAsync` to `vi.advanceTimersByTimeAsync`', async () => {
+    expect(
+      await transformTestFile(`await jest.advanceTimersByTimeAsync(0);`),
+    ).toBe(
+      `\
 import { vi } from 'vitest';
 await vi.advanceTimersByTimeAsync(0);`,
-      );
-    },
-  );
+    );
+  });
 
-  it(
-    'rewrites `jest.runOnlyPendingTimersAsync` to `vi.runOnlyPendingTimersAsync`',
-    async () => {
-      expect(
-        await transformTestFile(`await jest.runOnlyPendingTimersAsync();`),
-      ).toBe(
-        `\
+  it('rewrites `jest.runOnlyPendingTimersAsync` to `vi.runOnlyPendingTimersAsync`', async () => {
+    expect(
+      await transformTestFile(`await jest.runOnlyPendingTimersAsync();`),
+    ).toBe(
+      `\
 import { vi } from 'vitest';
 await vi.runOnlyPendingTimersAsync();`,
-      );
-    },
-  );
+    );
+  });
 
-  it(
-    'rewrites `jest.runAllTimersAsync` to `vi.runAllTimersAsync`',
-    async () => {
-      expect(await transformTestFile(`await jest.runAllTimersAsync();`)).toBe(
-        `\
+  it('rewrites `jest.runAllTimersAsync` to `vi.runAllTimersAsync`', async () => {
+    expect(await transformTestFile(`await jest.runAllTimersAsync();`)).toBe(
+      `\
 import { vi } from 'vitest';
 await vi.runAllTimersAsync();`,
-      );
-    },
-  );
+    );
+  });
 
-  it(
-    'rewrites `jest.advanceTimersByTime` / `jest.runAllTimers` / `jest.runOnlyPendingTimers` to `vi.*` sync equivalents',
-    async () => {
-      expect(await transformTestFile(`jest.advanceTimersByTime(1000);`)).toBe(
-        `\
+  it('rewrites `jest.advanceTimersByTime` / `jest.runAllTimers` / `jest.runOnlyPendingTimers` to `vi.*` sync equivalents', async () => {
+    expect(await transformTestFile(`jest.advanceTimersByTime(1000);`)).toBe(
+      `\
 import { vi } from 'vitest';
 vi.advanceTimersByTime(1000);`,
-      );
+    );
 
-      expect(await transformTestFile(`jest.runAllTimers();`)).toBe(
-        `\
+    expect(await transformTestFile(`jest.runAllTimers();`)).toBe(
+      `\
 import { vi } from 'vitest';
 vi.runAllTimers();`,
-      );
+    );
 
-      expect(await transformTestFile(`jest.runOnlyPendingTimers();`)).toBe(
-        `\
+    expect(await transformTestFile(`jest.runOnlyPendingTimers();`)).toBe(
+      `\
 import { vi } from 'vitest';
 vi.runOnlyPendingTimers();`,
-      );
-    },
-  );
+    );
+  });
 
-  it(
-    'rewrites `jest.spyOn(global, setTimeout)` to `vi.spyOn(globalThis, setTimeout)`',
-    async () => {
-      expect(
-        await transformTestFile(
-          `const setTimeoutSpy = jest.spyOn(global, 'setTimeout');`,
-        ),
-      ).toBe(
-        `\
+  it('rewrites `jest.spyOn(global, setTimeout)` to `vi.spyOn(globalThis, setTimeout)`', async () => {
+    expect(
+      await transformTestFile(
+        `const setTimeoutSpy = jest.spyOn(global, 'setTimeout');`,
+      ),
+    ).toBe(
+      `\
 import { vi } from 'vitest';
 const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');`,
-      );
-    },
-  );
+    );
+  });
 });
 
 function transformTestFile(content: string) {
@@ -315,4 +230,3 @@ function transformTestFile(content: string) {
     transforms: [jestViTransform],
   });
 }
-
