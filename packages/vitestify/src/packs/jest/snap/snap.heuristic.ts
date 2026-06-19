@@ -1,13 +1,6 @@
-import type { Finding } from '../../../core/models/finding';
-import type { Heuristic } from '../../../core/models/heuristic';
-import type { Project, ProjectFile } from '../../../core/models/workspace-info';
+import { defineFileContentHeuristic } from '../../../core/domain/define-file-content-heuristic';
+import type { ProjectFile } from '../../../core/models/workspace-info';
 import { findingTypes } from '../identifiers';
-
-interface SnapFileEntry {
-  file: ProjectFile;
-  project: Project;
-  content: string | null;
-}
 
 function _isSnapshotFile(file: ProjectFile): boolean {
   return (
@@ -15,36 +8,21 @@ function _isSnapshotFile(file: ProjectFile): boolean {
   );
 }
 
-export const snapHeuristic: Heuristic = {
-  inspect: async ({ info, tree }): Promise<Finding[]> => {
-    const snapFiles = await Promise.all(
-      info.projects
-        .flatMap((project) =>
-          project.files
-            .filter(_isSnapshotFile)
-            .map((file) => ({ project, file })),
-        )
-        .map(async ({ file, project }) => ({
-          file,
-          project,
-          content: await tree.maybeReadFile(file.path),
-        })),
-    );
-
-    return _collectSnapFindings(snapFiles);
-  },
-};
-
 const jestSnapshotPattern = /Array \[|Object \{/;
 
-function _collectSnapFindings(snapFiles: SnapFileEntry[]): Finding[] {
-  return snapFiles
-    .filter(
-      ({ content }) => content !== null && jestSnapshotPattern.test(content),
-    )
-    .map(({ file, project }) => ({
-      type: findingTypes.jestSymbol,
-      project,
-      file,
-    }));
-}
+export const snapHeuristic = defineFileContentHeuristic({
+  predicate: _isSnapshotFile,
+  inspect: ({ file, project, content }) => {
+    if (!jestSnapshotPattern.test(content)) {
+      return [];
+    }
+
+    return [
+      {
+        type: findingTypes.jestSymbol,
+        project,
+        file,
+      },
+    ];
+  },
+});
