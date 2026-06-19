@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol-heuristic';
 import { transformTestFile as runTransformTestFile } from '../testing';
-import { jestMockDefaultExportsTransform } from './jest-mock-default-exports-transform';
+import { jestMockTransform } from './jest-mock-transform';
 
-describe('jestMockDefaultExports', () => {
+describe('jestMock', () => {
   it('detects and rewrites `jest.mock` to `vi.mock`', async () => {
     expect(await transformTestFile(`jest.mock('./foo');`)).toContain(
       `vi.mock('./foo');`,
@@ -17,15 +17,13 @@ describe('jestMockDefaultExports', () => {
         await transformTestFile(`\
 jest.mock('./my-module', () => ({
   ...jest.requireActual('./my-module'),
-  canSyncAgency: jest.fn().mockReturnValue(true),
-  canSyncAgencyCode: jest.fn().mockReturnValue(true)
+  canCook: () => true,
 }));`),
       ).toContain(
         `\
 vi.mock('./my-module', async () => ({
   ...(await vi.importActual('./my-module')),
-  canSyncAgency: vi.fn().mockReturnValue(true),
-  canSyncAgencyCode: vi.fn().mockReturnValue(true)
+  canCook: () => true,
 }));`,
       );
     },
@@ -104,6 +102,6 @@ vi.mock('./mod', () => {
 function transformTestFile(content: string) {
   return runTransformTestFile(content, {
     heuristics: [jestSymbolHeuristic],
-    transforms: [jestMockDefaultExportsTransform],
+    transforms: [jestMockTransform],
   });
 }
