@@ -4,110 +4,201 @@ import { vitestImportsHeuristic } from './vitest-imports.heuristic';
 import { vitestImportsTransform } from './vitest-imports.transform';
 
 describe('vitestImports', () => {
-  it('adds named imports from vitest for globals used in a file', async () => {
+  it('adds import for describe', async () => {
     expect(
       await transformTestFile(`\
-describe(OrpiDirectoriesController.name, () => {
-  it('should sync agency successfully and return 204', async () => {
-    expect(true).toBe(true);
-  });
-});`),
+describe('suite', () => {});
+`),
     ).toBe(`\
-import { describe, it, expect } from 'vitest';
+import { describe } from 'vitest';
 
-describe(OrpiDirectoriesController.name, () => {
-  it('should sync agency successfully and return 204', async () => {
-    expect(true).toBe(true);
-  });
-});`);
+describe('suite', () => {});
+`);
   });
 
-  it(
-    'adds imports for describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, and vi',
-    async () => {
-      expect(
-        await transformTestFile(`\
-describe('suite', () => {
-  beforeAll(() => {});
-  afterAll(() => {});
-  beforeEach(() => {});
-  afterEach(() => {});
+  it('adds import for it', async () => {
+    expect(
+      await transformTestFile(`\
+it('case', () => {});
+`),
+    ).toBe(`\
+import { it } from 'vitest';
 
-  it('uses it', () => {
-    expect(true).toBe(true);
+it('case', () => {});
+`);
   });
 
-  test('uses test', () => {
-    vi.fn();
-  });
-});`),
-      ).toBe(`\
-import { describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
+  it('adds import for test', async () => {
+    expect(
+      await transformTestFile(`\
+test('case', () => {});
+`),
+    ).toBe(`\
+import { test } from 'vitest';
 
-describe('suite', () => {
-  beforeAll(() => {});
-  afterAll(() => {});
-  beforeEach(() => {});
-  afterEach(() => {});
-
-  it('uses it', () => {
-    expect(true).toBe(true);
+test('case', () => {});
+`);
   });
 
-  test('uses test', () => {
-    vi.fn();
-  });
-});`);
-    },
-  );
+  it('adds import for expect', async () => {
+    expect(
+      await transformTestFile(`\
+expect(true).toBe(true);
+`),
+    ).toBe(`\
+import { expect } from 'vitest';
 
-  it('does not rewrite it.todo or test.todo (imports it/test only)', async () => {
+expect(true).toBe(true);
+`);
+  });
+
+  it('adds import for beforeAll', async () => {
+    expect(
+      await transformTestFile(`\
+beforeAll(() => {});
+`),
+    ).toBe(`\
+import { beforeAll } from 'vitest';
+
+beforeAll(() => {});
+`);
+  });
+
+  it('adds import for afterAll', async () => {
+    expect(
+      await transformTestFile(`\
+afterAll(() => {});
+`),
+    ).toBe(`\
+import { afterAll } from 'vitest';
+
+afterAll(() => {});
+`);
+  });
+
+  it('adds import for beforeEach', async () => {
+    expect(
+      await transformTestFile(`\
+beforeEach(() => {});
+`),
+    ).toBe(`\
+import { beforeEach } from 'vitest';
+
+beforeEach(() => {});
+`);
+  });
+
+  it('adds import for afterEach', async () => {
+    expect(
+      await transformTestFile(`\
+afterEach(() => {});
+`),
+    ).toBe(`\
+import { afterEach } from 'vitest';
+
+afterEach(() => {});
+`);
+  });
+
+  it('adds import for vi', async () => {
+    expect(
+      await transformTestFile(`\
+vi.fn();
+`),
+    ).toBe(`\
+import { vi } from 'vitest';
+
+vi.fn();
+`);
+  });
+
+  it('does not rewrite it.todo (imports it only)', async () => {
     expect(
       await transformTestFile(`\
 it.todo('implement later');
-test.todo('also later');`),
+`),
     ).toBe(`\
-import { it, test } from 'vitest';
+import { it } from 'vitest';
 
 it.todo('implement later');
-test.todo('also later');`);
+`);
   });
 
-  it(
-    'does not rewrite it.concurrent or test.concurrent (imports it/test only)',
-    async () => {
-      expect(
-        await transformTestFile(`\
+  it('does not rewrite test.todo (imports test only)', async () => {
+    expect(
+      await transformTestFile(`\
+test.todo('also later');
+`),
+    ).toBe(`\
+import { test } from 'vitest';
+
+test.todo('also later');
+`);
+  });
+
+  it('does not rewrite it.concurrent (imports it only)', async () => {
+    expect(
+      await transformTestFile(`\
 it.concurrent('runs in parallel', async () => { /* … */ });
-test.concurrent('also parallel', async () => { /* … */ });`),
-      ).toBe(`\
-import { it, test } from 'vitest';
+`),
+    ).toBe(`\
+import { it } from 'vitest';
 
 it.concurrent('runs in parallel', async () => { /* … */ });
-test.concurrent('also parallel', async () => { /* … */ });`);
-    },
-  );
+`);
+  });
 
-  it(
-    'does not rewrite describe.only, describe.skip, or describe.each (imports describe only)',
-    async () => {
-      expect(
-        await transformTestFile(`\
-const cases = [1, 2];
+  it('does not rewrite test.concurrent (imports test only)', async () => {
+    expect(
+      await transformTestFile(`\
+test.concurrent('also parallel', async () => { /* … */ });
+`),
+    ).toBe(`\
+import { test } from 'vitest';
+
+test.concurrent('also parallel', async () => { /* … */ });
+`);
+  });
+
+  it('does not rewrite describe.skip (imports describe only)', async () => {
+    expect(
+      await transformTestFile(`\
+describe.skip('legacy suite', () => { /* … */ });
+`),
+    ).toBe(`\
+import { describe } from 'vitest';
 
 describe.skip('legacy suite', () => { /* … */ });
+`);
+  });
+
+  it('does not rewrite describe.only (imports describe only)', async () => {
+    expect(
+      await transformTestFile(`\
 describe.only('focused suite', () => { /* … */ });
-describe.each(cases)('case %s', (input) => { /* … */ });`),
-      ).toBe(`\
+`),
+    ).toBe(`\
+import { describe } from 'vitest';
+
+describe.only('focused suite', () => { /* … */ });
+`);
+  });
+
+  it('does not rewrite describe.each (imports describe only)', async () => {
+    expect(
+      await transformTestFile(`\
+const cases = [1, 2];
+
+describe.each(cases)('case %s', (input) => { /* … */ });
+`),
+    ).toBe(`\
 import { describe } from 'vitest';
 
 const cases = [1, 2];
 
-describe.skip('legacy suite', () => { /* … */ });
-describe.only('focused suite', () => { /* … */ });
-describe.each(cases)('case %s', (input) => { /* … */ });`);
-    },
-  );
+describe.each(cases)('case %s', (input) => { /* … */ });
+`);
+  });
 });
 
 function transformTestFile(content: string) {

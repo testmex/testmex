@@ -34,7 +34,7 @@ function _rewriteVitestImports(content: string): string {
     }
   }
 
-  return editor.commit().trimEnd();
+  return editor.commit();
 }
 
 function _formatVitestImportNames(

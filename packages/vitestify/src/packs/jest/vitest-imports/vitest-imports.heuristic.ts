@@ -44,9 +44,7 @@ export const vitestImportsHeuristic: Heuristic = {
   },
 };
 
-function _collectVitestImportsFindings(
-  testFiles: TestFileEntry[],
-): Finding[] {
+function _collectVitestImportsFindings(testFiles: TestFileEntry[]): Finding[] {
   const findings: Finding[] = [];
 
   for (const { file, project, content } of testFiles) {
@@ -103,8 +101,7 @@ function _getMissingVitestImports(
 
 function _parseVitestImportNames(content: string): Set<string> {
   const imported = new Set<string>();
-  const importPattern =
-    /import\s+\{([^}]+)\}\s+from\s+['"]vitest['"]/g;
+  const importPattern = /import\s+\{([^}]+)\}\s+from\s+['"]vitest['"]/g;
 
   for (const match of content.matchAll(importPattern)) {
     for (const name of match[1].split(',')) {
