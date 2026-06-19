@@ -1,22 +1,23 @@
 import { Edit, Lang, parse, SgNode } from '@ast-grep/napi';
 
-interface ModuleImportState {
-  symbols: Set<string>;
-  types: Set<string>;
-  topImportEditIndex?: number;
-}
-
 export class SgEditor {
   readonly root: SgRootNode;
-  private readonly _edits: Edit[] = [];
-  private readonly _moduleState: Map<string, ModuleImportState> = new Map();
+  private _edits: Edit[] = [];
+  private _moduleState: Map<string, ModuleImportState> = new Map();
 
   constructor(content: string, lang = Lang.TypeScript) {
     this.root = parse(lang, content).root();
   }
 
   commit(): string {
-    return this.root.commitEdits(this._edits);
+    this._syncImportEdits();
+
+    const content = this.root.commitEdits(this._edits);
+
+    this._moduleState = new Map();
+    this._edits = [];
+
+    return content;
   }
 
   ensureSymbol(args: { symbol: string; module: string }): string {
@@ -40,31 +41,40 @@ export class SgEditor {
     this._edits.push(node.replace(replacement));
   }
 
-  private _ensureImport(args: {
+  /**
+   * Makes sure that a symbol or type is imported or will add/update the imports accordingly.
+   */
+  private _ensureImport({
+    symbol,
+    module,
+    kind,
+  }: {
     symbol: string;
     module: string;
     kind: 'value' | 'type';
   }): string {
-    const { symbol, module, kind } = args;
-    const state = this._getOrCreateModuleState(module);
-    const ensured = kind === 'value' ? state.symbols : state.types;
+    let state = this._getOrCreateModuleState(module);
 
-    if (ensured.has(symbol)) {
+    /* This symbol was already ensured. */
+    if ((kind === 'value' ? state.symbols : state.types).has(symbol)) {
       return symbol;
     }
 
     const existingImports = _findModuleImports(this.root, module);
-    const fileSymbols = new Set(existingImports.flatMap((i) => i.symbols));
-    const fileTypes = new Set(existingImports.flatMap((i) => i.types));
+    state = {
+      symbols: new Set([
+        ...existingImports.flatMap((i) => i.symbols),
+        ...state.symbols,
+        ...(kind === 'value' ? [symbol] : []),
+      ]),
+      types: new Set([
+        ...existingImports.flatMap((i) => i.types),
+        ...state.types,
+        ...(kind === 'type' ? [symbol] : []),
+      ]),
+    };
 
-    if (kind === 'value' ? fileSymbols.has(symbol) : fileTypes.has(symbol)) {
-      ensured.add(symbol);
-      return symbol;
-    }
-
-    ensured.add(symbol);
-    this._syncModuleImport(module);
-
+    this._moduleState.set(module, state);
     return symbol;
   }
 
@@ -77,53 +87,49 @@ export class SgEditor {
     return state;
   }
 
-  private _syncModuleImport(module: string): void {
-    const state = this._getOrCreateModuleState(module);
-    const existingImports = _findModuleImports(this.root, module);
+  private _syncImportEdits(): void {
+    for (const [module, state] of this._moduleState) {
+      const existingImports = _findModuleImports(this.root, module);
+      const importText = _formatModuleImport(module, state);
 
-    const symbols = new Set([
-      ...existingImports.flatMap((i) => i.symbols),
-      ...state.symbols,
-    ]);
-    const types = new Set([
-      ...existingImports.flatMap((i) => i.types),
-      ...state.types,
-    ]);
-
-
-    const importText = _formatModuleImport({ module, symbols, types });
-
-    if (existingImports.length > 0) {
-      this.replaceNode(existingImports[0].node, importText);
-      for (let i = 1; i < existingImports.length; i++) {
-        this.replaceNode(existingImports[i].node, '');
+      /* Replace the first import.
+       * Deleting all nodes than inserting at the top does not work
+       * as it creates two conflicting edits. */
+      const firstImport = existingImports[0];
+      if (firstImport != null) {
+        this.replaceNode(firstImport.node, importText);
+      } else {
+        this._insertAtTop(`${importText}\n`);
       }
-      state.topImportEditIndex = undefined;
-    } else if (state.topImportEditIndex !== undefined) {
-      this._edits[state.topImportEditIndex].insertedText = `${importText}\n`;
-    } else {
-      state.topImportEditIndex = this._insertAtTop(`${importText}\n`);
+
+      /* Delete all other imports of the same module. */
+      for (const imp of existingImports.slice(1)) {
+        this.replaceNode(imp.node, '');
+      }
     }
   }
 
-  private _insertAtTop(text: string): number {
+  private _insertAtTop(text: string): void {
     const firstNonCommentStatement = this.root
       .children()
       .find((child) => child.kind() !== 'comment');
     const position = firstNonCommentStatement?.range().start.index ?? 0;
 
-    const editIndex = this._edits.length;
-    this._edits.push({
+    /* This one is special and has to be applied first. */
+    this._edits.unshift({
       startPos: position,
       endPos: position,
       insertedText: text,
     });
-
-    return editIndex;
   }
 }
 
 export type SgRootNode = ReturnType<ReturnType<typeof parse>['root']>;
+
+interface ModuleImportState {
+  symbols: Set<string>;
+  types: Set<string>;
+}
 
 function _findModuleImports(
   root: SgRootNode,
@@ -168,9 +174,10 @@ function _importSource(imp: SgNode): string | undefined {
     ?.text();
 }
 
-function _parseValueImportNames(
-  names: SgNode[],
-): { symbols: string[]; types: string[] } {
+function _parseValueImportNames(names: SgNode[]): {
+  symbols: string[];
+  types: string[];
+} {
   const symbols: string[] = [];
   const types: string[] = [];
 
@@ -189,12 +196,10 @@ function _parseValueImportNames(
   return { symbols, types };
 }
 
-function _formatModuleImport(args: {
-  module: string;
-  symbols: Set<string>;
-  types: Set<string>;
-}): string {
-  const { module, symbols, types } = args;
+function _formatModuleImport(
+  module: string,
+  { symbols, types }: ModuleImportState,
+): string {
   if (symbols.size === 0) {
     return `import type { ${[...types].join(', ')} } from '${module}';`;
   }

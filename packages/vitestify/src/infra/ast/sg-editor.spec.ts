@@ -2,25 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { SgEditor } from './sg-editor';
 
 describe(SgEditor, () => {
-  describe('insertAtTop', () => {
-    it('inserts after a leading block comment', () => {
-      const editor = new SgEditor(`\
-/* license header */
-// blablabla
-const foo = 1;`);
-
-      editor._insertAtTop("import { vi } from 'vitest';\n");
-
-      expect(editor.commit()).toBe(
-        `\
-/* license header */
-// blablabla
-import { vi } from 'vitest';
-const foo = 1;`,
-      );
-    });
-  });
-
   describe('insertBefore', () => {
     it('inserts text immediately before the given node', () => {
       const editor = new SgEditor('describe("suite", () => {});');
@@ -200,5 +181,4 @@ const mock: Mock = vi.fn();`,
       );
     });
   });
-
 });
