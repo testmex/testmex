@@ -1,7 +1,7 @@
 import debug from 'debug';
-import type { Workspace } from './core/domain/workspace';
-import type { Finding } from './core/models/finding';
-import type { Heuristic } from './core/models/heuristic';
+import type { Workspace } from '../core/domain/workspace';
+import type { Finding } from '../core/models/finding';
+import type { Heuristic } from '../core/models/heuristic';
 
 const log = debug('vitestify:analyzer');
 

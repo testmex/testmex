@@ -1,8 +1,8 @@
-import { Analyzer } from '../analyzer';
+import { Analyzer } from '../pipeline/analyzer';
 import type { Workspace } from '../core/domain/workspace';
 import type { Heuristic } from '../core/models/heuristic';
 import type { Transform } from '../core/models/transform';
-import { Transformer } from '../transformer';
+import { Transformer } from '../pipeline/transformer';
 
 export interface RunTransformOptions {
   workspace: Workspace;

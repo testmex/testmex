@@ -1,14 +1,14 @@
 import { Analyzer } from './analyzer';
-import { CommandRunnerPooled } from './core/domain/command-runner-pooled';
-import type { Pack } from './core/models/pack';
-import type { CommandRunner } from './core/ports/command-runner';
-import type { FileSystem } from './core/ports/file-system';
-import { FileSystemImpl } from './infra/file-system.impl';
-import angularCliPack from './packs/angular-cli';
-import corePack from './packs/core';
-import jestPack from './packs/jest';
-import nxPack from './packs/nx';
-import { Scanner } from './scanner/scanner';
+import { CommandRunnerPooled } from '../core/domain/command-runner-pooled';
+import type { Pack } from '../core/models/pack';
+import type { CommandRunner } from '../core/ports/command-runner';
+import type { FileSystem } from '../core/ports/file-system';
+import { FileSystemImpl } from '../infra/file-system.impl';
+import angularCliPack from '../packs/angular-cli';
+import corePack from '../packs/core';
+import jestPack from '../packs/jest';
+import nxPack from '../packs/nx';
+import { Scanner } from '../pipeline/scanner';
 import { Transformer } from './transformer';
 
 export class Vitestify {

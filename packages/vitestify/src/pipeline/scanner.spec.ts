@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { relativePath } from '../core/models/relative-path';
 import { type Project } from '../core/models/workspace-info';
-import { angularCliWorkspaceMother } from '../packs/angular-cli/angular-cli-workspace-infra.mother';
+import { CommandRunnerFake } from '../core/ports/command-runner.fake';
+import { FileSystemFake } from '../core/ports/file-system.fake';
 import angularCliPack from '../packs/angular-cli';
+import { angularCliWorkspaceMother } from '../packs/angular-cli/angular-cli-workspace-infra.mother';
 import corePack from '../packs/core';
 import jestPack from '../packs/jest';
 import nxPack from '../packs/nx';
 import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
-import { CommandRunnerFake } from '../core/ports/command-runner.fake';
-import { FileSystemFake } from '../core/ports/file-system.fake';
 import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {

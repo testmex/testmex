@@ -1,7 +1,7 @@
 import debug from 'debug';
-import type { Workspace } from './core/domain/workspace';
-import type { Finding } from './core/models/finding';
-import type { Transform } from './core/models/transform';
+import type { Workspace } from '../core/domain/workspace';
+import type { Finding } from '../core/models/finding';
+import type { Transform } from '../core/models/transform';
 
 const log = debug('vitestify:transformer');
 
