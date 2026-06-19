@@ -3,19 +3,9 @@ import type { Heuristic } from '../../../core/models/heuristic';
 import type { Project, ProjectFile } from '../../../core/models/workspace-info';
 import { projectFileTags as coreProjectFileTags } from '../../core/identifiers';
 import { findingTypes } from '../identifiers';
+import { jestGlobals } from './jest-globals';
 
-export const vitestGlobals = [
-  'describe',
-  'it',
-  'test',
-  'expect',
-  'beforeEach',
-  'afterEach',
-  'beforeAll',
-  'afterAll',
-] as const;
-
-type VitestGlobal = (typeof vitestGlobals)[number];
+type VitestGlobal = (typeof jestGlobals)[number];
 
 interface TestFileEntry {
   file: ProjectFile;
@@ -76,13 +66,13 @@ function _collectVitestImportsFindings(testFiles: TestFileEntry[]): Finding[] {
 export function _collectUsedVitestGlobals(content: string): VitestGlobal[] {
   const used = new Set<VitestGlobal>();
 
-  for (const global of vitestGlobals) {
+  for (const global of jestGlobals) {
     if (_usesVitestGlobal(content, global)) {
       used.add(global);
     }
   }
 
-  return vitestGlobals.filter((global) => used.has(global));
+  return jestGlobals.filter((global) => used.has(global));
 }
 
 function _usesVitestGlobal(content: string, global: VitestGlobal): boolean {

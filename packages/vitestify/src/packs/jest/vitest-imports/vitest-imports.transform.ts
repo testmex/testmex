@@ -1,10 +1,8 @@
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
 import { SgEditor } from '../../../infra/ast/sg-editor';
 import { findingTypes } from '../identifiers';
-import {
-  _collectUsedVitestGlobals,
-  vitestGlobals,
-} from './vitest-imports.heuristic';
+import { _collectUsedVitestGlobals } from './vitest-imports.heuristic';
+import { jestGlobals } from './jest-globals';
 
 export const vitestImportsTransform = defineFileTransform({
   findingType: findingTypes.vitestImportsNeeded,
@@ -40,7 +38,7 @@ function _rewriteVitestImports(content: string): string {
 function _formatVitestImportNames(
   usedGlobals: ReturnType<typeof _collectUsedVitestGlobals>,
 ): string {
-  return vitestGlobals
+  return jestGlobals
     .filter((global) => usedGlobals.includes(global))
     .join(', ');
 }
