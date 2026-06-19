@@ -57,14 +57,11 @@ export class SgEditor {
     const fileSymbols = new Set(existingImports.flatMap((i) => i.symbols));
     const fileTypes = new Set(existingImports.flatMap((i) => i.types));
 
-    if (kind === 'value' ? fileSymbols.has(symbol) : fileTypes.has(symbol)) {
-      ensured.add(symbol);
-      return symbol;
+    if (!(kind === 'value' ? fileSymbols.has(symbol) : fileTypes.has(symbol))) {
+      this._syncModuleImport(module);
     }
-
+    
     ensured.add(symbol);
-    this._syncModuleImport(module);
-
     return symbol;
   }
 
@@ -90,7 +87,8 @@ export class SgEditor {
       ...state.types,
     ]);
 
-    const importText = _formatModuleImport(module, [...symbols], [...types]);
+
+    const importText = _formatModuleImport({ module, symbols, types });
 
     if (existingImports.length > 0) {
       this.replaceNode(existingImports[0].node, importText);
@@ -188,15 +186,16 @@ function _parseValueImportNames(
   return { symbols, types };
 }
 
-function _formatModuleImport(
-  module: string,
-  symbols: string[],
-  types: string[],
-): string {
-  if (symbols.length === 0) {
-    return `import type { ${types.join(', ')} } from '${module}';`;
+function _formatModuleImport(args: {
+  module: string;
+  symbols: Set<string>;
+  types: Set<string>;
+}): string {
+  const { module, symbols, types } = args;
+  if (symbols.size === 0) {
+    return `import type { ${[...types].join(', ')} } from '${module}';`;
   }
 
-  const parts = [...symbols, ...types.map((type) => `type ${type}`)];
+  const parts = [...symbols, ...[...types].map((type) => `type ${type}`)];
   return `import { ${parts.join(', ')} } from '${module}';`;
 }
