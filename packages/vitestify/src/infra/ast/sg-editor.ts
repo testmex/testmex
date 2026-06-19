@@ -27,7 +27,7 @@ export class SgEditor {
     });
   }
 
-  prepend(node: SgNode, text: string): void {
+  insertBefore(node: SgNode, text: string): void {
     const start = node.range().start.index;
     this._edits.push({
       startPos: start,

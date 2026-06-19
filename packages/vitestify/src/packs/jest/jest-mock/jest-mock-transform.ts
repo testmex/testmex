@@ -69,7 +69,7 @@ function _replaceRequireActual({
     const importActual = `(await ${vi}.importActual(${jestRequireActual.getMatch('MODULE')?.text()}))`;
     editor.replaceNode(jestRequireActual, importActual);
     if (!markedAsync) {
-      editor.prepend(factory, 'async ');
+      editor.insertBefore(factory, 'async ');
       markedAsync = true;
     }
   }
