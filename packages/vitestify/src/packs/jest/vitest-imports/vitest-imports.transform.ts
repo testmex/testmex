@@ -1,5 +1,5 @@
-import { Lang, parse } from '@ast-grep/napi';
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
+import { SgEditor } from '../../../infra/ast/sg-editor';
 import { findingTypes } from '../identifiers';
 import {
   _collectUsedVitestGlobals,
@@ -18,18 +18,23 @@ function _rewriteVitestImports(content: string): string {
     return content;
   }
 
-  const root = parse(Lang.TypeScript, content).root();
-  const existingImport = root.find("import { $$$NAMES } from 'vitest'");
+  const editor = new SgEditor(content);
   const importNames = _formatVitestImportNames(usedGlobals);
   const importStatement = `import { ${importNames} } from 'vitest';`;
+  const existingImport = editor.root.find("import { $$$NAMES } from 'vitest'");
 
   if (existingImport) {
-    return root
-      .commitEdits([existingImport.replace(importStatement)])
-      .trimEnd();
+    editor.replaceNode(existingImport, importStatement);
+  } else {
+    const firstStatement = editor.root
+      .children()
+      .find((child) => child.kind() !== 'comment');
+    if (firstStatement) {
+      editor.insertBefore(firstStatement, `${importStatement}\n\n`);
+    }
   }
 
-  return `${importStatement}\n\n${content}`.trimEnd();
+  return editor.commit().trimEnd();
 }
 
 function _formatVitestImportNames(

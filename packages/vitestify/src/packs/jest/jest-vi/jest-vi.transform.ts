@@ -1,5 +1,7 @@
-import { Lang, parse, type SgNode } from '@ast-grep/napi';
+import { type SgNode } from '@ast-grep/napi';
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
+import { SgEditor } from '../../../infra/ast/sg-editor';
+import { ensureVitestSymbol } from '../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../identifiers';
 
 const apiNamesRecord: Record<string, string> = {
@@ -36,36 +38,27 @@ function _rewriteJestVi(content: string): string {
   let result = content;
 
   for (let pass = 0; pass < 256; pass++) {
-    const root = parse(Lang.TypeScript, result).root();
-    const disableAutomock = root.find('jest.disableAutomock($$$ARGS)');
+    const editor = new SgEditor(result);
+    const disableAutomock = editor.root.find('jest.disableAutomock($$$ARGS)');
 
     if (disableAutomock) {
       const statement = _expressionStatement(disableAutomock);
-      result = root.commitEdits([
-        {
-          startPos: statement.range().start.index,
-          endPos: statement.range().end.index,
-          insertedText: '',
-        },
-      ]);
+      editor.replaceNode(statement, '');
+      result = editor.commit();
       continue;
     }
 
-    const calls = _collectJestCalls(root);
+    const calls = _collectJestCalls(editor.root);
     if (calls.length === 0) {
       break;
     }
 
     const { call, method } = calls[0];
-    const edits: Array<
-      | ReturnType<SgNode['replace']>
-      | { startPos: number; endPos: number; insertedText: string }
-    > = [];
 
     if (method === 'spyOn' && call.text().includes('global')) {
       const argMatch = call.text().match(/jest\.spyOn\(global,\s*(.+)\)$/);
       const arg = argMatch?.[1] ?? '';
-      edits.push(call.replace(`vi.spyOn(globalThis, ${arg})`));
+      editor.replaceNode(call, `vi.spyOn(globalThis, ${arg})`);
     } else {
       const viMethod = apiNamesRecord[method] ?? method;
       const replacement = _replaceJestCall(call.text(), method, viMethod);
@@ -75,14 +68,14 @@ function _rewriteJestVi(content: string): string {
         const awaited = inSpread
           ? `(await ${replacement})`
           : `await ${replacement}`;
-        edits.push(call.replace(awaited));
-        _markEnclosingFunctionAsync(call, edits);
+        editor.replaceNode(call, awaited);
+        _markEnclosingFunctionAsync(call, editor);
       } else {
-        edits.push(call.replace(replacement));
+        editor.replaceNode(call, replacement);
       }
     }
 
-    result = root.commitEdits(edits);
+    result = editor.commit();
   }
 
   if (genericAsyncApiPattern.test(result)) {
@@ -92,8 +85,10 @@ function _rewriteJestVi(content: string): string {
     );
   }
 
-  if (/\bvi\.\w+/.test(result) && !_hasViImport(parse(Lang.TypeScript, result).root())) {
-    result = `import { vi } from 'vitest';\n${result}`;
+  if (/\bvi\.\w+/.test(result)) {
+    const editor = new SgEditor(result);
+    ensureVitestSymbol({ editor, symbol: 'vi' });
+    result = editor.commit();
   }
 
   return result.replace(/^\n+/, '');
@@ -138,13 +133,7 @@ function _expressionStatement(node: SgNode): SgNode {
   return current ?? node;
 }
 
-function _markEnclosingFunctionAsync(
-  node: SgNode,
-  edits: Array<
-    | ReturnType<SgNode['replace']>
-    | { startPos: number; endPos: number; insertedText: string }
-  >,
-): void {
+function _markEnclosingFunctionAsync(node: SgNode, editor: SgEditor): void {
   let current: SgNode | null = node.parent();
   while (
     current != null &&
@@ -164,30 +153,5 @@ function _markEnclosingFunctionAsync(
     return;
   }
 
-  edits.push({
-    startPos: params.range().start.index,
-    endPos: params.range().start.index,
-    insertedText: 'async ',
-  });
-}
-
-function _hasViImport(root: SgNode) {
-  for (const imp of root.findAll('import { $$$NAMES } from $SOURCE')) {
-    if (
-      imp
-        .getMatch('SOURCE')
-        ?.find({ rule: { kind: 'string_fragment' } })
-        ?.text() !== 'vitest'
-    ) {
-      continue;
-    }
-
-    for (const name of imp.getMultipleMatches('NAMES')) {
-      if (name.text().trim() === 'vi') {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  editor.insertBefore(params, 'async ');
 }

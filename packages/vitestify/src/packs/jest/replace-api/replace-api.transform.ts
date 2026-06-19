@@ -1,5 +1,5 @@
-import { Lang, parse } from '@ast-grep/napi';
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
+import { SgEditor } from '../../../infra/ast/sg-editor';
 import { findingTypes } from '../identifiers';
 
 export const replaceApiTransform = defineFileTransform({
@@ -10,73 +10,73 @@ export const replaceApiTransform = defineFileTransform({
 function _rewriteReplaceApi(content: string): string {
   let result = _rewriteFitCalls(content);
   result = _rewriteFailingCalls(result);
-  result = _rewriteLegacySkipAndFocusCalls(result);
-  return result;
+  return _rewriteLegacySkipAndFocusCalls(result);
 }
 
 function _rewriteFitCalls(content: string): string {
-  const root = parse(Lang.TypeScript, content).root();
+  const editor = new SgEditor(content);
   const fitSites = [
-    ...root.findAll('fit($$$ARGS)'),
-    ...root.findAll('fit.$PROP'),
+    ...editor.root.findAll('fit($$$ARGS)'),
+    ...editor.root.findAll('fit.$PROP'),
   ];
 
   if (fitSites.length === 0) {
     return content;
   }
 
-  const edits = fitSites.map((node) =>
-    node.replace(node.text().replace(/^fit\b/, 'it.only')),
-  );
+  for (const node of fitSites) {
+    editor.replaceNode(node, node.text().replace(/^fit\b/, 'it.only'));
+  }
 
-  return root.commitEdits(edits);
+  return editor.commit();
 }
 
 function _rewriteFailingCalls(content: string): string {
-  const root = parse(Lang.TypeScript, content).root();
+  const editor = new SgEditor(content);
   const failingCalls = [
-    ...root.findAll('it.failing($$$ARGS)'),
-    ...root.findAll('test.failing($$$ARGS)'),
-    ...root.findAll('it.only.failing($$$ARGS)'),
-    ...root.findAll('it.skip.failing($$$ARGS)'),
-    ...root.findAll('test.only.failing($$$ARGS)'),
-    ...root.findAll('test.skip.failing($$$ARGS)'),
+    ...editor.root.findAll('it.failing($$$ARGS)'),
+    ...editor.root.findAll('test.failing($$$ARGS)'),
+    ...editor.root.findAll('it.only.failing($$$ARGS)'),
+    ...editor.root.findAll('it.skip.failing($$$ARGS)'),
+    ...editor.root.findAll('test.only.failing($$$ARGS)'),
+    ...editor.root.findAll('test.skip.failing($$$ARGS)'),
   ];
 
   if (failingCalls.length === 0) {
     return content;
   }
 
-  const edits = failingCalls.map((node) =>
-    node.replace(node.text().replace(/\.failing\b/, '.fails')),
-  );
+  for (const node of failingCalls) {
+    editor.replaceNode(node, node.text().replace(/\.failing\b/, '.fails'));
+  }
 
-  return root.commitEdits(edits);
+  return editor.commit();
 }
 
 function _rewriteLegacySkipAndFocusCalls(content: string): string {
-  const root = parse(Lang.TypeScript, content).root();
+  const editor = new SgEditor(content);
   const legacyCalls = [
-    ...root.findAll('xit($$$ARGS)'),
-    ...root.findAll('xdescribe($$$ARGS)'),
-    ...root.findAll('xtest($$$ARGS)'),
-    ...root.findAll('fdescribe($$$ARGS)'),
+    ...editor.root.findAll('xit($$$ARGS)'),
+    ...editor.root.findAll('xdescribe($$$ARGS)'),
+    ...editor.root.findAll('xtest($$$ARGS)'),
+    ...editor.root.findAll('fdescribe($$$ARGS)'),
   ];
 
   if (legacyCalls.length === 0) {
     return content;
   }
 
-  const edits = legacyCalls.map((node) =>
-    node.replace(
+  for (const node of legacyCalls) {
+    editor.replaceNode(
+      node,
       node
         .text()
         .replace(/^xit\b/, 'it.skip')
         .replace(/^xdescribe\b/, 'describe.skip')
         .replace(/^xtest\b/, 'test.skip')
         .replace(/^fdescribe\b/, 'describe.only'),
-    ),
-  );
+    );
+  }
 
-  return root.commitEdits(edits);
+  return editor.commit();
 }
