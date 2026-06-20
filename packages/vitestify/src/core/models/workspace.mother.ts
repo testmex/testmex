@@ -39,34 +39,6 @@ export class WorkspaceMother {
     });
   }
 
-  withLegacyFile({
-    appName,
-    fileName,
-    content,
-  }: {
-    appName: string;
-    fileName: string;
-    content: string;
-  }) {
-    if (appName !== this._state.name) {
-      throw new Error(`WorkspaceMother: app "${appName}" does not exist`);
-    }
-
-    const path = relativePath(`apps/${appName}/${fileName}`);
-
-    return new WorkspaceMother({
-      ...this._state,
-      appFiles: {
-        ...this._state.appFiles,
-        [path]: {
-          path,
-          tags: inferProjectFileTags(fileName),
-          content,
-        },
-      },
-    });
-  }
-
   buildFiles(): Record<RelativePath, string> {
     const files: Record<RelativePath, string> = {};
 
@@ -102,18 +74,20 @@ interface State {
   appFiles: Record<string, WorkspaceFile>;
 }
 
-function inferProjectFileTags(fileName: string): ProjectFileTag[] {
-  if (fileName.endsWith('.snap')) {
-    return [projectFileTag('snapshot')];
-  }
-  if (fileName.endsWith('.spec.ts') || fileName.endsWith('.spec.tsx')) {
-    return [projectFileTag('test')];
-  }
-  return [];
-}
-
 export class WorkspaceFileMother {
   constructor(private readonly _file: WorkspaceFile) {}
+
+  static file(
+    appName: string,
+    content: string,
+    fileName: string,
+  ): WorkspaceFileMother {
+    return new WorkspaceFileMother({
+      content,
+      path: relativePath(`apps/${appName}/${fileName}`),
+      tags: [],
+    });
+  }
 
   static snapshotFile({
     appName,

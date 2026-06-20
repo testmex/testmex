@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../../core/domain/tree';
-import { WorkspaceMother } from '../../core/models/workspace.mother';
+import {
+  WorkspaceFileMother,
+  WorkspaceMother,
+} from '../../core/models/workspace.mother';
 import { FileSystemFake } from '../../core/ports/file-system.fake';
 import { TestEnricher } from './test-enricher';
 
 describe(TestEnricher.name, () => {
   it('ignores non test files', async () => {
-    const mother = WorkspaceMother.withApp('my-app').withLegacyFile({
-      appName: 'my-app',
-      fileName: 'src/app.ts',
-      content: 'export const app = 1;',
-    });
+    const mother = WorkspaceMother.withApp('my-app').withFile(
+      WorkspaceFileMother.file(
+        'my-app',
+        'export const app = 1;',
+        'src/app.ts',
+      ).build(),
+    );
 
     const files = await enrich(mother);
 
@@ -19,16 +24,20 @@ describe(TestEnricher.name, () => {
 
   it('discovers .spec.ts files and tags them as test', async () => {
     const mother = WorkspaceMother.withApp('my-app')
-      .withLegacyFile({
-        appName: 'my-app',
-        fileName: 'src/app.spec.ts',
-        content: 'it("works", () => {})',
-      })
-      .withLegacyFile({
-        appName: 'my-app',
-        fileName: 'src/app.ts',
-        content: 'export const app = 1;',
-      });
+      .withFile(
+        WorkspaceFileMother.testFile(
+          'my-app',
+          'it("works", () => {})',
+          'src/app.spec.ts',
+        ).build(),
+      )
+      .withFile(
+        WorkspaceFileMother.file(
+          'my-app',
+          'export const app = 1;',
+          'src/app.ts',
+        ).build(),
+      );
 
     const files = await enrich(mother);
 
@@ -41,11 +50,13 @@ describe(TestEnricher.name, () => {
   });
 
   it('discovers .spec.tsx files and tags them as test', async () => {
-    const mother = WorkspaceMother.withApp('my-app').withLegacyFile({
-      appName: 'my-app',
-      fileName: 'src/app.spec.tsx',
-      content: 'it("works", () => {})',
-    });
+    const mother = WorkspaceMother.withApp('my-app').withFile(
+      WorkspaceFileMother.testFile(
+        'my-app',
+        'it("works", () => {})',
+        'src/app.spec.tsx',
+      ).build(),
+    );
 
     const files = await enrich(mother);
 
@@ -58,11 +69,13 @@ describe(TestEnricher.name, () => {
   });
 
   it('discovers .snap files and tags them as snapshot', async () => {
-    const mother = WorkspaceMother.withApp('my-app').withLegacyFile({
-      appName: 'my-app',
-      fileName: '__snapshots__/app.spec.tsx.snap',
-      content: "exports[`foo test 1`] = `Array ['foo', 'bar']`;",
-    });
+    const mother = WorkspaceMother.withApp('my-app').withFile(
+      WorkspaceFileMother.snapshotFile({
+        appName: 'my-app',
+        fileName: 'app.spec.tsx.snap',
+        content: "exports[`foo test 1`] = `Array ['foo', 'bar']`;",
+      }).build(),
+    );
 
     const files = await enrich(mother);
 

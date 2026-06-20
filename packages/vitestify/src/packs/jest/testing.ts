@@ -1,5 +1,6 @@
 import {
   createTestingWorkspace,
+  WorkspaceFileMother,
   WorkspaceMother,
 } from '../../core/models/workspace.mother';
 import { relativePath } from '../../core/models/relative-path';
@@ -24,11 +25,9 @@ export async function transformTestFile(
   }: TransformTestFileOptions,
 ): Promise<string | null> {
   const workspace = createTestingWorkspace(
-    WorkspaceMother.withApp(appName).withLegacyFile({
-      appName,
-      fileName: filePath,
-      content,
-    }),
+    WorkspaceMother.withApp(appName).withFile(
+      WorkspaceFileMother.testFile(appName, content, filePath).build(),
+    ),
   );
   await runTransform({ workspace, heuristics, transforms });
   return workspace.tree.maybeReadFile(
