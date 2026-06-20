@@ -9,17 +9,27 @@ import {
   type WorkspaceInfo,
 } from './workspace-info';
 
-export class WorkspaceMother {
-  constructor(private readonly _state: State = { appFiles: {} }) {}
+export function createTestingWorkspace(mother: WorkspaceMother): Workspace {
+  const fileSystem = new FileSystemFake();
+  fileSystem.configure(mother.buildFiles());
 
-  withApp(name: string) {
+  return defineWorkspace({
+    info: mother.buildWorkspaceInfo(),
+    tree: new Tree({ fileSystem }),
+  });
+}
+
+export class WorkspaceMother {
+  constructor(private readonly _state: State) {}
+
+  static withApp(name: string): WorkspaceMother {
     return new WorkspaceMother({
-      ...this._state,
       name,
+      appFiles: {},
     });
   }
 
-  withWorkspaceFile(file: WorkspaceFile) {
+  withFile(file: WorkspaceFile) {
     return new WorkspaceMother({
       ...this._state,
       appFiles: {
@@ -29,7 +39,7 @@ export class WorkspaceMother {
     });
   }
 
-  withFile({
+  withLegacyFile({
     appName,
     fileName,
     content,
@@ -38,10 +48,6 @@ export class WorkspaceMother {
     fileName: string;
     content: string;
   }) {
-    if (this._state.name === undefined) {
-      throw new Error('WorkspaceMother: configure a workspace first');
-    }
-
     if (appName !== this._state.name) {
       throw new Error(`WorkspaceMother: app "${appName}" does not exist`);
     }
@@ -62,10 +68,6 @@ export class WorkspaceMother {
   }
 
   buildFiles(): Record<RelativePath, string> {
-    if (this._state.name === undefined) {
-      throw new Error('WorkspaceMother: configure a workspace first');
-    }
-
     const files: Record<RelativePath, string> = {};
 
     for (const file of Object.values(this._state.appFiles)) {
@@ -76,10 +78,6 @@ export class WorkspaceMother {
   }
 
   buildWorkspaceInfo(): WorkspaceInfo {
-    if (this._state.name === undefined) {
-      throw new Error('WorkspaceMother: configure a workspace first');
-    }
-
     const name = this._state.name;
     const root = relativePath(`apps/${name}`);
 
@@ -100,7 +98,7 @@ export class WorkspaceMother {
 }
 
 interface State {
-  name?: string;
+  name: string;
   appFiles: Record<string, WorkspaceFile>;
 }
 
@@ -112,18 +110,6 @@ function inferProjectFileTags(fileName: string): ProjectFileTag[] {
     return [projectFileTag('test')];
   }
   return [];
-}
-
-export const workspaceMother = new WorkspaceMother();
-
-export function createTestingWorkspace(mother: WorkspaceMother): Workspace {
-  const fileSystem = new FileSystemFake();
-  fileSystem.configure(mother.buildFiles());
-
-  return defineWorkspace({
-    info: mother.buildWorkspaceInfo(),
-    tree: new Tree({ fileSystem }),
-  });
 }
 
 export class WorkspaceFileMother {

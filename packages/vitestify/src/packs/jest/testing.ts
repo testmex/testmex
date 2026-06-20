@@ -1,6 +1,6 @@
 import {
   createTestingWorkspace,
-  workspaceMother,
+  WorkspaceMother,
 } from '../../core/models/workspace.mother';
 import { relativePath } from '../../core/models/relative-path';
 import type { Heuristic } from '../../core/models/heuristic';
@@ -24,9 +24,11 @@ export async function transformTestFile(
   }: TransformTestFileOptions,
 ): Promise<string | null> {
   const workspace = createTestingWorkspace(
-    workspaceMother
-      .withApp(appName)
-      .withFile({ appName, fileName: filePath, content }),
+    WorkspaceMother.withApp(appName).withLegacyFile({
+      appName,
+      fileName: filePath,
+      content,
+    }),
   );
   await runTransform({ workspace, heuristics, transforms });
   return workspace.tree.maybeReadFile(

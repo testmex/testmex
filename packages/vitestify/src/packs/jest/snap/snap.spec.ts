@@ -5,7 +5,7 @@ import { snapTransform } from './snap.transform';
 import {
   createTestingWorkspace,
   WorkspaceFileMother,
-  workspaceMother,
+  WorkspaceMother,
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
 import { relativePath } from '../../../core/models/relative-path';
@@ -103,7 +103,7 @@ async function transformSnapFile(content: string) {
   const appName = 'my-app';
 
   const workspace = createTestingWorkspace(
-    workspaceMother.withApp(appName).withWorkspaceFile(
+    WorkspaceMother.withApp(appName).withFile(
       WorkspaceFileMother.snapshotFile({
         appName,
         fileName: 'app.spec.ts.snap',
