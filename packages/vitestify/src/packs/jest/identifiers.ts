@@ -3,6 +3,7 @@ import { projectFileTag } from '../../core/models/workspace-info';
 
 export const findingTypes = {
   jestSymbol: findingType('jest-symbol'),
+  snapshot: findingType('snapshot'),
   vitestImportsNeeded: findingType('vitest-imports-needed'),
 } as const;
 

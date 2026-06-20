@@ -9,7 +9,11 @@ describe(TestEnricher.name, () => {
   it('ignores non test files', async () => {
     const mother = workspaceMother
       .withApp('my-app')
-      .withAppFile('my-app', 'src/app.ts', 'export const app = 1;');
+      .withFile({
+        appName: 'my-app',
+        fileName: 'src/app.ts',
+        content: 'export const app = 1;',
+      });
 
     const files = await enrich(mother);
 
@@ -19,8 +23,16 @@ describe(TestEnricher.name, () => {
   it('discovers .spec.ts files and tags them as test', async () => {
     const mother = workspaceMother
       .withApp('my-app')
-      .withAppFile('my-app', 'src/app.spec.ts', 'it("works", () => {})')
-      .withAppFile('my-app', 'src/app.ts', 'export const app = 1;');
+      .withFile({
+        appName: 'my-app',
+        fileName: 'src/app.spec.ts',
+        content: 'it("works", () => {})',
+      })
+      .withFile({
+        appName: 'my-app',
+        fileName: 'src/app.ts',
+        content: 'export const app = 1;',
+      });
 
     const files = await enrich(mother);
 
@@ -35,7 +47,11 @@ describe(TestEnricher.name, () => {
   it('discovers .spec.tsx files and tags them as test', async () => {
     const mother = workspaceMother
       .withApp('my-app')
-      .withAppFile('my-app', 'src/app.spec.tsx', 'it("works", () => {})');
+      .withFile({
+        appName: 'my-app',
+        fileName: 'src/app.spec.tsx',
+        content: 'it("works", () => {})',
+      });
 
     const files = await enrich(mother);
 
@@ -43,6 +59,23 @@ describe(TestEnricher.name, () => {
       {
         path: 'apps/my-app/src/app.spec.tsx',
         tags: ['test'],
+      },
+    ]);
+  });
+
+  it('discovers .snap files and tags them as snapshot', async () => {
+    const mother = workspaceMother.withApp('my-app').withFile({
+      appName: 'my-app',
+      fileName: '__snapshots__/app.spec.tsx.snap',
+      content: "exports[`foo test 1`] = `Array ['foo', 'bar']`;",
+    });
+
+    const files = await enrich(mother);
+
+    expect(files).toEqual([
+      {
+        path: 'apps/my-app/__snapshots__/app.spec.tsx.snap',
+        tags: ['snapshot'],
       },
     ]);
   });

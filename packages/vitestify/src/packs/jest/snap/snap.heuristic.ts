@@ -1,28 +1,14 @@
 import { defineFileContentHeuristic } from '../../../core/domain/define-file-content-heuristic';
-import type { ProjectFile } from '../../../core/models/workspace-info';
+import { projectFileTags } from '../../core/identifiers';
 import { findingTypes } from '../identifiers';
 
-function _isSnapshotFile(file: ProjectFile): boolean {
-  return (
-    file.path.endsWith('.snap') && file.path.includes('__snapshots__')
-  );
-}
-
-const jestSnapshotPattern = /Array \[|Object \{/;
-
 export const snapHeuristic = defineFileContentHeuristic({
-  predicate: _isSnapshotFile,
-  inspect: ({ file, project, content }) => {
-    if (!jestSnapshotPattern.test(content)) {
-      return [];
-    }
-
-    return [
-      {
-        type: findingTypes.jestSymbol,
-        project,
-        file,
-      },
-    ];
-  },
+  predicate: (file) => file.tags.includes(projectFileTags.snapshot),
+  inspect: ({ file, project }) => [
+    {
+      type: findingTypes.snapshot,
+      project,
+      file,
+    },
+  ],
 });

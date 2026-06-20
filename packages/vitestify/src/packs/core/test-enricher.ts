@@ -26,6 +26,7 @@ export class TestEnricher implements Enricher {
           ...project,
           files: [
             ...project.files,
+            ...(await this._discoverSnapshotFiles(project.path)),
             ...(await this._discoverTestFiles(project.path)),
           ],
         })),
@@ -33,12 +34,21 @@ export class TestEnricher implements Enricher {
     };
   }
 
+  private async _discoverSnapshotFiles(
+    projectRoot: RelativePath,
+  ): Promise<ProjectFile[]> {
+    return (await this._tree.scanDirectory(projectRoot))
+      .filter((file) => file.endsWith('.snap'))
+      .map((path) => ({
+        path,
+        tags: [projectFileTags.snapshot],
+      }));
+  }
+
   private async _discoverTestFiles(
     projectRoot: RelativePath,
   ): Promise<ProjectFile[]> {
-    const files = await this._tree.scanDirectory(projectRoot);
-
-    return files
+    return (await this._tree.scanDirectory(projectRoot))
       .filter((file) => file.endsWith('.spec.ts') || file.endsWith('.spec.tsx'))
       .map((path) => ({
         path,

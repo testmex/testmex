@@ -24,7 +24,9 @@ export async function transformTestFile(
   }: TransformTestFileOptions,
 ): Promise<string | null> {
   const workspace = createTestingWorkspace(
-    workspaceMother.withApp(appName).withAppFile(appName, filePath, content),
+    workspaceMother
+      .withApp(appName)
+      .withFile({ appName, fileName: filePath, content }),
   );
   await runTransform({ workspace, heuristics, transforms });
   return workspace.tree.maybeReadFile(

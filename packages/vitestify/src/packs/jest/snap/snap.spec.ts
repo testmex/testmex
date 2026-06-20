@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { transformTestFile as runTransformTestFile } from '../testing';
 import { snapHeuristic } from './snap.heuristic';
 import { snapTransform } from './snap.transform';
+import {
+  createTestingWorkspace,
+  WorkspaceFileMother,
+  workspaceMother,
+} from '../../../core/models/workspace.mother';
+import { runTransform } from '../../../testing/run-transform';
+import { relativePath } from '../../../core/models/relative-path';
 
 describe('snap', () => {
-  it(
-    'normalize jest snapshot file format in __snapshots__/*.snap',
-    async () => {
-      expect(
-        await transformSnapFile(`\
+  it('normalize jest snapshot file format in __snapshots__/*.snap', async () => {
+    expect(
+      await transformSnapFile(`\
 exports[\`foo test 1\`] = \`
 Array [
   "foo",
@@ -21,7 +26,7 @@ Object {
   "key": "value",
 }
 \`;`),
-      ).toBe(`\
+    ).toBe(`\
 exports[\`foo test 1\`] = \`
 [
   "foo",
@@ -34,8 +39,7 @@ exports[\`bar test 1\`] = \`
   "key": "value",
 }
 \`;`);
-    },
-  );
+  });
 
   it('rewrites `Array [` to `[` via string replace', async () => {
     expect(
@@ -85,21 +89,34 @@ Object {
 }
 \`;`;
 
-    expect(await transformSpecFile(specContent)).toBe(specContent);
+    const result = await runTransformTestFile(specContent, {
+      heuristics: [snapHeuristic],
+      transforms: [snapTransform],
+      filePath: 'src/app.spec.ts',
+    });
+
+    expect(result).toBe(specContent);
   });
 });
 
-function transformSnapFile(content: string) {
-  return runTransformTestFile(content, {
-    heuristics: [snapHeuristic],
-    transforms: [snapTransform],
-    filePath: 'src/__snapshots__/app.spec.ts.snap',
-  });
-}
+async function transformSnapFile(content: string) {
+  const appName = 'my-app';
 
-function transformSpecFile(content: string) {
-  return runTransformTestFile(content, {
+  const workspace = createTestingWorkspace(
+    workspaceMother.withApp(appName).withWorkspaceFile(
+      WorkspaceFileMother.snapshotFile({
+        appName,
+        fileName: 'app.spec.ts.snap',
+        content,
+      }).build(),
+    ),
+  );
+  await runTransform({
+    workspace,
     heuristics: [snapHeuristic],
     transforms: [snapTransform],
   });
+  return workspace.tree.maybeReadFile(
+    relativePath(`apps/${appName}/__snapshots__/app.spec.ts.snap`),
+  );
 }
