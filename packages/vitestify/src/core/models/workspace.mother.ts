@@ -77,11 +77,15 @@ interface State {
 export class WorkspaceFileMother {
   constructor(private readonly _file: WorkspaceFile) {}
 
-  static file(
-    appName: string,
-    content: string,
-    fileName: string,
-  ): WorkspaceFileMother {
+  static file({
+    appName,
+    content,
+    fileName,
+  }: {
+    appName: string;
+    content: string;
+    fileName: string;
+  }): WorkspaceFileMother {
     return new WorkspaceFileMother({
       content,
       path: relativePath(`apps/${appName}/${fileName}`),
@@ -105,11 +109,15 @@ export class WorkspaceFileMother {
     });
   }
 
-  static testFile(
-    appName: string,
-    content: string,
-    fileName: string,
-  ): WorkspaceFileMother {
+  static testFile({
+    appName,
+    content,
+    fileName,
+  }: {
+    appName: string;
+    content: string;
+    fileName: string;
+  }): WorkspaceFileMother {
     return new WorkspaceFileMother({
       content,
       path: relativePath(`apps/${appName}/${fileName}`),

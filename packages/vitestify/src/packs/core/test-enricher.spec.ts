@@ -10,11 +10,11 @@ import { TestEnricher } from './test-enricher';
 describe(TestEnricher.name, () => {
   it('ignores non test files', async () => {
     const mother = WorkspaceMother.withApp('my-app').withFile(
-      WorkspaceFileMother.file(
-        'my-app',
-        'export const app = 1;',
-        'src/app.ts',
-      ).build(),
+      WorkspaceFileMother.file({
+        appName: 'my-app',
+        content: 'export const app = 1;',
+        fileName: 'src/app.ts',
+      }).build(),
     );
 
     const files = await enrich(mother);
@@ -25,18 +25,18 @@ describe(TestEnricher.name, () => {
   it('discovers .spec.ts files and tags them as test', async () => {
     const mother = WorkspaceMother.withApp('my-app')
       .withFile(
-        WorkspaceFileMother.testFile(
-          'my-app',
-          'it("works", () => {})',
-          'src/app.spec.ts',
-        ).build(),
+        WorkspaceFileMother.testFile({
+          appName: 'my-app',
+          content: 'it("works", () => {})',
+          fileName: 'src/app.spec.ts',
+        }).build(),
       )
       .withFile(
-        WorkspaceFileMother.file(
-          'my-app',
-          'export const app = 1;',
-          'src/app.ts',
-        ).build(),
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: 'export const app = 1;',
+          fileName: 'src/app.ts',
+        }).build(),
       );
 
     const files = await enrich(mother);
@@ -51,11 +51,11 @@ describe(TestEnricher.name, () => {
 
   it('discovers .spec.tsx files and tags them as test', async () => {
     const mother = WorkspaceMother.withApp('my-app').withFile(
-      WorkspaceFileMother.testFile(
-        'my-app',
-        'it("works", () => {})',
-        'src/app.spec.tsx',
-      ).build(),
+      WorkspaceFileMother.testFile({
+        appName: 'my-app',
+        content: 'it("works", () => {})',
+        fileName: 'src/app.spec.tsx',
+      }).build(),
     );
 
     const files = await enrich(mother);

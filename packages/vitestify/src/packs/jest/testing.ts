@@ -26,7 +26,11 @@ export async function transformTestFile(
 ): Promise<string | null> {
   const workspace = createTestingWorkspace(
     WorkspaceMother.withApp(appName).withFile(
-      WorkspaceFileMother.testFile(appName, content, filePath).build(),
+      WorkspaceFileMother.testFile({
+        appName,
+        content,
+        fileName: filePath,
+      }).build(),
     ),
   );
   await runTransform({ workspace, heuristics, transforms });
