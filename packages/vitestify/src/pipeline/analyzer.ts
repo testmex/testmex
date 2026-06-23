@@ -19,7 +19,7 @@ export class Analyzer {
       log('heuristic %d/%d', index + 1, this._heuristics.length);
       findings.push(...(await heuristic.inspect(workspace)));
     }
-    log('found %d findings', findings.length);
+    log('discovered %d findings', findings.length);
     return findings;
   }
 }
