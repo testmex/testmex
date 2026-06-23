@@ -6,13 +6,13 @@ import { Transformer } from '../pipeline/transformer';
 
 export interface RunTransformOptions {
   workspace: Workspace;
-  heuristics: Heuristic[];
+  heuristics?: Heuristic[];
   transforms: Transform[];
 }
 
 export async function runTransform({
   workspace,
-  heuristics,
+  heuristics = [],
   transforms,
 }: RunTransformOptions): Promise<void> {
   const analyzer = new Analyzer({ heuristics });

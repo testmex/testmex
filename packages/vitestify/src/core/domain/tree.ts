@@ -24,6 +24,15 @@ export class Tree {
     return this._fileSystemCached.maybeReadFile(path);
   }
 
+  async maybeReadJsonFile<T>(path: RelativePath): Promise<T | null> {
+    const content = await this.maybeReadFile(path);
+    if (content === null) {
+      return null;
+    }
+
+    return JSON.parse(content) as T;
+  }
+
   async scanDirectory(path: RelativePath): Promise<RelativePath[]> {
     return this._fileSystemCached.scanDirectory(path);
   }
