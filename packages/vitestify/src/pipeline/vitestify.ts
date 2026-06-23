@@ -19,6 +19,7 @@ export class Vitestify {
     corePack,
   ];
   private readonly _analyzer: Analyzer;
+  private readonly _commandRunner: CommandRunner;
   private readonly _scanner: Scanner;
   private readonly _transformer: Transformer;
 
@@ -26,6 +27,7 @@ export class Vitestify {
     commandRunner = new CommandRunnerPooled({ maxConcurrent: 10 }),
     fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
   }: { commandRunner?: CommandRunner; fileSystem?: FileSystem } = {}) {
+    this._commandRunner = commandRunner;
     this._scanner = new Scanner({
       commandRunner,
       enricherFactories: this._packs.flatMap((pack) => pack.enricherFactories),
@@ -43,5 +45,8 @@ export class Vitestify {
     const workspace = await this._scanner.scanWorkspace();
     const findings = await this._analyzer.analyze(workspace);
     await this._transformer.transform({ findings, workspace });
+    for (const command of workspace.commands.all()) {
+      await this._commandRunner.run(command);
+    }
   }
 }

@@ -67,6 +67,7 @@ class NxWorkspaceInfraMother {
     const root = `apps/${name}`;
 
     return {
+      ['npx nx add @nx/vitest']: '',
       ['npx nx graph --print']: JSON.stringify({
         graph: {
           nodes: {
