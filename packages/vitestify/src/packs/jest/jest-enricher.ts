@@ -1,7 +1,7 @@
 import { relative } from 'node:path/posix';
 import type { RelativePath } from '../../core/models/relative-path';
 import {
-  type ProjectFile,
+  type FileInfo,
   type WorkspaceInfo,
 } from '../../core/models/workspace-info';
 import { projectFileTags } from './identifiers';
@@ -20,23 +20,20 @@ export class JestEnricher implements Enricher {
       return workspaceInfo;
     }
 
-    return {
-      ...workspaceInfo,
-      projects: await Promise.all(
-        workspaceInfo.projects.map(async (project) => ({
-          ...project,
-          files: [
-            ...project.files,
-            ...(await this._discoverJestConfigFiles(project.path)),
-          ],
-        })),
-      ),
-    };
+    const discoveredFiles = (
+      await Promise.all(
+        workspaceInfo.projects.map((project) =>
+          this._discoverJestConfigFiles(project.path),
+        ),
+      )
+    ).flat();
+
+    return workspaceInfo.merge({ files: discoveredFiles });
   }
 
   private async _discoverJestConfigFiles(
     projectRoot: RelativePath,
-  ): Promise<ProjectFile[]> {
+  ): Promise<FileInfo[]> {
     const files = await this._tree.scanDirectory(projectRoot);
     const jestConfigPattern = /^jest\.config\.(ts|js|mjs|cjs)$/;
 

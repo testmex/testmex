@@ -34,9 +34,7 @@ export class Scanner {
     let count = 0;
     for (const enricher of enrichers) {
       workspaceInfo = await enricher.enrich(workspaceInfo);
-      count += workspaceInfo.projects.flatMap(
-        (project) => project.files,
-      ).length;
+      count += workspaceInfo.files.length;
       if (count > 0) {
         log(`found ${count} files`);
       }

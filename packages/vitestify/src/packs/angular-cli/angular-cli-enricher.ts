@@ -1,9 +1,5 @@
 import { relativePath } from '../../core/models/relative-path';
-import {
-  mergeWorkspaceInfo,
-  type Project,
-  WorkspaceInfo,
-} from '../../core/models/workspace-info';
+import { type Project, WorkspaceInfo } from '../../core/models/workspace-info';
 import { Enricher } from '../../core/models/enricher';
 import type { ReadonlyTree } from '../../core/domain/tree';
 
@@ -29,13 +25,10 @@ export class AngularCliEnricher implements Enricher {
       ([name, meta]) => ({
         name,
         path: relativePath(meta.root),
-        files: [],
       }),
     );
 
-    return mergeWorkspaceInfo(workspaceInfo, {
-      projects,
-    });
+    return workspaceInfo.merge({ projects });
   }
 }
 

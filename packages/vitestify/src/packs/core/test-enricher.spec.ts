@@ -4,6 +4,7 @@ import {
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../core/models/workspace.mother';
+import { WorkspaceInfo } from '../../core/models/workspace-info';
 import { FileSystemFake } from '../../core/ports/file-system.fake';
 import { TestEnricher } from './test-enricher';
 
@@ -93,10 +94,13 @@ async function enrich(mother: WorkspaceMother) {
   fileSystem.configure(mother.buildFiles());
 
   const enricher = new TestEnricher({ tree: new Tree({ fileSystem }) });
-  const { projects } = mother.buildWorkspaceInfo();
-  const result = await enricher.enrich({
-    projects: projects.map((project) => ({ ...project, files: [] })),
-  });
+  const workspaceInfo = mother.buildWorkspaceInfo();
+  const result = await enricher.enrich(
+    new WorkspaceInfo({
+      files: [],
+      projects: workspaceInfo.projects,
+    }),
+  );
 
-  return result.projects[0].files;
+  return result.getProjectFiles('my-app');
 }

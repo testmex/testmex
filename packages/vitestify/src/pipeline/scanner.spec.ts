@@ -53,14 +53,10 @@ describe(Scanner.name, () => {
 
     const { info } = await scanner.scanWorkspace();
 
-    expect(info.projects).toMatchObject([
+    expect(info.getProjectFiles('my-app')).toMatchObject([
       {
-        files: [
-          {
-            path: relativePath('apps/my-app/jest.config.ts'),
-            tags: ['jest-config'],
-          },
-        ],
+        path: relativePath('apps/my-app/jest.config.ts'),
+        tags: ['jest-config'],
       },
     ]);
   });
@@ -76,14 +72,10 @@ describe(Scanner.name, () => {
 
     const { info } = await scanner.scanWorkspace();
 
-    expect(info.projects).toMatchObject([
+    expect(info.getProjectFiles('my-app')).toMatchObject([
       {
-        files: [
-          {
-            path: relativePath('apps/my-app/src/app.spec.ts'),
-            tags: ['test'],
-          },
-        ],
+        path: relativePath('apps/my-app/src/app.spec.ts'),
+        tags: ['test'],
       },
     ]);
   });

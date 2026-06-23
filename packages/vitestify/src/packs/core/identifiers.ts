@@ -1,6 +1,6 @@
-import { projectFileTag } from '../../core/models/workspace-info';
+import { fileTag } from '../../core/models/workspace-info';
 
 export const projectFileTags = {
-  snapshot: projectFileTag('snapshot'),
-  test: projectFileTag('test'),
+  snapshot: fileTag('snapshot'),
+  test: fileTag('test'),
 } as const;

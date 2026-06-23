@@ -1,5 +1,5 @@
 import { findingType } from '../../core/models/finding';
-import { projectFileTag } from '../../core/models/workspace-info';
+import { fileTag } from '../../core/models/workspace-info';
 
 export const findingTypes = {
   jestSymbol: findingType('jest-symbol'),
@@ -8,5 +8,5 @@ export const findingTypes = {
 } as const;
 
 export const projectFileTags = {
-  jestConfig: projectFileTag('jest-config'),
+  jestConfig: fileTag('jest-config'),
 } as const;

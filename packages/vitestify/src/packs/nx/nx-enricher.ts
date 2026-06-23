@@ -1,9 +1,6 @@
 import { hasNx } from '../../core/domain/tree-helpers/has-nx';
 import { relativePath } from '../../core/models/relative-path';
-import {
-  mergeWorkspaceInfo,
-  WorkspaceInfo,
-} from '../../core/models/workspace-info';
+import { type Project, WorkspaceInfo } from '../../core/models/workspace-info';
 import type { CommandRunner } from '../../core/ports/command-runner';
 import { Enricher } from '../../core/models/enricher';
 import type { ReadonlyTree } from '../../core/domain/tree';
@@ -30,11 +27,10 @@ export class NxEnricher implements Enricher {
 
     const graph = await this._runNxGraphCommand();
 
-    return mergeWorkspaceInfo(workspaceInfo, {
+    return workspaceInfo.merge({
       projects: Object.values(graph.graph.nodes).map((node) => ({
         name: node.name,
         path: relativePath(node.data.root),
-        files: [],
       })),
     });
   }

@@ -3,10 +3,10 @@ import { Tree } from '../domain/tree';
 import { defineWorkspace, type Workspace } from '../domain/workspace';
 import { relativePath, type RelativePath } from './relative-path';
 import {
-  ProjectFileTag,
-  projectFileTag,
-  type ProjectFile,
-  type WorkspaceInfo,
+  FileTag,
+  fileTag,
+  type FileInfo,
+  WorkspaceInfo,
 } from './workspace-info';
 
 export function createTestingWorkspace(mother: WorkspaceMother): Workspace {
@@ -53,19 +53,14 @@ export class WorkspaceMother {
     const name = this._state.name;
     const root = relativePath(`apps/${name}`);
 
-    const files: ProjectFile[] = Object.values(this._state.appFiles).map(
+    const files: FileInfo[] = Object.values(this._state.appFiles).map(
       ({ path, tags }) => ({ path, tags }),
     );
 
-    return {
-      projects: [
-        {
-          name,
-          path: root,
-          files,
-        },
-      ],
-    };
+    return new WorkspaceInfo({
+      files,
+      projects: [{ name, path: root }],
+    });
   }
 }
 
@@ -119,7 +114,7 @@ export class WorkspaceFileMother {
     return new WorkspaceFileMother({
       content,
       path: relativePath(`apps/${appName}/__snapshots__/${fileName}`),
-      tags: [projectFileTag('snapshot')],
+      tags: [fileTag('snapshot')],
     });
   }
 
@@ -135,7 +130,7 @@ export class WorkspaceFileMother {
     return new WorkspaceFileMother({
       content,
       path: relativePath(`apps/${appName}/${fileName}`),
-      tags: [projectFileTag('test')],
+      tags: [fileTag('test')],
     });
   }
 
@@ -146,6 +141,6 @@ export class WorkspaceFileMother {
 
 interface WorkspaceFile {
   path: RelativePath;
-  tags: ProjectFileTag[];
+  tags: FileTag[];
   content: string;
 }
