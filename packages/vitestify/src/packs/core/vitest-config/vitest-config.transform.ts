@@ -14,7 +14,7 @@ const vitestConfigAlternativeFileNames = [
 
 export const vitestConfigTransform = defineTransform({
   apply: async ({ workspace }) => {
-    const { info, tree } = workspace;
+    const { commands, info, tree } = workspace;
 
     for (const project of info.projects) {
       if (await _hasVitestConfig(tree, project.path)) {
@@ -26,6 +26,9 @@ export const vitestConfigTransform = defineTransform({
         _vitestConfigContent(),
       );
     }
+
+    commands.add(['pnpm', 'add', '-D', 'vite-tsconfig-paths']);
+    commands.add(['pnpm', 'add', '-D', 'vitest']);
   },
 });
 

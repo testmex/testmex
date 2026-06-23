@@ -67,7 +67,8 @@ class NxWorkspaceInfraMother {
     const root = `apps/${name}`;
 
     return {
-      ['npx nx add @nx/vite']: '',
+      ['pnpm add -D vite-tsconfig-paths']: '',
+      ['pnpm add -D vitest']: '',
       ['npx nx add @nx/vitest']: '',
       ['npx nx graph --print']: JSON.stringify({
         graph: {

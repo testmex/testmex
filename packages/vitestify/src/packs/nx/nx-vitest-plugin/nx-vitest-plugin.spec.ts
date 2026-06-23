@@ -65,7 +65,6 @@ describe('nxVitestPluginTransform', () => {
     await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
 
     expect(workspace.commands.all()).toEqual([
-      ['npx', 'nx', 'add', '@nx/vite'],
       ['npx', 'nx', 'add', '@nx/vitest'],
     ]);
   });

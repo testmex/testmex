@@ -13,11 +13,15 @@ import { Finalizer } from './finalizer';
 import { Transformer } from './transformer';
 
 export class Vitestify {
+  /**
+   * Order is important as core pack might install some dependencies first,
+   * such as vite-tsconfig-paths which must be installed before @nx/vitest.
+   */
   private readonly _packs: Pack[] = [
+    corePack,
+    jestPack,
     angularCliPack,
     nxPack,
-    jestPack,
-    corePack,
   ];
   private readonly _analyzer: Analyzer;
   private readonly _finalizer: Finalizer;
@@ -28,14 +32,14 @@ export class Vitestify {
     commandRunner = new CommandRunnerPooled({ maxConcurrent: 10 }),
     fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
   }: { commandRunner?: CommandRunner; fileSystem?: FileSystem } = {}) {
+    this._analyzer = new Analyzer({
+      heuristics: this._packs.flatMap((pack) => pack.heuristics),
+    });
     this._finalizer = new Finalizer({ commandRunner });
     this._scanner = new Scanner({
       commandRunner,
       enricherFactories: this._packs.flatMap((pack) => pack.enricherFactories),
       fileSystem,
-    });
-    this._analyzer = new Analyzer({
-      heuristics: this._packs.flatMap((pack) => pack.heuristics),
     });
     this._transformer = new Transformer({
       transforms: this._packs.flatMap((pack) => pack.transforms),
