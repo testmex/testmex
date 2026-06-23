@@ -1,6 +1,13 @@
-import { defineTransform } from '../../../core/models/transform';
 import { relativePath } from '../../../core/models/relative-path';
+import { defineTransform } from '../../../core/models/transform';
 import type { Command } from '../../../core/ports/command-runner';
+
+export const nxViteAddCommand = [
+  'npx',
+  'nx',
+  'add',
+  '@nx/vite',
+] as const satisfies Command;
 
 export const nxVitestAddCommand = [
   'npx',
@@ -38,6 +45,7 @@ export const nxVitestPluginTransform = defineTransform({
 
     await tree.write(nxJsonPath, JSON.stringify(nxJson, null, 2));
 
+    commands.add(nxViteAddCommand);
     commands.add(nxVitestAddCommand);
   },
 });
