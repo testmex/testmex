@@ -20,21 +20,37 @@ export const nxVitestPluginTransform = defineTransform({
     }
 
     const plugins = nxJson.plugins ?? [];
-
     if (_hasVitestPlugin(plugins)) {
       return;
     }
+
+    nxJson.plugins = [
+      ...(nxJson.plugins ?? []),
+      {
+        plugin: '@nx/vitest',
+        options: {
+          testTargetName: 'test',
+          ciTargetName: 'test-ci',
+          testMode: 'watch',
+        },
+      },
+    ];
+
+    await tree.write(nxJsonPath, JSON.stringify(nxJson, null, 2));
 
     commands.add(nxVitestAddCommand);
   },
 });
 
-function _hasVitestPlugin(plugins: NxPlugin[]): boolean {
-  return plugins.some((entry) => entry.plugin === '@nx/vitest');
+function _hasVitestPlugin(plugins: Array<NxPlugin | string>): boolean {
+  return plugins.some((entry) => {
+    const pluginName = typeof entry === 'string' ? entry : entry.plugin;
+    return pluginName === '@nx/vitest';
+  });
 }
 
 interface NxJson {
-  plugins?: NxPlugin[];
+  plugins?: Array<NxPlugin | string>;
 }
 
 interface NxPlugin {

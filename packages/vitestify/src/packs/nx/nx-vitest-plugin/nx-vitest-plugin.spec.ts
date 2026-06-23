@@ -8,7 +8,57 @@ import { runTransform } from '../../../testing/run-transform';
 import { nxVitestPluginTransform } from './nx-vitest-plugin.transform';
 
 describe('nxVitestPluginTransform', () => {
-  it('queues nx add @nx/vitest when plugins is empty', async () => {
+  it('adds @nx/vitest plugin to nx.json', async () => {
+    const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
+    await workspace.tree.write(relativePath('nx.json'), '{}');
+
+    await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
+
+    expect(
+      await workspace.tree.maybeReadJsonFile(relativePath('nx.json')),
+    ).toMatchObject({
+      plugins: [
+        {
+          plugin: '@nx/vitest',
+          options: {
+            testTargetName: 'test',
+            ciTargetName: 'test-ci',
+            testMode: 'watch',
+          },
+        },
+      ],
+    });
+  });
+
+  it('adds @nx/vitest plugin to nx.json when plugins is not empty', async () => {
+    const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
+    await workspace.tree.write(
+      relativePath('nx.json'),
+      JSON.stringify({
+        plugins: [{ plugin: '@nx/js/typescript' }],
+      }),
+    );
+
+    await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
+
+    expect(
+      await workspace.tree.maybeReadJsonFile(relativePath('nx.json')),
+    ).toMatchObject({
+      plugins: [
+        { plugin: '@nx/js/typescript' },
+        {
+          plugin: '@nx/vitest',
+          options: {
+            testTargetName: 'test',
+            ciTargetName: 'test-ci',
+            testMode: 'watch',
+          },
+        },
+      ],
+    });
+  });
+
+  it('queues nx add @nx/vitest when @nx/plugin is not configured', async () => {
     const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
     await workspace.tree.write(relativePath('nx.json'), '{}');
 
