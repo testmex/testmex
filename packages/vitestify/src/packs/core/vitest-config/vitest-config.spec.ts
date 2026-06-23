@@ -5,7 +5,7 @@ import {
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../../core/models/workspace.mother';
-import { Transformer } from '../../../pipeline/transformer';
+import { runTransform } from '../../../testing/run-transform';
 import { vitestConfigTransform } from './vitest-config.transform';
 
 describe('vitestConfigTransform', () => {
@@ -20,10 +20,7 @@ describe('vitestConfigTransform', () => {
       ),
     );
 
-    await new Transformer({ transforms: [vitestConfigTransform] }).transform({
-      findings: [],
-      workspace,
-    });
+    await runTransform({ workspace, transforms: [vitestConfigTransform] });
 
     expect(
       await workspace.tree.maybeReadFile(
@@ -43,10 +40,7 @@ describe('vitestConfigTransform', () => {
       ),
     );
 
-    await new Transformer({ transforms: [vitestConfigTransform] }).transform({
-      findings: [],
-      workspace,
-    });
+    await runTransform({ workspace, transforms: [vitestConfigTransform] });
 
     expect(
       await workspace.tree.maybeReadFile(

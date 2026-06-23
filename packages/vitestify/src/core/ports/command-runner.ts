@@ -1,3 +1,7 @@
+export type Command = readonly string[];
+
+export type CommandResponse = readonly [command: Command, output: string];
+
 export interface CommandRunner {
-  run(args: readonly string[]): Promise<string>;
+  run(command: Command): Promise<string>;
 }

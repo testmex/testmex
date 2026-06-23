@@ -1,5 +1,5 @@
 import { CommandRunnerImpl } from '../../infra/command-runner.impl';
-import { CommandRunner } from '../ports/command-runner';
+import type { Command, CommandRunner } from '../ports/command-runner';
 
 export class CommandRunnerPooled implements CommandRunner {
   private readonly _inner: CommandRunner;
@@ -12,10 +12,10 @@ export class CommandRunnerPooled implements CommandRunner {
     this._maxConcurrent = args.maxConcurrent ?? 10;
   }
 
-  async run(args: readonly string[]): Promise<string> {
+  async run(command: Command): Promise<string> {
     await this._acquire();
     try {
-      return await this._inner.run(args);
+      return await this._inner.run(command);
     } finally {
       this._release();
     }

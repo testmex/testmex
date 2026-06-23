@@ -1,11 +1,11 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { CommandRunner } from '../core/ports/command-runner';
+import type { Command, CommandRunner } from '../core/ports/command-runner';
 
 export class CommandRunnerImpl implements CommandRunner {
-  async run(args: readonly string[]): Promise<string> {
+  async run(command: Command): Promise<string> {
     const execFileAsync = promisify(execFile);
-    const [file, ...commandArgs] = args;
+    const [file, ...commandArgs] = command;
 
     const { stdout } = await execFileAsync(file, commandArgs, {
       encoding: 'utf8',

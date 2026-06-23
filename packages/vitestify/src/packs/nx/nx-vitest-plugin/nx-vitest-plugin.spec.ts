@@ -8,17 +8,15 @@ import { runTransform } from '../../../testing/run-transform';
 import { nxVitestPluginTransform } from './nx-vitest-plugin.transform';
 
 describe('nxVitestPluginTransform', () => {
-  it('adds @nx/vitest plugin when plugins is empty', async () => {
+  it('queues nx add @nx/vitest when plugins is empty', async () => {
     const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
     await workspace.tree.write(relativePath('nx.json'), '{}');
 
     await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
 
-    expect(
-      await workspace.tree.maybeReadJsonFile(relativePath('nx.json')),
-    ).toMatchObject({
-      plugins: [{ plugin: '@nx/vitest' }],
-    });
+    expect(workspace.commands.all()).toEqual([
+      ['npx', 'nx', 'add', '@nx/vitest'],
+    ]);
   });
 
   it('skips when @nx/vitest plugin already present', async () => {
@@ -35,11 +33,7 @@ describe('nxVitestPluginTransform', () => {
 
     await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
 
-    expect(
-      await workspace.tree.maybeReadJsonFile(relativePath('nx.json')),
-    ).toMatchObject({
-      plugins: [{ options: { testTargetName: 'custom-test' } }],
-    });
+    expect(workspace.commands.all()).toEqual([]);
   });
 
   it('skips when nx.json is missing', async () => {
@@ -47,8 +41,6 @@ describe('nxVitestPluginTransform', () => {
 
     await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
 
-    expect(
-      await workspace.tree.maybeReadFile(relativePath('nx.json')),
-    ).toBeNull();
+    expect(workspace.commands.all()).toEqual([]);
   });
 });
