@@ -26,7 +26,53 @@ describe('vitestConfigTransform', () => {
       await workspace.tree.maybeReadFile(
         relativePath('apps/my-app/vitest.config.mts'),
       ),
-    ).toContain('export default defineConfig');
+    ).toContain(`
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    include: ['**/*.{test,spec}.{ts,tsx}'],
+  },
+});
+`);
+  });
+
+  it('adds nxViteTsPaths if nx workspace', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.packageJsonFile({
+            dependencies: {
+              nx: '23.0.0',
+            },
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
+          }).build(),
+        ),
+    );
+
+    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+
+    expect(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/vitest.config.mts'),
+      ),
+    ).toContain(`
+import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    include: ['**/*.{test,spec}.{ts,tsx}'],
+    plugins: [nxViteTsPaths()],
+  },
+});
+`);
   });
 
   it('skips projects that already have a vitest config', async () => {

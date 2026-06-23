@@ -21,13 +21,23 @@ export const vitestConfigTransform = defineTransform({
         continue;
       }
 
+      const hasNx = await _hasNx(tree);
+
       await tree.write(
         relativePath(join(project.path, vitestConfigFileName)),
-        _vitestConfigContent(),
+        _vitestConfigContent({ hasNx }),
       );
     }
   },
 });
+
+async function _hasNx(tree: ReadonlyTree): Promise<boolean> {
+  const packageJson = await tree.maybeReadJsonFile<{
+    dependencies: Record<string, string>;
+    devDependencies: Record<string, string>;
+  }>(relativePath('package.json'));
+  return packageJson?.dependencies?.nx != null;
+}
 
 async function _hasVitestConfig(
   tree: ReadonlyTree,
@@ -40,13 +50,15 @@ async function _hasVitestConfig(
   );
 }
 
-function _vitestConfigContent(): string {
+function _vitestConfigContent({ hasNx }: { hasNx: boolean }): string {
   return `
+${hasNx ? `import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';\n` : ''}\
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
     include: ['**/*.{test,spec}.{ts,tsx}'],
+${hasNx ? `    plugins: [nxViteTsPaths()],\n` : ''}\
   },
 });
 `;

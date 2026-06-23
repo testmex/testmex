@@ -99,7 +99,10 @@ export class Tree {
   }
 }
 
-export type ReadonlyTree = Pick<Tree, 'maybeReadFile' | 'scanDirectory'>;
+export type ReadonlyTree = Pick<
+  Tree,
+  'maybeReadFile' | 'maybeReadJsonFile' | 'scanDirectory'
+>;
 
 export type Change = { path: RelativePath } & (
   | CreateState

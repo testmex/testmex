@@ -1,7 +1,7 @@
 import { FileSystemFake } from '../../core/ports/file-system.fake';
-import { relativePath, type RelativePath } from './relative-path';
 import { Tree } from '../domain/tree';
 import { defineWorkspace, type Workspace } from '../domain/workspace';
+import { relativePath, type RelativePath } from './relative-path';
 import {
   ProjectFileTag,
   projectFileTag,
@@ -89,6 +89,20 @@ export class WorkspaceFileMother {
     return new WorkspaceFileMother({
       content,
       path: relativePath(`apps/${appName}/${fileName}`),
+      tags: [],
+    });
+  }
+
+  static packageJsonFile({
+    dependencies,
+  }: {
+    dependencies: Record<string, string>;
+  }): WorkspaceFileMother {
+    return new WorkspaceFileMother({
+      content: JSON.stringify({
+        dependencies,
+      }),
+      path: relativePath('package.json'),
       tags: [],
     });
   }
