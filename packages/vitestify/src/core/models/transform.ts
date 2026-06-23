@@ -3,7 +3,7 @@ import type { Workspace } from '../domain/workspace';
 
 export interface TransformApplyArgs {
   findings: Finding[];
-  workspace: Workspace;
+  workspace: Readonly<Workspace>;
 }
 
 export interface Transform {
