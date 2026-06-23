@@ -6,7 +6,11 @@ import {
 } from '../../../core/models/relative-path';
 import type { ReadonlyTree } from '../../../core/domain/tree';
 
-const vitestConfigFileName = 'vitest.config.ts';
+const vitestConfigFileName = 'vitest.config.mts';
+const vitestConfigAlternativeFileNames = [
+  vitestConfigFileName,
+  'vitest.config.ts',
+];
 
 export const vitestConfigTransform = defineTransform({
   apply: async ({ workspace }) => {
@@ -31,8 +35,8 @@ async function _hasVitestConfig(
 ): Promise<boolean> {
   const files = await tree.scanDirectory(projectRoot);
 
-  return files.some(
-    (file) => vitestConfigFileName === relative(projectRoot, file),
+  return files.some((file) =>
+    vitestConfigAlternativeFileNames.includes(relative(projectRoot, file)),
   );
 }
 

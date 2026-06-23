@@ -9,7 +9,7 @@ import { runTransform } from '../../../testing/run-transform';
 import { vitestConfigTransform } from './vitest-config.transform';
 
 describe('vitestConfigTransform', () => {
-  it('generates vitest.config.ts at the root of each project', async () => {
+  it('generates vitest.config.mts at the root of each project', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(
         WorkspaceFileMother.file({
@@ -24,7 +24,7 @@ describe('vitestConfigTransform', () => {
 
     expect(
       await workspace.tree.maybeReadFile(
-        relativePath('apps/my-app/vitest.config.ts'),
+        relativePath('apps/my-app/vitest.config.mts'),
       ),
     ).toContain('export default defineConfig');
   });
