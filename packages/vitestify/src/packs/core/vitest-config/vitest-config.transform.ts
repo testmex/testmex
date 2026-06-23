@@ -4,6 +4,7 @@ import {
   relativePath,
   type RelativePath,
 } from '../../../core/models/relative-path';
+import { hasNx } from '../../../core/domain/tree-helpers/has-nx';
 import type { ReadonlyTree } from '../../../core/domain/tree';
 
 const vitestConfigFileName = 'vitest.config.mts';
@@ -21,23 +22,13 @@ export const vitestConfigTransform = defineTransform({
         continue;
       }
 
-      const hasNx = await _hasNx(tree);
-
       await tree.write(
         relativePath(join(project.path, vitestConfigFileName)),
-        _vitestConfigContent({ hasNx }),
+        _vitestConfigContent({ hasNx: await hasNx(tree) }),
       );
     }
   },
 });
-
-async function _hasNx(tree: ReadonlyTree): Promise<boolean> {
-  const packageJson = await tree.maybeReadJsonFile<{
-    dependencies: Record<string, string>;
-    devDependencies: Record<string, string>;
-  }>(relativePath('package.json'));
-  return packageJson?.dependencies?.nx != null;
-}
 
 async function _hasVitestConfig(
   tree: ReadonlyTree,

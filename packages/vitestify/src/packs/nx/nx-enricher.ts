@@ -1,3 +1,4 @@
+import { hasNx } from '../../core/domain/tree-helpers/has-nx';
 import { relativePath } from '../../core/models/relative-path';
 import {
   mergeWorkspaceInfo,
@@ -23,7 +24,7 @@ export class NxEnricher implements Enricher {
   }
 
   async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
-    if (!(await this._isNx())) {
+    if (!(await hasNx(this._tree))) {
       return workspaceInfo;
     }
 
@@ -36,24 +37,6 @@ export class NxEnricher implements Enricher {
         files: [],
       })),
     });
-  }
-
-  private async _isNx(): Promise<boolean> {
-    const packageJsonString = await this._tree.maybeReadFile(
-      relativePath('package.json'),
-    );
-
-    if (packageJsonString === null) {
-      return false;
-    }
-
-    const packageJson: PackageJson = JSON.parse(packageJsonString);
-
-    const nxPackageName = 'nx';
-    return (
-      nxPackageName in packageJson.dependencies ||
-      nxPackageName in packageJson.devDependencies
-    );
   }
 
   private async _runNxGraphCommand(): Promise<NxGraph> {
@@ -71,9 +54,4 @@ interface NxGraph {
   graph: {
     nodes: Record<string, { name: string; data: { root: string } }>;
   };
-}
-
-interface PackageJson {
-  dependencies: Record<string, string>;
-  devDependencies: Record<string, string>;
 }
