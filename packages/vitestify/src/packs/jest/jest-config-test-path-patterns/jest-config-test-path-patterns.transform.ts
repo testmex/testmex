@@ -10,7 +10,21 @@ export const jestConfigTestPathPatterns = defineFileTransform({
   apply: (content) => {
     const editor = new SgEditor(content);
 
-    const config = editor.root.find('module.exports = {$CONFIG}'); // ?
+    const config = editor.root
+      .find('module.exports = $CONFIG')
+      ?.getMatch('CONFIG');
+    const lastPair = config
+      ?.children()
+      .filter((c) => c.kind() === 'pair')
+      .at(-1);
+
+    if (lastPair) {
+      editor.replaceNode(
+        lastPair,
+        `${lastPair.text()},
+  testPathPatterns: ["**/.*\\.jest\\.(ts|tsx)"]`,
+      );
+    }
 
     return editor.commit();
   },

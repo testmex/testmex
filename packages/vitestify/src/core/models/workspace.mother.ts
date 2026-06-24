@@ -5,8 +5,8 @@ import { relativePath, type RelativePath } from './relative-path';
 import {
   FileTag,
   fileTag,
-  type FileInfo,
   WorkspaceInfo,
+  type FileInfo,
 } from './workspace-info';
 
 export function createTestingWorkspace(mother: WorkspaceMother): Workspace {
@@ -76,15 +76,17 @@ export class WorkspaceFileMother {
     appName,
     content,
     fileName,
+    tags = [],
   }: {
     appName: string;
     content: string;
     fileName: string;
+    tags: FileTag[];
   }): WorkspaceFileMother {
     return new WorkspaceFileMother({
       content,
       path: relativePath(`apps/${appName}/${fileName}`),
-      tags: [],
+      tags,
     });
   }
 

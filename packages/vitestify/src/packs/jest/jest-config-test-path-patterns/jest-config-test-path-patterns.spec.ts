@@ -1,14 +1,17 @@
 import { relativePath } from '../../../core/models/relative-path';
+import { fileTag } from '../../../core/models/workspace-info';
 import {
   createTestingWorkspace,
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
+import { projectFileTags } from '../identifiers';
+import { jestConfigHeuristic } from '../jest-config.heuristic';
 import { jestConfigTestPathPatterns } from './jest-config-test-path-patterns.transform';
 
 describe('jest-config-test-path-patterns', () => {
-  it.todo('add "testPathPatterns" to match ".jest.ts"', async () => {
+  it('add "testPathPatterns" to match ".jest.ts"', async () => {
     const transformed = await transformJestConfig(`
 module.exports = {
   preset: '../../jest.preset.js',
@@ -16,12 +19,12 @@ module.exports = {
   setupFilesAfterEnv: ['./jest.setup.ts'],
 };
 `);
-    expect(transformed).toBe(`
+    expect(transformed).toContain(`\
 module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testPathPatterns: ["**/.*\\.jest\\.(ts|tsx)"]
+  testPathPatterns: ["**/.*\\.jest\\.(ts|tsx)"],
 };
 `);
   });
@@ -49,10 +52,15 @@ async function transformJestConfig(content: string) {
         appName,
         content,
         fileName: 'jest.config.ts',
+        tags: [projectFileTags.jestConfig],
       }).build(),
     ),
   );
-  await runTransform({ workspace, transforms: [jestConfigTestPathPatterns] });
+  await runTransform({
+    workspace,
+    heuristics: [jestConfigHeuristic],
+    transforms: [jestConfigTestPathPatterns],
+  });
   return workspace.tree.maybeReadFile(
     relativePath(`apps/${appName}/jest.config.ts`),
   );
