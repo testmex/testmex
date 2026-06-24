@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "@ast-grep/napi": "0.43.0",
-    "debug": "4.4.3"
+    "debug": "4.4.3",
+    "globby": "16.2.0"
   },
   "devDependencies": {
     "@types/debug": "4.1.13"

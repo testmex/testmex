@@ -31,7 +31,7 @@ export default defineConfig(() => ({
       formats: ['es' as const],
     },
     rollupOptions: {
-      external: ['@ast-grep/napi', /^node:/],
+      external: ['@ast-grep/napi', 'globby', /^node:/],
     },
   },
   test: {

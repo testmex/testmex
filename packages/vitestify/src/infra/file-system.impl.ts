@@ -1,13 +1,7 @@
-import type { Dirent } from 'node:fs';
-import {
-  mkdir,
-  readFile,
-  readdir,
-  rm,
-  writeFile as writeFileFs,
-} from 'node:fs/promises';
-import { basename, dirname, join, relative, sep } from 'node:path';
+import { mkdir, readFile, rm, writeFile as writeFileFs } from 'node:fs/promises';
+import { dirname, join, sep } from 'node:path';
 import { posix } from 'node:path/posix';
+import { globby } from 'globby';
 import type { RelativePath } from '../core/models/relative-path';
 import { relativePath } from '../core/models/relative-path';
 import type { FileSystem } from '../core/ports/file-system';
@@ -36,21 +30,15 @@ export class FileSystemImpl implements FileSystem {
     }
   }
 
-  async scanDirectory(
-    path?: RelativePath,
-    { exclude = [] }: { exclude?: string[] } = {},
-  ): Promise<RelativePath[]> {
-    const directory = path
-      ? join(this._workspaceRoot, path)
-      : this._workspaceRoot;
-    const files = await this._collectFiles(directory, { exclude });
+  async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
+    const pattern = path ? `${path}/**/*` : '**/*';
 
-    if (!path) {
-      return files;
-    }
+    const files = await globby(pattern, {
+      cwd: this._workspaceRoot,
+      onlyFiles: true,
+    });
 
-    const prefix = `${path}/`;
-    return files.filter((file) => file.startsWith(prefix));
+    return files.map((file: string) => this._toPosixPath(relativePath(file)));
   }
 
   async writeFile(path: RelativePath, content: string): Promise<void> {
@@ -71,48 +59,6 @@ export class FileSystemImpl implements FileSystem {
 
       throw error;
     }
-  }
-
-  private async _collectFiles(
-    directory: string,
-    options: { exclude: string[] },
-  ): Promise<RelativePath[]> {
-    let entries: Dirent[];
-
-    if (options.exclude.includes(basename(directory))) {
-      return [];
-    }
-
-    try {
-      entries = await readdir(directory, { withFileTypes: true });
-    } catch (error) {
-      if (this._isEnoent(error)) {
-        return [];
-      }
-
-      throw error;
-    }
-
-    const files: RelativePath[] = [];
-
-    for (const entry of entries) {
-      const absolutePath = join(directory, entry.name);
-
-      if (entry.isDirectory()) {
-        files.push(...(await this._collectFiles(absolutePath, options)));
-        continue;
-      }
-
-      if (entry.isFile()) {
-        files.push(
-          this._toPosixPath(
-            relativePath(relative(this._workspaceRoot, absolutePath)),
-          ),
-        );
-      }
-    }
-
-    return files;
   }
 
   private _isEnoent(error: unknown): boolean {
