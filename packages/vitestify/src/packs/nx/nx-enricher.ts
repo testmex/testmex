@@ -1,9 +1,9 @@
-import { hasNx } from '../../core/domain/tree-helpers/has-nx';
-import { relativePath } from '../../core/models/relative-path';
-import { type Project, WorkspaceInfo } from '../../core/models/workspace-info';
-import type { CommandRunner } from '../../core/ports/command-runner';
-import { Enricher } from '../../core/models/enricher';
 import type { ReadonlyTree } from '../../core/domain/tree';
+import { hasNx } from '../../core/domain/tree-helpers/has-nx';
+import { Enricher } from '../../core/models/enricher';
+import { relativePath } from '../../core/models/relative-path';
+import { WorkspaceInfo } from '../../core/models/workspace-info';
+import type { CommandRunner } from '../../core/ports/command-runner';
 
 export class NxEnricher implements Enricher {
   private readonly _commandRunner: CommandRunner;

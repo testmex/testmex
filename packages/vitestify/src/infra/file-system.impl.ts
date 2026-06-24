@@ -6,7 +6,7 @@ import {
   rm,
   writeFile as writeFileFs,
 } from 'node:fs/promises';
-import { dirname, join, relative, sep } from 'node:path';
+import { basename, dirname, join, relative, sep } from 'node:path';
 import { posix } from 'node:path/posix';
 import type { RelativePath } from '../core/models/relative-path';
 import { relativePath } from '../core/models/relative-path';
@@ -36,11 +36,14 @@ export class FileSystemImpl implements FileSystem {
     }
   }
 
-  async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
+  async scanDirectory(
+    path?: RelativePath,
+    { exclude = [] }: { exclude?: string[] } = {},
+  ): Promise<RelativePath[]> {
     const directory = path
       ? join(this._workspaceRoot, path)
       : this._workspaceRoot;
-    const files = await this._collectFiles(directory);
+    const files = await this._collectFiles(directory, { exclude });
 
     if (!path) {
       return files;
@@ -70,8 +73,15 @@ export class FileSystemImpl implements FileSystem {
     }
   }
 
-  private async _collectFiles(directory: string): Promise<RelativePath[]> {
+  private async _collectFiles(
+    directory: string,
+    options: { exclude: string[] },
+  ): Promise<RelativePath[]> {
     let entries: Dirent[];
+
+    if (options.exclude.includes(basename(directory))) {
+      return [];
+    }
 
     try {
       entries = await readdir(directory, { withFileTypes: true });
@@ -89,7 +99,7 @@ export class FileSystemImpl implements FileSystem {
       const absolutePath = join(directory, entry.name);
 
       if (entry.isDirectory()) {
-        files.push(...(await this._collectFiles(absolutePath)));
+        files.push(...(await this._collectFiles(absolutePath, options)));
         continue;
       }
 

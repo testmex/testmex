@@ -1,10 +1,6 @@
 import type { ReadonlyTree } from '../../core/domain/tree';
 import { Enricher } from '../../core/models/enricher';
 import {
-  relativePath,
-  type RelativePath,
-} from '../../core/models/relative-path';
-import {
   type FileInfo,
   type WorkspaceInfo,
 } from '../../core/models/workspace-info';

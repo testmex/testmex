@@ -34,7 +34,9 @@ export class Tree {
   }
 
   async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
-    return this._fileSystemCached.scanDirectory(path);
+    return this._fileSystemCached.scanDirectory(path, {
+      exclude: ['.git', 'node_modules'],
+    });
   }
 
   async write(path: RelativePath, content: string): Promise<void> {
