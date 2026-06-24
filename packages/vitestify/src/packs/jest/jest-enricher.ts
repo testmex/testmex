@@ -1,12 +1,11 @@
-import { relative } from 'node:path/posix';
-import type { RelativePath } from '../../core/models/relative-path';
+import { basename } from 'node:path/posix';
+import type { ReadonlyTree } from '../../core/domain/tree';
+import { Enricher } from '../../core/models/enricher';
 import {
   type FileInfo,
   type WorkspaceInfo,
 } from '../../core/models/workspace-info';
 import { projectFileTags } from './identifiers';
-import { Enricher } from '../../core/models/enricher';
-import type { ReadonlyTree } from '../../core/domain/tree';
 
 export class JestEnricher implements Enricher {
   private readonly _tree: ReadonlyTree;
@@ -16,35 +15,26 @@ export class JestEnricher implements Enricher {
   }
 
   async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
-    if (workspaceInfo.projects.length === 0) {
-      return workspaceInfo;
-    }
-
-    const discoveredFiles = (
-      await Promise.all(
-        workspaceInfo.projects.map((project) =>
-          this._discoverJestConfigFiles(project.path),
-        ),
-      )
-    ).flat();
-
-    return workspaceInfo.merge({ files: discoveredFiles });
+    return workspaceInfo.merge({
+      files: await this._discoverJestConfigFiles(),
+    });
   }
 
-  private async _discoverJestConfigFiles(
-    projectRoot: RelativePath,
-  ): Promise<FileInfo[]> {
-    const files = await this._tree.scanDirectory(projectRoot);
-    const jestConfigPattern = /^jest\.config\.(ts|js|mjs|cjs)$/;
+  private async _discoverJestConfigFiles(): Promise<FileInfo[]> {
+    const files = await this._tree.scanDirectory();
+    const jestConfigAlternativeFileNames = [
+      'jest.config.ts',
+      'jest.config.js',
+      'jest.config.mjs',
+      'jest.config.cjs',
+    ];
 
     return files
-      .filter((file) => {
-        const relativeToProject = relative(projectRoot, file);
-        return (
-          !relativeToProject.includes('/') &&
-          jestConfigPattern.test(relativeToProject)
-        );
-      })
+      .filter((path) =>
+        jestConfigAlternativeFileNames.some((name) =>
+          basename(path).endsWith(name),
+        ),
+      )
       .map((path) => ({
         path,
         tags: [projectFileTags.jestConfig],

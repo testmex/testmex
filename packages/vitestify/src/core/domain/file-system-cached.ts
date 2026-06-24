@@ -27,7 +27,7 @@ export class FileSystemCached implements FileSystem {
     return null;
   }
 
-  async scanDirectory(path: RelativePath): Promise<RelativePath[]> {
+  async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
     return this._inner.scanDirectory(path);
   }
 

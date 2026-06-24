@@ -33,7 +33,7 @@ export class Tree {
     return JSON.parse(content) as T;
   }
 
-  async scanDirectory(path: RelativePath): Promise<RelativePath[]> {
+  async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
     return this._fileSystemCached.scanDirectory(path);
   }
 

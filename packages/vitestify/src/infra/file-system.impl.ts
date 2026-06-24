@@ -36,7 +36,7 @@ export class FileSystemImpl implements FileSystem {
     }
   }
 
-  async scanDirectory(path: RelativePath): Promise<RelativePath[]> {
+  async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
     const directory = path
       ? join(this._workspaceRoot, path)
       : this._workspaceRoot;
