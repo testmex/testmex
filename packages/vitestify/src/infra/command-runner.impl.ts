@@ -9,6 +9,7 @@ export class CommandRunnerImpl implements CommandRunner {
 
     const { stdout } = await execFileAsync(file, commandArgs, {
       encoding: 'utf8',
+      maxBuffer: 1024 ^ 3,
     });
 
     return stdout;
