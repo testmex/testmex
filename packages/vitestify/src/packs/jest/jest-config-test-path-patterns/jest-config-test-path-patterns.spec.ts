@@ -1,5 +1,4 @@
 import { relativePath } from '../../../core/models/relative-path';
-import { fileTag } from '../../../core/models/workspace-info';
 import {
   createTestingWorkspace,
   WorkspaceFileMother,
@@ -29,12 +28,52 @@ module.exports = {
 `);
   });
 
-  it.todo(
-    'transform ".spec.ts" and ".test.ts" to ".jest.ts" in "testPathPatterns"',
-    () => {
-      throw new Error('🚧 Work in progress!');
-    },
-  );
+  it('transform ".spec.ts" to ".jest.ts" in "testPathPatterns"', async () => {
+    const transformed = await transformJestConfig(`
+module.exports = {
+  preset: '../../jest.preset.js',
+  testEnvironment: 'node',
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+  testPathPatterns: ["**/.*\\.spec\\.(ts|tsx)"],
+};
+    `);
+    expect(transformed).toContain(`\
+module.exports = {
+  preset: '../../jest.preset.js',
+  testEnvironment: 'node',
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+  testPathPatterns: ["**/.*\\.jest\\.(ts|tsx)"],
+};
+    `);
+  });
+
+  it('transform ".test.ts" to ".jest.ts" in "testPathPatterns"', async () => {
+    const transformed = await transformJestConfig(`
+module.exports = {
+  preset: '../../jest.preset.js',
+  testEnvironment: 'node',
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+  testPathPatterns: ["**/.*\\.test\\.(ts|tsx)"],
+};
+    `);
+    expect(transformed).toContain(
+      `testPathPatterns: ["**/.*\\.jest\\.(ts|tsx)"]`,
+    );
+  });
+
+  it('transform ".(spec|test).ts" to ".jest.ts" in "testPathPatterns"', async () => {
+    const transformed = await transformJestConfig(`
+module.exports = {
+  preset: '../../jest.preset.js',
+  testEnvironment: 'node',
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+  testPathPatterns: ["**/.*\\.(spec|test)\\.(ts|tsx)"],
+};
+    `);
+    expect(transformed).toContain(
+      `testPathPatterns: ["**/.*\\.(jest)\\.(ts|tsx)"]`,
+    );
+  });
 
   it.todo(
     'transform ".spec.ts" and ".test.ts" to ".jest.ts" in "testPathIgnorePatterns"',
@@ -46,12 +85,13 @@ module.exports = {
 
 async function transformJestConfig(content: string) {
   const appName = 'my-app';
+  const jestConfigName = 'jest.config.ts';
   const workspace = createTestingWorkspace(
     WorkspaceMother.withApp(appName).withFile(
       WorkspaceFileMother.file({
         appName,
         content,
-        fileName: 'jest.config.ts',
+        fileName: jestConfigName,
         tags: [projectFileTags.jestConfig],
       }).build(),
     ),
@@ -62,6 +102,6 @@ async function transformJestConfig(content: string) {
     transforms: [jestConfigTestPathPatterns],
   });
   return workspace.tree.maybeReadFile(
-    relativePath(`apps/${appName}/jest.config.ts`),
+    relativePath(`apps/${appName}/${jestConfigName}`),
   );
 }
