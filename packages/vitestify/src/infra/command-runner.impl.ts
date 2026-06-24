@@ -9,6 +9,7 @@ export class CommandRunnerImpl implements CommandRunner {
 
     const { stdout } = await execFileAsync(file, commandArgs, {
       encoding: 'utf8',
+      /* HACK: Fixes ERR_CHILD_PROCESS_STDIO_MAXBUFFER when running `nx add @nx/vitest` */
       maxBuffer: 1024 ^ 3,
     });
 
