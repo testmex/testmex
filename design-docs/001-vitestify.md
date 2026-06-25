@@ -173,10 +173,10 @@ interface Project {
 
 interface ProjectFile {
   path: RelativePath;
-  tags: ProjectFileTag[];
+  tags: FileTag[];
 }
 
-type ProjectFileTag =
+type FileTag =
   | 'jest-config' // jest.config.{ts,js,mjs,cjs} or package.json jest field
   | 'nx-project-json'
   | 'angular-json'
@@ -412,7 +412,7 @@ flowchart LR
 1. [x] Nits
 
 - Move out stuff that have nothing to do in core
-- Split `projectFileTag` accross packs
+- Split `fileTag` accross packs
 
 # Alternatives Considered
 
