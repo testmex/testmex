@@ -1,6 +1,6 @@
 import { fileTag } from '../../core/models/workspace-info';
 
-export const projectFileTags = {
+export const fileTags = {
   jestConfig: fileTag('jest-config'),
   snapshot: fileTag('snapshot'),
   test: fileTag('test'),

@@ -5,7 +5,7 @@ import {
   WorkspaceMother,
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
-import { projectFileTags } from '../identifiers';
+import { fileTags } from '../identifiers';
 import { jestConfigHeuristic } from '../jest-config.heuristic';
 import { jestConfigTestPathPatterns } from './jest-config-test-path-patterns.transform';
 
@@ -92,7 +92,7 @@ async function transformJestConfig(content: string) {
         appName,
         content,
         fileName: jestConfigName,
-        tags: [projectFileTags.jestConfig],
+        tags: [fileTags.jestConfig],
       }).build(),
     ),
   );

@@ -5,7 +5,7 @@ import {
   type FileInfo,
   type WorkspaceInfo,
 } from '../../core/models/workspace-info';
-import { projectFileTags } from './identifiers';
+import { fileTags } from './identifiers';
 
 export class JestEnricher implements Enricher {
   private readonly _tree: ReadonlyTree;
@@ -37,7 +37,7 @@ export class JestEnricher implements Enricher {
       )
       .map((path) => ({
         path,
-        tags: [projectFileTags.jestConfig],
+        tags: [fileTags.jestConfig],
       }));
   }
 }

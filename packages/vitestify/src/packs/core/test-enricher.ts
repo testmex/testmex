@@ -4,7 +4,7 @@ import {
   type FileInfo,
   type WorkspaceInfo,
 } from '../../core/models/workspace-info';
-import { projectFileTags } from './identifiers';
+import { fileTags } from './identifiers';
 
 export class TestEnricher implements Enricher {
   private readonly _tree: ReadonlyTree;
@@ -27,7 +27,7 @@ export class TestEnricher implements Enricher {
       .filter((file) => file.endsWith('.snap'))
       .map((path) => ({
         path,
-        tags: [projectFileTags.snapshot],
+        tags: [fileTags.snapshot],
       }));
   }
 
@@ -36,7 +36,7 @@ export class TestEnricher implements Enricher {
       .filter((file) => file.endsWith('.spec.ts') || file.endsWith('.spec.tsx'))
       .map((path) => ({
         path,
-        tags: [projectFileTags.test],
+        tags: [fileTags.test],
       }));
   }
 }

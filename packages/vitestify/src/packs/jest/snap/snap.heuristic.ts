@@ -1,9 +1,9 @@
 import { defineFileContentHeuristic } from '../../../core/domain/define-file-content-heuristic';
-import { projectFileTags } from '../../core/identifiers';
+import { fileTags } from '../../core/identifiers';
 import { findingTypes } from '../identifiers';
 
 export const snapHeuristic = defineFileContentHeuristic({
-  predicate: (file) => file.tags.includes(projectFileTags.snapshot),
+  predicate: (file) => file.tags.includes(fileTags.snapshot),
   inspect: ({ file, project }) => [
     {
       type: findingTypes.snapshot,

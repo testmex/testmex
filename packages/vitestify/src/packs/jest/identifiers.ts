@@ -8,6 +8,6 @@ export const findingTypes = {
   vitestImportsNeeded: findingType('vitest-imports-needed'),
 } as const;
 
-export const projectFileTags = {
+export const fileTags = {
   jestConfig: fileTag('jest-config'),
 } as const;
