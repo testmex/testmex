@@ -10,7 +10,7 @@ import { runTransform } from '../../../testing/run-transform';
 import { jestRenameTestFilesTransform } from './jest-rename-test-files.transform';
 
 describe(jestRenameTestFilesTransform, () => {
-  it.todo('renames .spec.ts to .jest.ts', async () => {
+  it('renames .spec.ts to .jest.ts', async () => {
     const content = 'it("works", () => {})';
     const appName = 'my-app';
     const tree = await runRenameTransform(
@@ -31,7 +31,7 @@ describe(jestRenameTestFilesTransform, () => {
     ).toBeNull();
   });
 
-  it.todo('renames .test.ts to .jest.ts', async () => {
+  it('renames .test.ts to .jest.ts', async () => {
     const content = 'it("works", () => {})';
     const appName = 'my-app';
     const tree = await runRenameTransform(
@@ -52,7 +52,7 @@ describe(jestRenameTestFilesTransform, () => {
     ).toBeNull();
   });
 
-  it.todo('skips files that are not .spec.ts or .test.ts', async () => {
+  it('skips files that are not .spec.ts or .test.ts', async () => {
     const content = 'export const app = 1;';
     const appName = 'my-app';
     const tree = await runRenameTransform(
