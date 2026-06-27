@@ -5,8 +5,8 @@ import { findingTypes } from '../identifiers';
 /**
  * @deprecated 🚧 Work in progress.
  */
-export const jestConfigTestPathPatterns = defineFileTransform({
-  name: 'jest-config-test-path-patterns',
+export const configTestPathPatterns = defineFileTransform({
+  name: 'config-test-path-patterns',
   findingType: findingTypes.jestConfig,
   apply: (content) => {
     const editor = new SgEditor(content);

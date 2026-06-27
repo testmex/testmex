@@ -2,8 +2,8 @@ import { defineTransform } from '../../../core/models/transform';
 import { relativePath } from '../../../core/models/relative-path';
 import { fileTags } from '../../core/identifiers';
 
-export const jestRenameSpecToJestTransform = defineTransform({
-  name: 'jest-rename-spec-to-jest',
+export const renameSpecToJestTransform = defineTransform({
+  name: 'rename-spec-to-jest',
   apply: async ({ workspace }) => {
     const { info, tree } = workspace;
 
