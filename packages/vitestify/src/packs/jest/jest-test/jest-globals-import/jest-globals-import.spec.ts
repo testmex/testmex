@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { jestSymbolHeuristic } from '../../jest-symbol/jest-symbol.heuristic';
+import { jestSymbolHeuristic } from '../../jest-symbol.heuristic';
 import { transformTestFile as runTransformTestFile } from '../../testing';
 import { jestGlobalsImportTransform } from './jest-globals-import.transform';
 

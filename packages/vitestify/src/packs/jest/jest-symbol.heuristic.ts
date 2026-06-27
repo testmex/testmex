@@ -1,6 +1,6 @@
-import { defineFileContentHeuristic } from '../../../core/domain/define-file-content-heuristic';
-import { fileTags as coreFileTags } from '../../core/identifiers';
-import { findingTypes } from '../identifiers';
+import { defineFileContentHeuristic } from '../../core/domain/define-file-content-heuristic';
+import { fileTags as coreFileTags } from '../core/identifiers';
+import { findingTypes } from './identifiers';
 
 const jestSymbolPattern = /\bjest\b/;
 
