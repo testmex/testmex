@@ -7,9 +7,9 @@ import {
 import { runTransform } from '../../../testing/run-transform';
 import { fileTags } from '../identifiers';
 import { jestConfigHeuristic } from '../jest-config.heuristic';
-import { configTestPathPatterns } from './config-test-path-patterns.transform';
+import { configTestPathPatternsTransform } from './config-test-path-patterns.transform';
 
-describe(configTestPathPatterns.name, () => {
+describe(configTestPathPatternsTransform.name, () => {
   it('add "testPathPatterns" to match ".jest.ts"', async () => {
     const transformed = await transformJestConfig(`
 module.exports = {
@@ -99,7 +99,7 @@ async function transformJestConfig(content: string) {
   await runTransform({
     workspace,
     heuristics: [jestConfigHeuristic],
-    transforms: [configTestPathPatterns],
+    transforms: [configTestPathPatternsTransform],
   });
   return workspace.tree.maybeReadFile(
     relativePath(`apps/${appName}/${jestConfigName}`),
