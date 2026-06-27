@@ -9,7 +9,7 @@ import {
 import { runTransform } from '../../../testing/run-transform';
 import { jestRenameTestFilesTransform } from './jest-rename-test-files.transform';
 
-describe(jestRenameTestFilesTransform, () => {
+describe(jestRenameTestFilesTransform.name, () => {
   it('renames .spec.ts to .jest.ts', async () => {
     const content = 'it("works", () => {})';
     const appName = 'my-app';
@@ -23,12 +23,20 @@ describe(jestRenameTestFilesTransform, () => {
       ),
     );
 
-    expect.soft(
-      await tree.maybeReadFile(relativePath(`apps/${appName}/src/app.jest.ts`)),
-    ).toBe(content);
-    expect.soft(
-      await tree.maybeReadFile(relativePath(`apps/${appName}/src/app.spec.ts`)),
-    ).toBeNull();
+    expect
+      .soft(
+        await tree.maybeReadFile(
+          relativePath(`apps/${appName}/src/app.jest.ts`),
+        ),
+      )
+      .toBe(content);
+    expect
+      .soft(
+        await tree.maybeReadFile(
+          relativePath(`apps/${appName}/src/app.spec.ts`),
+        ),
+      )
+      .toBeNull();
   });
 
   it('renames .test.ts to .jest.ts', async () => {
@@ -44,12 +52,20 @@ describe(jestRenameTestFilesTransform, () => {
       ),
     );
 
-    expect.soft(
-      await tree.maybeReadFile(relativePath(`apps/${appName}/src/app.jest.ts`)),
-    ).toBe(content);
-    expect.soft(
-      await tree.maybeReadFile(relativePath(`apps/${appName}/src/app.test.ts`)),
-    ).toBeNull();
+    expect
+      .soft(
+        await tree.maybeReadFile(
+          relativePath(`apps/${appName}/src/app.jest.ts`),
+        ),
+      )
+      .toBe(content);
+    expect
+      .soft(
+        await tree.maybeReadFile(
+          relativePath(`apps/${appName}/src/app.test.ts`),
+        ),
+      )
+      .toBeNull();
   });
 
   it('skips files that are not .spec.ts or .test.ts', async () => {

@@ -81,7 +81,7 @@ export class WorkspaceFileMother {
     appName: string;
     content: string;
     fileName: string;
-    tags: FileTag[];
+    tags?: FileTag[];
   }): WorkspaceFileMother {
     return new WorkspaceFileMother({
       content,
