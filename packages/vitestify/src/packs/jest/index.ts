@@ -2,7 +2,7 @@ import { definePack } from '../../core/models/pack';
 import { JestEnricher } from './jest-enricher';
 import { jestGlobalsImportTransform } from './jest-globals-import/jest-globals-import.transform';
 import { jestMockTransform } from './jest-mock/jest-mock.transform';
-import { jestRenameTestFilesTransform } from './jest-rename-test-files/jest-rename-test-files.transform';
+import { jestRenameSpecToJestTransform } from './jest-rename-spec-to-jest/jest-rename-spec-to-jest.transform';
 import { jestSetMockTransform } from './jest-set-mock/jest-set-mock.transform';
 import { jestSetTimeoutTransform } from './jest-set-timeout/jest-set-timeout.transform';
 import { jestSymbolHeuristic } from './jest-symbol/jest-symbol.heuristic';
@@ -27,7 +27,7 @@ export default definePack({
   transforms: [
     jestGlobalsImportTransform,
     jestMockTransform,
-    jestRenameTestFilesTransform,
+    jestRenameSpecToJestTransform,
     jestSetMockTransform,
     jestSetTimeoutTransform,
     jestTypesTransform,

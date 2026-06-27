@@ -7,9 +7,9 @@ import {
   WorkspaceMother,
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
-import { jestRenameTestFilesTransform } from './jest-rename-test-files.transform';
+import { jestRenameSpecToJestTransform } from './jest-rename-spec-to-jest.transform';
 
-describe(jestRenameTestFilesTransform.name, () => {
+describe(jestRenameSpecToJestTransform.name, () => {
   it('renames .spec.ts to .jest.ts', async () => {
     const content = 'it("works", () => {})';
     const appName = 'my-app';
@@ -92,7 +92,7 @@ async function runRenameTransform(mother: WorkspaceMother): Promise<Tree> {
 
   await runTransform({
     workspace,
-    transforms: [jestRenameTestFilesTransform],
+    transforms: [jestRenameSpecToJestTransform],
   });
 
   return workspace.tree;
