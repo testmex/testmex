@@ -9,7 +9,7 @@ import { runTransform } from '../../../testing/run-transform';
 import { nxJestTargetTransform } from './nx-jest-target.transform';
 
 describe('nxJestTargetTransform', () => {
-  it.todo('renames test target to jest in project.json', async () => {
+  it('renames test target to jest in project.json', async () => {
     expect(
       await transformProjectJson({
         name: 'my-app',
@@ -26,7 +26,7 @@ describe('nxJestTargetTransform', () => {
     });
   });
 
-  it.todo('skips when project.json has no test target', async () => {
+  it('skips when project.json has no test target', async () => {
     const { targets } = await transformProjectJson({
       name: 'my-app',
       targets: {
