@@ -9,13 +9,13 @@ export const nxJestTargetTransform = defineTransform({
 
     for (const project of info.projects) {
       const projectJsonPath = relativePath(join(project.path, 'project.json'));
-      const content = await tree.maybeReadFile(projectJsonPath);
+      const projectJson = await tree.maybeReadJsonFile<ProjectJson>(
+        projectJsonPath,
+      );
 
-      if (content == null) {
+      if (projectJson == null) {
         continue;
       }
-
-      const projectJson: ProjectJson = JSON.parse(content);
 
       if (projectJson.targets?.test === undefined) {
         continue;
