@@ -3,6 +3,7 @@ import { SgEditor } from '../../../infra/ast/sg-editor';
 import { findingTypes } from '../identifiers';
 
 export const replaceApiTransform = defineFileTransform({
+  name: 'replace-api',
   findingType: findingTypes.jestSymbol,
   apply: _rewriteReplaceApi,
 });

@@ -13,6 +13,7 @@ const vitestConfigAlternativeFileNames = [
 ];
 
 export const vitestConfigTransform = defineTransform({
+  name: 'vitest-config',
   apply: async ({ workspace }) => {
     const { commands, info, tree } = workspace;
 

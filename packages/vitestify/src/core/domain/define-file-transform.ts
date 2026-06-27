@@ -3,6 +3,7 @@ import { defineTransform, type Transform } from '../models/transform';
 import type { FileInfo, FileTag } from '../models/workspace-info';
 
 export interface DefineFileTransformArgs {
+  name: string;
   findingType?: FindingType;
   fileTags?: FileTag[];
   apply: (content: string) => string;
@@ -10,6 +11,7 @@ export interface DefineFileTransformArgs {
 
 export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
+    name: args.name,
     apply: async ({ findings, workspace }) => {
       const { tree } = workspace;
 

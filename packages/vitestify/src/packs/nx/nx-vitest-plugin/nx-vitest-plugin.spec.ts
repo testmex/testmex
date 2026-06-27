@@ -7,7 +7,7 @@ import {
 import { runTransform } from '../../../testing/run-transform';
 import { nxVitestPluginTransform } from './nx-vitest-plugin.transform';
 
-describe('nxVitestPluginTransform', () => {
+describe(nxVitestPluginTransform.name, () => {
   it('adds @nx/vitest plugin to nx.json', async () => {
     const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
     await workspace.tree.write(relativePath('nx.json'), '{}');

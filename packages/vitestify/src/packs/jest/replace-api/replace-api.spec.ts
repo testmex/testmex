@@ -3,7 +3,7 @@ import { transformTestFile as runTransformTestFile } from '../testing';
 import { replaceApiHeuristic } from './replace-api.heuristic';
 import { replaceApiTransform } from './replace-api.transform';
 
-describe('replaceApi', () => {
+describe(replaceApiTransform.name, () => {
   it('rewrites `fit(` → `it.only(`', async () => {
     expect(
       await transformTestFile(`fit('filters', async () => { /* … */ });`),

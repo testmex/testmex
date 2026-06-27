@@ -4,6 +4,7 @@ import { ensureVitestSymbol } from '../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../identifiers';
 
 export const jestSetTimeoutTransform = defineFileTransform({
+  name: 'jest-set-timeout',
   findingType: findingTypes.jestSymbol,
   apply: _rewriteJestSetTimeout,
 });

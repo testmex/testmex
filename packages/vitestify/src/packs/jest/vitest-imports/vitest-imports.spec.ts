@@ -3,7 +3,7 @@ import { transformTestFile as runTransformTestFile } from '../testing';
 import { vitestImportsHeuristic } from './vitest-imports.heuristic';
 import { vitestImportsTransform } from './vitest-imports.transform';
 
-describe('vitestImports', () => {
+describe(vitestImportsTransform.name, () => {
   it('adds import for describe', async () => {
     expect(
       await transformTestFile(`\

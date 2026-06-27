@@ -3,7 +3,7 @@ import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol.heuristic';
 import { transformTestFile as runTransformTestFile } from '../testing';
 import { jestMockTransform } from './jest-mock.transform';
 
-describe('jest-mock', () => {
+describe(jestMockTransform.name, () => {
   it('detects and rewrites `jest.mock` to `vi.mock`', async () => {
     expect(await transformTestFile(`jest.mock('./foo');`)).toContain(
       `vi.mock('./foo');`,

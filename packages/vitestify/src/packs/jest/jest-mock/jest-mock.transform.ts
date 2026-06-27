@@ -10,6 +10,7 @@ import { ensureVitestSymbol } from '../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../identifiers';
 
 export const jestMockTransform = defineFileTransform({
+  name: 'jest-mock',
   findingType: findingTypes.jestSymbol,
   apply: _rewriteDefaultExportMocks,
 });

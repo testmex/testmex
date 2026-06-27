@@ -7,6 +7,7 @@ export interface TransformApplyArgs {
 }
 
 export interface Transform {
+  name: string;
   apply(args: TransformApplyArgs): Promise<void>;
 }
 

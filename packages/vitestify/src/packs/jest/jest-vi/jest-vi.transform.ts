@@ -8,6 +8,7 @@ const apiNamesRecord: Record<string, string> = {
 };
 
 export const jestViTransform = defineFileTransform({
+  name: 'jest-vi',
   findingType: findingTypes.jestSymbol,
   apply: _rewriteJestVi,
 });

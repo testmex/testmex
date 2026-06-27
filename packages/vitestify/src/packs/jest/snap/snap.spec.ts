@@ -10,7 +10,7 @@ import {
 import { runTransform } from '../../../testing/run-transform';
 import { relativePath } from '../../../core/models/relative-path';
 
-describe('snap', () => {
+describe(snapTransform.name, () => {
   it('normalize jest snapshot file format in __snapshots__/*.snap', async () => {
     expect(
       await transformSnapFile(`\

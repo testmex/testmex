@@ -3,7 +3,7 @@ import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol.heuristic';
 import { transformTestFile as runTransformTestFile } from '../testing';
 import { jestViTransform } from './jest-vi.transform';
 
-describe('jestVi', () => {
+describe(jestViTransform.name, () => {
   it('rewrites `jest.spyOn` to `vi.spyOn`', async () => {
     expect(
       await transformTestFile(

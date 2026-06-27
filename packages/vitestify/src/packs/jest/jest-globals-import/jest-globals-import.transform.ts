@@ -3,6 +3,7 @@ import { SgEditor } from '../../../infra/ast/sg-editor';
 import { findingTypes } from '../identifiers';
 
 export const jestGlobalsImportTransform = defineFileTransform({
+  name: 'jest-globals-import',
   findingType: findingTypes.jestSymbol,
   apply: _rewriteJestGlobalsImport,
 });

@@ -10,6 +10,7 @@ const jestTypeReplacements = {
 } as const;
 
 export const jestTypesTransform = defineFileTransform({
+  name: 'jest-types',
   findingType: findingTypes.jestSymbol,
   apply: _rewriteJestTypes,
 });

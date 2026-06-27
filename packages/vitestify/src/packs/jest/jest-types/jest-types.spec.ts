@@ -3,7 +3,7 @@ import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol.heuristic';
 import { transformTestFile as runTransformTestFile } from '../testing';
 import { jestTypesTransform } from './jest-types.transform';
 
-describe('jestTypes', () => {
+describe(jestTypesTransform.name, () => {
   it('replace jest.Mock type casts to Mock from vitest', async () => {
     expect(
       await transformTestFile(`(spy as jest.Mock).mockReturnValue(false);`),

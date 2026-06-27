@@ -4,6 +4,7 @@ import { findingTypes } from '../identifiers';
 import { ensureVitestSymbol } from '../../../infra/ast/vitest-ast-utils';
 
 export const jestSetMockTransform = defineFileTransform({
+  name: 'jest-set-mock',
   findingType: findingTypes.jestSymbol,
   apply: _wrapSetMockObjectLiteral,
 });

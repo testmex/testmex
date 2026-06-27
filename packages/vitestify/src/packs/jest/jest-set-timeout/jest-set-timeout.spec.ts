@@ -3,7 +3,7 @@ import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol.heuristic';
 import { transformTestFile as runTransformTestFile } from '../testing';
 import { jestSetTimeoutTransform } from './jest-set-timeout.transform';
 
-describe('jestSetTimeout', () => {
+describe(jestSetTimeoutTransform.name, () => {
   it('detects and rewrites file top-level `jest.setTimeout` to `vi.setConfig`', async () => {
     expect(await transformTestFile(`jest.setTimeout(30_000);`)).toBe(
       `\

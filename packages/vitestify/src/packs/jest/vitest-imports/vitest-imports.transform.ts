@@ -5,6 +5,7 @@ import { findingTypes } from '../identifiers';
 import { jestGlobals } from './jest-globals';
 
 export const vitestImportsTransform = defineFileTransform({
+  name: 'vitest-imports',
   findingType: findingTypes.vitestImportsNeeded,
   apply: _rewriteVitestImports,
 });

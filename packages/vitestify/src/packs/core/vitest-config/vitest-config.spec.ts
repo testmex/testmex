@@ -8,7 +8,7 @@ import {
 import { runTransform } from '../../../testing/run-transform';
 import { vitestConfigTransform } from './vitest-config.transform';
 
-describe('vitestConfigTransform', () => {
+describe(vitestConfigTransform.name, () => {
   it('generates vitest.config.mts at the root of each project', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(

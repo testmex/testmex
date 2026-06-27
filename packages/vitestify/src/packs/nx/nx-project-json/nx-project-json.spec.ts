@@ -8,7 +8,7 @@ import {
 import { runTransform } from '../../../testing/run-transform';
 import { nxProjectJsonTransform } from './nx-project-json.transform';
 
-describe('nxProjectJsonTransform', () => {
+describe(nxProjectJsonTransform.name, () => {
   it('removes test target from project.json', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(

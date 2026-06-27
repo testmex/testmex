@@ -9,7 +9,7 @@ import { fileTags } from '../identifiers';
 import { jestConfigHeuristic } from '../jest-config.heuristic';
 import { jestConfigTestPathPatterns } from './jest-config-test-path-patterns.transform';
 
-describe('jest-config-test-path-patterns', () => {
+describe(jestConfigTestPathPatterns.name, () => {
   it('add "testPathPatterns" to match ".jest.ts"', async () => {
     const transformed = await transformJestConfig(`
 module.exports = {
