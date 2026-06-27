@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { transformTestFile as runTransformTestFile } from '../testing';
+import { transformTestFile as runTransformTestFile } from '../../testing';
 import { vitestImportsHeuristic } from './vitest-imports.heuristic';
 import { vitestImportsTransform } from './vitest-imports.transform';
 

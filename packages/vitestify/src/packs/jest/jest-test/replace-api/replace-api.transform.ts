@@ -1,6 +1,6 @@
-import { defineFileTransform } from '../../../core/domain/define-file-transform';
-import { SgEditor } from '../../../infra/ast/sg-editor';
-import { findingTypes } from '../identifiers';
+import { defineFileTransform } from '../../../../core/domain/define-file-transform';
+import { SgEditor } from '../../../../infra/ast/sg-editor';
+import { findingTypes } from '../../identifiers';
 
 export const replaceApiTransform = defineFileTransform({
   name: 'replace-api',

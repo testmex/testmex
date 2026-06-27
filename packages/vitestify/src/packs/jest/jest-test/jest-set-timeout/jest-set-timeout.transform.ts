@@ -1,7 +1,7 @@
-import { defineFileTransform } from '../../../core/domain/define-file-transform';
-import { SgEditor } from '../../../infra/ast/sg-editor';
-import { ensureVitestSymbol } from '../../../infra/ast/vitest-ast-utils';
-import { findingTypes } from '../identifiers';
+import { defineFileTransform } from '../../../../core/domain/define-file-transform';
+import { SgEditor } from '../../../../infra/ast/sg-editor';
+import { ensureVitestSymbol } from '../../../../infra/ast/vitest-ast-utils';
+import { findingTypes } from '../../identifiers';
 
 export const jestSetTimeoutTransform = defineFileTransform({
   name: 'jest-set-timeout',

@@ -1,6 +1,6 @@
-import { defineFileContentHeuristic } from '../../../core/domain/define-file-content-heuristic';
-import { fileTags as coreFileTags } from '../../core/identifiers';
-import { findingTypes } from '../identifiers';
+import { defineFileContentHeuristic } from '../../../../core/domain/define-file-content-heuristic';
+import { fileTags as coreFileTags } from '../../../core/identifiers';
+import { findingTypes } from '../../identifiers';
 
 const replaceApiPattern =
   /\bfit\s*(?:\(|\.)|(?:it|test)\.(?:only|skip)\.failing\b|(?:it|test)\.failing\b|\bxit\s*\(|\bxdescribe\s*\(|\bxtest\s*\(|\bfdescribe\s*\(/;

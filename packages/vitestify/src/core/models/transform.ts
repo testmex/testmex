@@ -14,3 +14,17 @@ export interface Transform {
 export function defineTransform(args: Transform): Transform {
   return args;
 }
+
+export function defineTransformGroup(
+  name: string,
+  transforms: readonly Transform[],
+): Transform {
+  return defineTransform({
+    name,
+    apply: async (args) => {
+      for (const transform of transforms) {
+        await transform.apply(args);
+      }
+    },
+  });
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { transformTestFile as runTransformTestFile } from '../testing';
+import { transformTestFile as runTransformTestFile } from '../../testing';
 import { replaceApiHeuristic } from './replace-api.heuristic';
 import { replaceApiTransform } from './replace-api.transform';
 

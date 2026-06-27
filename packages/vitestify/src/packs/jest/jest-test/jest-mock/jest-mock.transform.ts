@@ -1,13 +1,13 @@
 import { SgNode } from '@ast-grep/napi';
-import { defineFileTransform } from '../../../core/domain/define-file-transform';
+import { defineFileTransform } from '../../../../core/domain/define-file-transform';
 import {
   findEnclosingCallable,
   markCallableAsync,
   noIntermediateOfKind,
-} from '../../../infra/ast/ast-utils';
-import { SgEditor } from '../../../infra/ast/sg-editor';
-import { ensureVitestSymbol } from '../../../infra/ast/vitest-ast-utils';
-import { findingTypes } from '../identifiers';
+} from '../../../../infra/ast/ast-utils';
+import { SgEditor } from '../../../../infra/ast/sg-editor';
+import { ensureVitestSymbol } from '../../../../infra/ast/vitest-ast-utils';
+import { findingTypes } from '../../identifiers';
 
 export const jestMockTransform = defineFileTransform({
   name: 'jest-mock',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { jestSymbolHeuristic } from '../jest-symbol/jest-symbol.heuristic';
-import { transformTestFile as runTransformTestFile } from '../testing';
+import { jestSymbolHeuristic } from '../../jest-symbol/jest-symbol.heuristic';
+import { transformTestFile as runTransformTestFile } from '../../testing';
 import { jestTypesTransform } from './jest-types.transform';
 
 describe(jestTypesTransform.name, () => {

@@ -1,5 +1,5 @@
-import { defineFileTransform } from '../../../core/domain/define-file-transform';
-import { findingTypes } from '../identifiers';
+import { defineFileTransform } from '../../../../core/domain/define-file-transform';
+import { findingTypes } from '../../identifiers';
 
 export const snapTransform = defineFileTransform({
   name: 'snap',

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { transformTestFile as runTransformTestFile } from '../testing';
+import { transformTestFile as runTransformTestFile } from '../../testing';
 import { snapHeuristic } from './snap.heuristic';
 import { snapTransform } from './snap.transform';
 import {
   createTestingWorkspace,
   WorkspaceFileMother,
   WorkspaceMother,
-} from '../../../core/models/workspace.mother';
-import { runTransform } from '../../../testing/run-transform';
-import { relativePath } from '../../../core/models/relative-path';
+} from '../../../../core/models/workspace.mother';
+import { runTransform } from '../../../../testing/run-transform';
+import { relativePath } from '../../../../core/models/relative-path';
 
 describe(snapTransform.name, () => {
   it('normalize jest snapshot file format in __snapshots__/*.snap', async () => {

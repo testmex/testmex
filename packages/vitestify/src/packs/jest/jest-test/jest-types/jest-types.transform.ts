@@ -1,7 +1,7 @@
-import { defineFileTransform } from '../../../core/domain/define-file-transform';
-import { SgEditor } from '../../../infra/ast/sg-editor';
-import { ensureVitestTypeSymbol } from '../../../infra/ast/vitest-ast-utils';
-import { findingTypes } from '../identifiers';
+import { defineFileTransform } from '../../../../core/domain/define-file-transform';
+import { SgEditor } from '../../../../infra/ast/sg-editor';
+import { ensureVitestTypeSymbol } from '../../../../infra/ast/vitest-ast-utils';
+import { findingTypes } from '../../identifiers';
 
 const jestTypeReplacements = {
   MockedFunction: 'MockedFunction',
