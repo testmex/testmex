@@ -1,10 +1,11 @@
-import { join, relative } from 'node:path/posix';
+import { dirname, join } from 'node:path/posix';
 import type { ReadonlyTree } from '../../../core/domain/tree';
 import {
   relativePath,
   type RelativePath,
 } from '../../../core/models/relative-path';
 import { defineTransform } from '../../../core/models/transform';
+import { fileTags } from '../identifiers';
 
 const vitestConfigFileName = 'vitest.config.mts';
 const vitestConfigAlternativeFileNames = [
@@ -17,13 +18,19 @@ export const vitestConfigTransform = defineTransform({
   apply: async ({ workspace }) => {
     const { commands, info, tree } = workspace;
 
-    for (const project of info.projects) {
-      if (await _hasVitestConfig(tree, project.path)) {
+    for (const file of info.files) {
+      if (!file.tags.includes(fileTags.jestConfig)) {
+        continue;
+      }
+
+      const configDirectory = relativePath(dirname(file.path));
+
+      if (await _hasVitestConfig(tree, configDirectory)) {
         continue;
       }
 
       await tree.write(
-        relativePath(join(project.path, vitestConfigFileName)),
+        relativePath(join(configDirectory, vitestConfigFileName)),
         _vitestConfigContent(),
       );
     }
@@ -37,11 +44,16 @@ async function _hasVitestConfig(
   tree: ReadonlyTree,
   projectRoot: RelativePath,
 ): Promise<boolean> {
-  const files = await tree.scanDirectory(projectRoot);
+  for (const fileName of vitestConfigAlternativeFileNames) {
+    if (
+      (await tree.maybeReadFile(relativePath(join(projectRoot, fileName)))) !==
+      null
+    ) {
+      return true;
+    }
+  }
 
-  return files.some((file) =>
-    vitestConfigAlternativeFileNames.includes(relative(projectRoot, file)),
-  );
+  return false;
 }
 
 function _vitestConfigContent(): string {
