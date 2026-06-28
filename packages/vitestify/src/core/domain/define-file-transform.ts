@@ -1,30 +1,41 @@
-import type { Finding, FindingType } from '../models/finding';
+import type { FindingType } from '../models/finding';
 import { defineTransform, type Transform } from '../models/transform';
 import type { FileInfo, FileTag } from '../models/workspace-info';
 
-export interface DefineFileTransformArgs {
+interface DefineFileTransformBase {
   name: string;
-  findingType?: FindingType;
-  fileTags?: FileTag[];
   apply: (content: string) => string;
 }
+
+export type DefineFileTransformArgs = DefineFileTransformBase &
+  ({ findingType: FindingType } | { fileTags?: FileTag[] });
 
 export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
     name: args.name,
     apply: async ({ findings, workspace }) => {
-      const { tree } = workspace;
+      const { info, tree } = workspace;
 
-      for (const finding of findings) {
-        const file = finding.file;
+      const fileTags = 'fileTags' in args ? args.fileTags : undefined;
 
-        if (
-          !_matchesFinding(finding, args.findingType) ||
-          !_matchesFile(file, args.fileTags)
-        ) {
-          continue;
-        }
+      const taggedFiles =
+        fileTags !== undefined
+          ? info
+              .getFiles()
+              .filter((file) =>
+                fileTags.every((tag) => file.tags.includes(tag)),
+              )
+          : undefined;
 
+      const findingFiles =
+        'findingType' in args
+          ? findings
+              .filter((finding) => finding.type === args.findingType)
+              .map((finding) => finding.file)
+              .filter((file): file is FileInfo => file !== undefined)
+          : undefined;
+
+      for (const file of taggedFiles ?? findingFiles ?? []) {
         const content = await tree.maybeReadFile(file.path);
 
         if (content != null) {
@@ -33,21 +44,4 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
       }
     },
   });
-}
-
-function _matchesFinding(
-  finding: Finding,
-  findingType: FindingType | undefined,
-): boolean {
-  return findingType === undefined || finding.type === findingType;
-}
-
-function _matchesFile(
-  file: FileInfo | undefined,
-  fileTags: FileTag[] | undefined,
-): file is FileInfo {
-  return (
-    file !== undefined &&
-    (fileTags === undefined || fileTags.every((tag) => file.tags.includes(tag)))
-  );
 }

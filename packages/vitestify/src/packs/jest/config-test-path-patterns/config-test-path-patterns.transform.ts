@@ -1,10 +1,10 @@
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
 import { SgEditor } from '../../../infra/ast/sg-editor';
-import { findingTypes } from '../identifiers';
+import { fileTags } from '../identifiers';
 
 export const configTestPathPatternsTransform = defineFileTransform({
   name: 'config-test-path-patterns',
-  findingType: findingTypes.jestConfig,
+  fileTags: [fileTags.jestConfig],
   apply: (content) => {
     const editor = new SgEditor(content);
 

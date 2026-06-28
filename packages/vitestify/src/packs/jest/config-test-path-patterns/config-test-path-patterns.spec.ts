@@ -6,7 +6,6 @@ import {
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
 import { fileTags } from '../identifiers';
-import { jestConfigHeuristic } from '../jest-config.heuristic';
 import { configTestPathPatternsTransform } from './config-test-path-patterns.transform';
 
 describe(configTestPathPatternsTransform.name, () => {
@@ -98,7 +97,6 @@ async function transformJestConfig(content: string) {
   );
   await runTransform({
     workspace,
-    heuristics: [jestConfigHeuristic],
     transforms: [configTestPathPatternsTransform],
   });
   return workspace.tree.maybeReadFile(
