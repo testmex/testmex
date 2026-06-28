@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { transformTestFile as runTransformTestFile } from '../../testing';
-import { snapHeuristic } from './snap.heuristic';
 import { snapTransform } from './snap.transform';
 import {
   createTestingWorkspace,
@@ -90,7 +89,6 @@ Object {
 \`;`;
 
     const result = await runTransformTestFile(specContent, {
-      heuristics: [snapHeuristic],
       transforms: [snapTransform],
       filePath: 'src/app.spec.ts',
     });
@@ -113,7 +111,6 @@ async function transformSnapFile(content: string) {
   );
   await runTransform({
     workspace,
-    heuristics: [snapHeuristic],
     transforms: [snapTransform],
   });
   return workspace.tree.maybeReadFile(

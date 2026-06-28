@@ -1,9 +1,9 @@
 import { defineFileTransform } from '../../../../core/domain/define-file-transform';
-import { findingTypes } from '../../identifiers';
+import { fileTags } from '../../../core/identifiers';
 
 export const snapTransform = defineFileTransform({
   name: 'snap',
-  findingType: findingTypes.snapshot,
+  fileTags: [fileTags.snapshot],
   apply: _rewriteSnap,
 });
 

@@ -1,6 +1,6 @@
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
 import { SgEditor } from '../../../infra/ast/sg-editor';
-import { fileTags } from '../identifiers';
+import { fileTags } from '../../core/identifiers';
 
 export const configTestPathPatternsTransform = defineFileTransform({
   name: 'config-test-path-patterns',

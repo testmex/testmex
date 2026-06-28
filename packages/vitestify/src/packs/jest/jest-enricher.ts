@@ -5,7 +5,7 @@ import {
   type FileInfo,
   type WorkspaceInfo,
 } from '../../core/models/workspace-info';
-import { fileTags } from './identifiers';
+import { fileTags } from '../core/identifiers';
 
 export class JestEnricher implements Enricher {
   private readonly _tree: ReadonlyTree;

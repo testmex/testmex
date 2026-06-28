@@ -5,7 +5,7 @@ import {
   WorkspaceMother,
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
-import { fileTags } from '../identifiers';
+import { fileTags } from '../../core/identifiers';
 import { configTestPathPatternsTransform } from './config-test-path-patterns.transform';
 
 describe(configTestPathPatternsTransform.name, () => {
