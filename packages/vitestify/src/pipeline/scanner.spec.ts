@@ -80,7 +80,7 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo(
+  it(
     'detects folder with jest.config.ts as project when no nx project exists at that path',
     async () => {
       const { configureWorkspace, scanner } = setUp();
@@ -103,12 +103,11 @@ describe(Scanner.name, () => {
             path: relativePath('libs/backend/recipes/core'),
           } satisfies Partial<Project>,
           {
-            name: 'backend',
             path: relativePath('libs/backend'),
           } satisfies Partial<Project>,
         ]),
       );
-      expect.soft(info.getProjectFiles('backend')).toMatchObject([
+      expect.soft(info.getProjectFiles('libs/backend')).toMatchObject([
         {
           path: relativePath('libs/backend/jest.config.ts'),
           tags: ['jest-config'],

@@ -1,6 +1,7 @@
-import { basename } from 'node:path/posix';
+import { basename, dirname } from 'node:path/posix';
 import type { ReadonlyTree } from '../../core/domain/tree';
 import { Enricher } from '../../core/models/enricher';
+import { relativePath } from '../../core/models/relative-path';
 import {
   type FileInfo,
   type WorkspaceInfo,
@@ -15,8 +16,22 @@ export class JestEnricher implements Enricher {
   }
 
   async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
+    const files = await this._discoverJestConfigFiles();
+
     return workspaceInfo.merge({
-      files: await this._discoverJestConfigFiles(),
+      files,
+      projects: files.flatMap((file) => {
+        const path = relativePath(dirname(file.path));
+        const alreadyExists = workspaceInfo.projects.some(
+          (project) => project.path === path,
+        );
+
+        if (alreadyExists) {
+          return [];
+        }
+
+        return [{ path }];
+      }),
     });
   }
 

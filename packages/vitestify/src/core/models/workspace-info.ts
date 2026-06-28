@@ -1,7 +1,7 @@
-import { RelativePath } from './relative-path';
+import { relativePath, type RelativePath } from './relative-path';
 
 export interface Project {
-  name: string;
+  name?: string;
   path: RelativePath;
 }
 
@@ -47,9 +47,13 @@ export class WorkspaceInfo {
     });
   }
 
-  getProjectFiles(projectName: string): FileInfo[] {
+  getProjectFiles(nameOrPath: string): FileInfo[] {
+    const path = relativePath(nameOrPath);
+
     return this.getFiles()
-      .filter(({ project }) => project.name === projectName)
+      .filter(
+        ({ project }) => project.name === nameOrPath || project.path === path,
+      )
       .map(({ path, tags }) => ({ path, tags }));
   }
 
