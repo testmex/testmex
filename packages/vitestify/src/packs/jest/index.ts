@@ -6,6 +6,7 @@ import { replaceApiHeuristic } from './jest-test/replace-api/replace-api.heurist
 import { snapHeuristic } from './jest-test/snap/snap.heuristic';
 import { vitestImportsHeuristic } from './jest-test/vitest-imports/vitest-imports.heuristic';
 import { configTestPathPatternsTransform } from './config-test-path-patterns/config-test-path-patterns.transform';
+import { vitestConfigTransform } from './vitest-config/vitest-config.transform';
 
 export default definePack({
   name: 'jest',
@@ -16,5 +17,9 @@ export default definePack({
     snapHeuristic,
     vitestImportsHeuristic,
   ],
-  transforms: [configTestPathPatternsTransform, jestTestTransform],
+  transforms: [
+    configTestPathPatternsTransform,
+    jestTestTransform,
+    vitestConfigTransform,
+  ],
 });
