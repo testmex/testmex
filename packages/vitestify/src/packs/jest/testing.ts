@@ -9,7 +9,7 @@ import type { Transform } from '../../core/models/transform';
 import { runTransform } from '../../testing/run-transform';
 
 export interface TransformTestFileOptions {
-  heuristics: Heuristic[];
+  heuristics?: Heuristic[];
   transforms: Transform[];
   appName?: string;
   filePath?: string;
@@ -20,7 +20,7 @@ export async function transformTestFile(
   {
     appName = 'my-app',
     filePath = 'src/app.spec.ts',
-    heuristics,
+    heuristics = [],
     transforms,
   }: TransformTestFileOptions,
 ): Promise<string | null> {

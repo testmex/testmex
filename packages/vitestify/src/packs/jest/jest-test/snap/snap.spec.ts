@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { transformTestFile as runTransformTestFile } from '../../testing';
+import { transformTestFile } from '../../testing';
 import { snapTransform } from './snap.transform';
 import {
   createTestingWorkspace,
@@ -88,7 +88,7 @@ Object {
 }
 \`;`;
 
-    const result = await runTransformTestFile(specContent, {
+    const result = await transformTestFile(specContent, {
       transforms: [snapTransform],
       filePath: 'src/app.spec.ts',
     });
