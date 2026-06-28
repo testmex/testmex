@@ -79,6 +79,43 @@ describe(Scanner.name, () => {
       },
     ]);
   });
+
+  it.todo(
+    'detects folder with jest.config.ts as project when no nx project exists at that path',
+    async () => {
+      const { configureWorkspace, scanner } = setUp();
+
+      configureWorkspace(
+        nxWorkspaceMother
+          .withLib('backend-recipes-core', 'libs/backend/recipes/core')
+          .withWorkspaceFile(
+            'libs/backend/jest.config.ts',
+            'export default {}',
+          ),
+      );
+
+      const { info } = await scanner.scanWorkspace();
+
+      expect.soft(info.projects).toEqual(
+        expect.arrayContaining([
+          {
+            name: 'backend-recipes-core',
+            path: relativePath('libs/backend/recipes/core'),
+          } satisfies Partial<Project>,
+          {
+            name: 'backend',
+            path: relativePath('libs/backend'),
+          } satisfies Partial<Project>,
+        ]),
+      );
+      expect.soft(info.getProjectFiles('backend')).toMatchObject([
+        {
+          path: relativePath('libs/backend/jest.config.ts'),
+          tags: ['jest-config'],
+        },
+      ]);
+    },
+  );
 });
 
 function setUp() {
