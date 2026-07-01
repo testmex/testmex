@@ -1,5 +1,6 @@
 import type { ReadonlyTree } from '../../core/domain/tree';
 import { Enricher } from '../../core/models/enricher';
+import type { RelativePath } from '../../core/models/relative-path';
 import {
   type FileInfo,
   type WorkspaceInfo,
@@ -14,16 +15,17 @@ export class TestEnricher implements Enricher {
   }
 
   async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
+    const files = await this._tree.scanDirectory();
     const discoveredFiles = [
-      ...(await this._discoverSnapshotFiles()),
-      ...(await this._discoverTestFiles()),
+      ...this._discoverSnapshotFiles(files),
+      ...this._discoverTestFiles(files),
     ];
 
     return workspaceInfo.merge({ files: discoveredFiles });
   }
 
-  private async _discoverSnapshotFiles(): Promise<FileInfo[]> {
-    return (await this._tree.scanDirectory())
+  private _discoverSnapshotFiles(files: RelativePath[]): FileInfo[] {
+    return files
       .filter((file) => file.endsWith('.snap'))
       .map((path) => ({
         path,
@@ -31,8 +33,8 @@ export class TestEnricher implements Enricher {
       }));
   }
 
-  private async _discoverTestFiles(): Promise<FileInfo[]> {
-    return (await this._tree.scanDirectory())
+  private _discoverTestFiles(files: RelativePath[]): FileInfo[] {
+    return files
       .filter((file) => file.endsWith('.spec.ts') || file.endsWith('.spec.tsx'))
       .map((path) => ({
         path,
