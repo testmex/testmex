@@ -1,5 +1,5 @@
-import { dirname, join } from 'node:path/posix';
 import type { SgNode } from '@ast-grep/napi';
+import { dirname, join } from 'node:path/posix';
 import type { ReadonlyTree } from '../../../core/domain/tree';
 import {
   relativePath,
@@ -9,11 +9,11 @@ import { defineTransform } from '../../../core/models/transform';
 import { SgEditor } from '../../../infra/ast/sg-editor';
 import { fileTags } from '../identifiers';
 
-const JEST_SETUP_FILE_KEYS = ['setupFiles', 'setupFilesAfterEnv'] as const;
+const JEST_SETUP_FILE_KEYS = ['setupFiles', 'setupFilesAfterEnv'];
 
-const vitestConfigFileName = 'vitest.config.mts';
-const vitestConfigAlternativeFileNames = [
-  vitestConfigFileName,
+const VITEST_CONFIG_FILE_NAME = 'vitest.config.mts';
+const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
+  VITEST_CONFIG_FILE_NAME,
   'vitest.config.ts',
 ];
 
@@ -36,7 +36,7 @@ export const vitestConfigTransform = defineTransform({
       const setupFiles = await _extractJestSetupFiles(tree, file.path);
 
       await tree.write(
-        relativePath(join(configDirectory, vitestConfigFileName)),
+        relativePath(join(configDirectory, VITEST_CONFIG_FILE_NAME)),
         _vitestConfigContent(setupFiles),
       );
     }
@@ -50,7 +50,7 @@ async function _hasVitestConfig(
   tree: ReadonlyTree,
   projectRoot: RelativePath,
 ): Promise<boolean> {
-  for (const fileName of vitestConfigAlternativeFileNames) {
+  for (const fileName of VITEST_CONFIG_ALTERNATIVE_FILE_NAMES) {
     if (
       (await tree.maybeReadFile(relativePath(join(projectRoot, fileName)))) !==
       null
@@ -67,38 +67,25 @@ async function _extractJestSetupFiles(
   jestConfigPath: RelativePath,
 ): Promise<string[]> {
   const jestConfigContent = await tree.maybeReadFile(jestConfigPath);
-  if (jestConfigContent == null || jestConfigContent === '') {
+  if (jestConfigContent == null) {
     return [];
   }
 
-  const configPairs = _findConfigPairs(jestConfigContent);
-  if (configPairs == null) {
-    return [];
-  }
+  const editor = new SgEditor(jestConfigContent);
 
-  const setupFiles: string[] = [];
-
-  for (const key of JEST_SETUP_FILE_KEYS) {
-    const pair = configPairs.find((node) => node.child(0)?.text() === key);
-    if (pair != null) {
-      setupFiles.push(
-        ...pair
-          .findAll({ rule: { kind: 'string_fragment' } })
-          .map((node) => node.text()),
-      );
-    }
-  }
-
-  return setupFiles;
-}
-
-function _findConfigPairs(content: string): SgNode[] | undefined {
-  const editor = new SgEditor(content);
-  const config =
-    editor.root.find('module.exports = $CONFIG')?.getMatch('CONFIG') ??
-    editor.root.find('export default $CONFIG')?.getMatch('CONFIG');
-
-  return config?.children()?.filter((child) => child.kind() === 'pair');
+  return (
+    editor.root
+      .findAll({ rule: { kind: 'pair' } })
+      .filter((node) => {
+        const key = node.child(0)?.text();
+        return key ? JEST_SETUP_FILE_KEYS.includes(key) : false;
+      })
+      .flatMap((node) =>
+        node.child(2)?.findAll({ rule: { kind: 'string_fragment' } }),
+      )
+      .map((node) => node?.text())
+      .filter((path) => path != null),
+  );
 }
 
 function _vitestConfigContent(setupFiles: string[]): string {
@@ -118,7 +105,8 @@ function _vitestConfigContent(setupFiles: string[]): string {
     setupFiles.length === 0 ? '' : "import { join } from 'node:path';\n";
 
   return `
-${joinImport}import tsconfigPaths from 'vite-tsconfig-paths'
+${joinImport}\
+import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
