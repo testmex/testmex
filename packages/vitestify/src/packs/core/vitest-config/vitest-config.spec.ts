@@ -43,6 +43,75 @@ describe('vitest-config', () => {
     ).toContain(vitestConfigContent);
   });
 
+  it('reuses jest setup files in vitest config', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app').withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: `\
+export default {
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+};
+`,
+          fileName: 'jest.config.ts',
+          tags: [fileTags.jestConfig],
+        }).build(),
+      ),
+    );
+
+    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+
+    expect(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/vitest.config.mts'),
+      ),
+    ).toContain(`\
+import { join } from 'node:path';
+import tsconfigPaths from 'vite-tsconfig-paths'
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  plugins: [tsconfigPaths()],
+  test: {
+    include: ['**/*.{test,spec}.{ts,tsx}'],
+    setupFiles: [
+      join(import.meta.dirname, "./jest.setup.ts"),
+    ],
+  },
+});
+`);
+  });
+
+  it('merges setupFiles and setupFilesAfterEnv from jest config', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app').withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: `\
+module.exports = {
+  setupFiles: ['<rootDir>/global.setup.ts'],
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+};
+`,
+          fileName: 'jest.config.ts',
+          tags: [fileTags.jestConfig],
+        }).build(),
+      ),
+    );
+
+    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+
+    expect(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/vitest.config.mts'),
+      ),
+    ).toContain(`\
+    setupFiles: [
+      join(import.meta.dirname, "./global.setup.ts"),
+      join(import.meta.dirname, "./jest.setup.ts"),
+    ],`);
+  });
+
   it('skips directories that already have a vitest config', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(
