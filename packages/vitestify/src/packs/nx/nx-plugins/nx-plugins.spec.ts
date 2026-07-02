@@ -9,14 +9,9 @@ import { nxPluginsTransform } from './nx-plugins.transform';
 
 describe('nxPluginsTransform', () => {
   it('adds @nx/vitest plugin to nx.json', async () => {
-    const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
-    await workspace.tree.write(relativePath('nx.json'), '{}');
+    const { nxJson } = await transformNxJson({});
 
-    await runTransform({ workspace, transforms: [nxPluginsTransform] });
-
-    expect(
-      await workspace.tree.maybeReadJsonFile(relativePath('nx.json')),
-    ).toMatchObject({
+    expect(nxJson).toMatchObject({
       plugins: [
         {
           plugin: '@nx/vitest',
@@ -31,19 +26,11 @@ describe('nxPluginsTransform', () => {
   });
 
   it('adds @nx/vitest plugin to nx.json when plugins is not empty', async () => {
-    const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
-    await workspace.tree.write(
-      relativePath('nx.json'),
-      JSON.stringify({
-        plugins: [{ plugin: '@nx/js/typescript' }],
-      }),
-    );
+    const { nxJson } = await transformNxJson({
+      plugins: [{ plugin: '@nx/js/typescript' }],
+    });
 
-    await runTransform({ workspace, transforms: [nxPluginsTransform] });
-
-    expect(
-      await workspace.tree.maybeReadJsonFile(relativePath('nx.json')),
-    ).toMatchObject({
+    expect(nxJson).toMatchObject({
       plugins: [
         { plugin: '@nx/js/typescript' },
         {
@@ -59,18 +46,13 @@ describe('nxPluginsTransform', () => {
   });
 
   it('queues nx add @nx/vitest when @nx/plugin is not configured', async () => {
-    const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
-    await workspace.tree.write(relativePath('nx.json'), '{}');
+    const { commands } = await transformNxJson({});
 
-    await runTransform({ workspace, transforms: [nxPluginsTransform] });
-
-    expect(workspace.commands.all()).toEqual([
-      ['npx', 'nx', 'add', '@nx/vitest'],
-    ]);
+    expect(commands).toEqual([['npx', 'nx', 'add', '@nx/vitest']]);
   });
 
   it('skips when @nx/vitest plugin already present', async () => {
-    const content = JSON.stringify({
+    const { commands } = await transformNxJson({
       plugins: [
         {
           plugin: '@nx/vitest',
@@ -78,42 +60,24 @@ describe('nxPluginsTransform', () => {
         },
       ],
     });
-    const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
-    await workspace.tree.write(relativePath('nx.json'), content);
 
-    await runTransform({ workspace, transforms: [nxPluginsTransform] });
-
-    expect(workspace.commands.all()).toEqual([]);
+    expect(commands).toEqual([]);
   });
 
   it('skips when nx.json is missing', async () => {
-    const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
+    const { commands } = await transformNxJson();
 
-    await runTransform({ workspace, transforms: [nxPluginsTransform] });
-
-    expect(workspace.commands.all()).toEqual([]);
+    expect(commands).toEqual([]);
   });
 
   it.todo(
     'normalizes a string plugin entry to an object with jest test targets',
     async () => {
-      const workspace = createTestingWorkspace(
-        WorkspaceMother.withApp('my-app'),
-      );
-      await workspace.tree.write(
-        relativePath('nx.json'),
-        JSON.stringify({ plugins: ['@nx/jest/plugin'] }),
-      );
+      const { nxJson } = await transformNxJson({
+        plugins: ['@nx/jest/plugin'],
+      });
 
-      await runTransform({ workspace, transforms: [nxPluginsTransform] });
-
-      expect(
-        (
-          await workspace.tree.maybeReadJsonFile<{ plugins: unknown[] }>(
-            relativePath('nx.json'),
-          )
-        )?.plugins,
-      ).toContainEqual({
+      expect(nxJson?.plugins).toContainEqual({
         plugin: '@nx/jest/plugin',
         options: { targetName: 'jest' },
       });
@@ -123,23 +87,11 @@ describe('nxPluginsTransform', () => {
   it.todo(
     'normalizes an object plugin entry without options to jest test targets',
     async () => {
-      const workspace = createTestingWorkspace(
-        WorkspaceMother.withApp('my-app'),
-      );
-      await workspace.tree.write(
-        relativePath('nx.json'),
-        JSON.stringify({ plugins: [{ plugin: '@nx/jest/plugin' }] }),
-      );
+      const { nxJson } = await transformNxJson({
+        plugins: [{ plugin: '@nx/jest/plugin' }],
+      });
 
-      await runTransform({ workspace, transforms: [nxPluginsTransform] });
-
-      expect(
-        (
-          await workspace.tree.maybeReadJsonFile<{ plugins: unknown[] }>(
-            relativePath('nx.json'),
-          )
-        )?.plugins,
-      ).toContainEqual({
+      expect(nxJson?.plugins).toContainEqual({
         plugin: '@nx/jest/plugin',
         options: { targetName: 'jest' },
       });
@@ -149,33 +101,43 @@ describe('nxPluginsTransform', () => {
   it.todo(
     'updates an object plugin entry with options so test targets become jest',
     async () => {
-      const workspace = createTestingWorkspace(
-        WorkspaceMother.withApp('my-app'),
-      );
-      await workspace.tree.write(
-        relativePath('nx.json'),
-        JSON.stringify({
-          plugins: [
-            {
-              plugin: '@nx/jest/plugin',
-              options: { targetName: 'test', serveTargetName: 'serve' },
-            },
-          ],
-        }),
-      );
+      const { nxJson } = await transformNxJson({
+        plugins: [
+          {
+            plugin: '@nx/jest/plugin',
+            options: { targetName: 'test', serveTargetName: 'serve' },
+          },
+        ],
+      });
 
-      await runTransform({ workspace, transforms: [nxPluginsTransform] });
-
-      expect(
-        (
-          await workspace.tree.maybeReadJsonFile<{ plugins: unknown[] }>(
-            relativePath('nx.json'),
-          )
-        )?.plugins,
-      ).toContainEqual({
+      expect(nxJson?.plugins).toContainEqual({
         plugin: '@nx/jest/plugin',
         options: { targetName: 'jest', serveTargetName: 'serve' },
       });
     },
   );
 });
+
+async function transformNxJson(content?: NxJson) {
+  const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
+
+  if (content !== undefined) {
+    await workspace.tree.write(
+      relativePath('nx.json'),
+      JSON.stringify(content),
+    );
+  }
+
+  await runTransform({ workspace, transforms: [nxPluginsTransform] });
+
+  return {
+    nxJson: await workspace.tree.maybeReadJsonFile<NxJson>(
+      relativePath('nx.json'),
+    ),
+    commands: workspace.commands.all(),
+  };
+}
+
+interface NxJson {
+  plugins?: unknown[];
+}
