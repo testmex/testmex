@@ -1,13 +1,13 @@
-import type { SgNode } from '@ast-grep/napi';
 import { dirname, join } from 'node:path/posix';
 import type { ReadonlyTree } from '../../../core/domain/tree';
+import type { Finding } from '../../../core/models/finding';
 import {
   relativePath,
   type RelativePath,
 } from '../../../core/models/relative-path';
 import { defineTransform } from '../../../core/models/transform';
 import { SgEditor } from '../../../infra/ast/sg-editor';
-import { fileTags } from '../identifiers';
+import { fileTags, findingTypes } from '../identifiers';
 
 const JEST_SETUP_FILE_KEYS = ['setupFiles', 'setupFilesAfterEnv'];
 
@@ -19,25 +19,26 @@ const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
 
 export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
-  apply: async ({ workspace }) => {
+  apply: async ({ findings, workspace }) => {
     const { commands, info, tree } = workspace;
+    let needsJsdom = false;
 
-    for (const file of info.files) {
+    for (const file of info.getFiles()) {
       if (!file.tags.includes(fileTags.jestConfig)) {
         continue;
       }
 
-      const configDirectory = relativePath(dirname(file.path));
-
-      if (await _hasVitestConfig(tree, configDirectory)) {
+      if (await _hasVitestConfig(tree, file.project.path)) {
         continue;
       }
 
       const setupFiles = await _extractJestSetupFiles(tree, file.path);
+      const useJsdom = _projectUsesDom(findings, file.project.path);
+      needsJsdom ||= useJsdom;
 
       await tree.write(
-        relativePath(join(configDirectory, VITEST_CONFIG_FILE_NAME)),
-        _vitestConfigContent(setupFiles),
+        relativePath(join(file.project.path, VITEST_CONFIG_FILE_NAME)),
+        _vitestConfigContent({ setupFiles, useJsdom }),
       );
     }
 
@@ -86,11 +87,28 @@ async function _extractJestSetupFiles(
     .filter((path) => path != null);
 }
 
-function _vitestConfigContent(setupFiles: string[]): string {
+function _projectUsesDom(
+  findings: Finding[],
+  projectPath: RelativePath,
+): boolean {
+  return findings.some(
+    (finding) =>
+      finding.type === findingTypes.dom && finding.project.path === projectPath,
+  );
+}
+
+function _vitestConfigContent({
+  setupFiles,
+  useJsdom,
+}: {
+  setupFiles: string[];
+  useJsdom: boolean;
+}): string {
+  const environmentBlock = useJsdom ? `    environment: 'jsdom',\n` : '';
   const setupFilesBlock =
     setupFiles.length === 0
       ? ''
-      : `
+      : `\
     setupFiles: [
       ${setupFiles
         .map(
@@ -98,11 +116,12 @@ function _vitestConfigContent(setupFiles: string[]): string {
             `join(import.meta.dirname, ${JSON.stringify(path.replace(/^<rootDir>\/?/, './'))})`,
         )
         .join(',\n      ')},
-    ],`;
+    ],
+`;
   const joinImport =
     setupFiles.length === 0 ? '' : "import { join } from 'node:path';\n";
 
-  return `
+  return `\
 ${joinImport}\
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config';
@@ -110,8 +129,9 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
-    include: ['**/*.{test,spec}.{ts,tsx}'],\
-${setupFilesBlock}
+${environmentBlock}\
+    include: ['**/*.{test,spec}.{ts,tsx}'],
+${setupFilesBlock}\
   },
 });
 `;

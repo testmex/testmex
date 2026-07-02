@@ -6,10 +6,11 @@ import {
   WorkspaceMother,
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
+import { domHeuristic } from '../dom.heuristic';
 import { fileTags } from '../identifiers';
 import { vitestConfigTransform } from './vitest-config.transform';
 
-const vitestConfigContent = `
+const vitestConfigContent = `\
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config';
 
@@ -142,5 +143,43 @@ module.exports = {
         relativePath('apps/my-app/vitest.config.mts'),
       ),
     ).toBeNull();
+  });
+
+  it('configures jsdom when dom tests are detected', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.testFile({
+            appName: 'my-app',
+            content: 'document.body.innerHTML = "";',
+            fileName: 'app.spec.ts',
+          }).build(),
+        ),
+    );
+
+    await runTransform({
+      workspace,
+      heuristics: [domHeuristic],
+      transforms: [vitestConfigTransform],
+    });
+
+    const config = await workspace.tree.maybeReadFile(
+      relativePath('apps/my-app/vitest.config.mts'),
+    );
+
+    expect(config?.replace(/include: \[.+\]/, 'include: [...]')).toContain(`\
+  test: {
+    environment: 'jsdom',
+    include: [...],
+  },
+`);
   });
 });
