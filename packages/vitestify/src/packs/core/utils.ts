@@ -3,10 +3,8 @@ import type { RelativePath } from '../../core/models/relative-path';
 
 const EXCLUDED_CODE_FILE_NAMES = [
   'jest.config.ts',
-  'vitest.config.ts',
   'vite.config.ts',
-  'jest.setup.ts',
-  'test-setup.ts',
+  'vitest.config.ts',
 ];
 
 export function isTestFile(path: RelativePath): boolean {
