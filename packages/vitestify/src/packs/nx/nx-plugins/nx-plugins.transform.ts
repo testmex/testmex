@@ -12,13 +12,15 @@ export const nxPluginsTransform = defineTransform({
       return;
     }
 
-    const plugins = nxJson.plugins ?? [];
+    const plugins = (nxJson.plugins ?? []).map((entry) =>
+      _maybeChangeJestPluginTarget(entry),
+    );
     if (_hasVitestPlugin(plugins)) {
       return;
     }
 
     nxJson.plugins = [
-      ...(nxJson.plugins ?? []),
+      ...plugins,
       {
         plugin: '@nx/vitest',
         options: {
@@ -34,6 +36,20 @@ export const nxPluginsTransform = defineTransform({
     commands.add(['npx', 'nx', 'add', '@nx/vitest']);
   },
 });
+
+function _maybeChangeJestPluginTarget(
+  entry: NxPlugin | string,
+): NxPlugin | string {
+  const pluginName = typeof entry === 'string' ? entry : entry.plugin;
+
+  if (pluginName !== '@nx/jest/plugin') {
+    return entry;
+  }
+
+  const options = typeof entry === 'string' ? undefined : entry.options;
+
+  return { plugin: pluginName, options: { ...options, targetName: 'jest' } };
+}
 
 function _hasVitestPlugin(plugins: Array<NxPlugin | string>): boolean {
   return plugins.some((entry) => {

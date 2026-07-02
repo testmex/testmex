@@ -70,52 +70,43 @@ describe('nxPluginsTransform', () => {
     expect(commands).toEqual([]);
   });
 
-  it.todo(
-    'normalizes a string plugin entry to an object with jest test targets',
-    async () => {
-      const { nxJson } = await transformNxJson({
-        plugins: ['@nx/jest/plugin'],
-      });
+  it('normalizes a string plugin entry to an object with jest test targets', async () => {
+    const { nxJson } = await transformNxJson({
+      plugins: ['@nx/jest/plugin'],
+    });
 
-      expect(nxJson?.plugins).toContainEqual({
-        plugin: '@nx/jest/plugin',
-        options: { targetName: 'jest' },
-      });
-    },
-  );
+    expect(nxJson?.plugins).toContainEqual({
+      plugin: '@nx/jest/plugin',
+      options: { targetName: 'jest' },
+    });
+  });
 
-  it.todo(
-    'normalizes an object plugin entry without options to jest test targets',
-    async () => {
-      const { nxJson } = await transformNxJson({
-        plugins: [{ plugin: '@nx/jest/plugin' }],
-      });
+  it('normalizes an object plugin entry without options to jest test targets', async () => {
+    const { nxJson } = await transformNxJson({
+      plugins: [{ plugin: '@nx/jest/plugin' }],
+    });
 
-      expect(nxJson?.plugins).toContainEqual({
-        plugin: '@nx/jest/plugin',
-        options: { targetName: 'jest' },
-      });
-    },
-  );
+    expect(nxJson?.plugins).toContainEqual({
+      plugin: '@nx/jest/plugin',
+      options: { targetName: 'jest' },
+    });
+  });
 
-  it.todo(
-    'updates an object plugin entry with options so test targets become jest',
-    async () => {
-      const { nxJson } = await transformNxJson({
-        plugins: [
-          {
-            plugin: '@nx/jest/plugin',
-            options: { targetName: 'test', serveTargetName: 'serve' },
-          },
-        ],
-      });
+  it('updates an object plugin entry with options so test targets become jest', async () => {
+    const { nxJson } = await transformNxJson({
+      plugins: [
+        {
+          plugin: '@nx/jest/plugin',
+          options: { targetName: 'test', serveTargetName: 'serve' },
+        },
+      ],
+    });
 
-      expect(nxJson?.plugins).toContainEqual({
-        plugin: '@nx/jest/plugin',
-        options: { targetName: 'jest', serveTargetName: 'serve' },
-      });
-    },
-  );
+    expect(nxJson?.plugins).toContainEqual({
+      plugin: '@nx/jest/plugin',
+      options: { targetName: 'jest', serveTargetName: 'serve' },
+    });
+  });
 });
 
 async function transformNxJson(content?: NxJson) {
