@@ -6,7 +6,7 @@ import {
   type WorkspaceInfo,
 } from '../../core/models/workspace-info';
 import { fileTags } from './identifiers';
-import { isTestFile } from './util';
+import { isTestFile } from './utils';
 
 export class TestEnricher implements Enricher {
   private readonly _tree: ReadonlyTree;
@@ -35,11 +35,9 @@ export class TestEnricher implements Enricher {
   }
 
   private _discoverTestFiles(files: RelativePath[]): FileInfo[] {
-    return files
-      .filter(isTestFile)
-      .map((path) => ({
-        path,
-        tags: [fileTags.test],
-      }));
+    return files.filter(isTestFile).map((path) => ({
+      path,
+      tags: [fileTags.test],
+    }));
   }
 }
