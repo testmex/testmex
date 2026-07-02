@@ -5,14 +5,14 @@ import {
   WorkspaceMother,
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
-import { nxVitestPluginTransform } from './nx-vitest-plugin.transform';
+import { nxPluginsTransform } from './nx-plugins.transform';
 
-describe(nxVitestPluginTransform.name, () => {
+describe('nxPluginsTransform', () => {
   it('adds @nx/vitest plugin to nx.json', async () => {
     const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
     await workspace.tree.write(relativePath('nx.json'), '{}');
 
-    await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
+    await runTransform({ workspace, transforms: [nxPluginsTransform] });
 
     expect(
       await workspace.tree.maybeReadJsonFile(relativePath('nx.json')),
@@ -39,7 +39,7 @@ describe(nxVitestPluginTransform.name, () => {
       }),
     );
 
-    await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
+    await runTransform({ workspace, transforms: [nxPluginsTransform] });
 
     expect(
       await workspace.tree.maybeReadJsonFile(relativePath('nx.json')),
@@ -62,7 +62,7 @@ describe(nxVitestPluginTransform.name, () => {
     const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
     await workspace.tree.write(relativePath('nx.json'), '{}');
 
-    await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
+    await runTransform({ workspace, transforms: [nxPluginsTransform] });
 
     expect(workspace.commands.all()).toEqual([
       ['npx', 'nx', 'add', '@nx/vitest'],
@@ -81,7 +81,7 @@ describe(nxVitestPluginTransform.name, () => {
     const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
     await workspace.tree.write(relativePath('nx.json'), content);
 
-    await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
+    await runTransform({ workspace, transforms: [nxPluginsTransform] });
 
     expect(workspace.commands.all()).toEqual([]);
   });
@@ -89,8 +89,35 @@ describe(nxVitestPluginTransform.name, () => {
   it('skips when nx.json is missing', async () => {
     const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
 
-    await runTransform({ workspace, transforms: [nxVitestPluginTransform] });
+    await runTransform({ workspace, transforms: [nxPluginsTransform] });
 
     expect(workspace.commands.all()).toEqual([]);
   });
+
+  it.todo(
+    'normalizes a string plugin entry to an object with jest test targets',
+    () => {
+      // arrange nx.json with plugins: ['@nx/jest/plugin']
+      // run nxPluginsTransform
+      // assert plugins is [{ plugin: '@nx/jest/plugin', options: { targetName: 'jest', ... } }]
+    },
+  );
+
+  it.todo(
+    'normalizes an object plugin entry without options to jest test targets',
+    () => {
+      // arrange nx.json with plugins: [{ plugin: '@nx/jest/plugin' }]
+      // run nxPluginsTransform
+      // assert plugins is [{ plugin: '@nx/jest/plugin', options: { targetName: 'jest', ... } }]
+    },
+  );
+
+  it.todo(
+    'updates an object plugin entry with options so test targets become jest',
+    () => {
+      // arrange nx.json with plugins: [{ plugin: '@nx/jest/plugin', options: { targetName: 'test', serveTargetName: 'serve' } }]
+      // run nxPluginsTransform
+      // assert targetName is 'jest' and other options are preserved
+    },
+  );
 });

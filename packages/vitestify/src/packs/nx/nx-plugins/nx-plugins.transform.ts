@@ -1,8 +1,8 @@
 import { relativePath } from '../../../core/models/relative-path';
 import { defineTransform } from '../../../core/models/transform';
 
-export const nxVitestPluginTransform = defineTransform({
-  name: 'nx-vitest-plugin',
+export const nxPluginsTransform = defineTransform({
+  name: 'nx-plugins',
   apply: async ({ workspace }) => {
     const { commands, tree } = workspace;
     const nxJsonPath = relativePath('nx.json');
