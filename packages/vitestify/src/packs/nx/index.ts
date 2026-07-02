@@ -9,7 +9,7 @@ export default definePack({
   enricherFactories: [(args) => new NxEnricher(args)],
   transforms: [
     nxJestTargetTransform,
-    nxProjectJsonTransform,
     nxPluginsTransform,
+    nxProjectJsonTransform,
   ],
 });
