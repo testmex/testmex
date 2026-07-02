@@ -41,8 +41,8 @@ export const vitestConfigTransform = defineTransform({
       );
     }
 
-    commands.add(['pnpm', 'add', '-D', 'vite-tsconfig-paths']);
-    commands.add(['pnpm', 'add', '-D', 'vitest']);
+    commands.add([info.packageManager, 'add', '-D', 'vite-tsconfig-paths']);
+    commands.add([info.packageManager, 'add', '-D', 'vitest']);
   },
 });
 

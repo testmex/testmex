@@ -24,19 +24,27 @@ export function fileTag(tag: string): FileTag {
 
 declare const __fileTagBrand: unique symbol;
 
+export const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn'] as const;
+
+export type PackageManager = (typeof PACKAGE_MANAGERS)[number];
+
 export class WorkspaceInfo {
-  readonly projects: Project[];
   readonly files: FileInfo[];
+  readonly packageManager: PackageManager;
+  readonly projects: Project[];
 
   constructor({
     files = [],
+    packageManager = 'npm',
     projects = [],
   }: {
     files?: FileInfo[];
+    packageManager?: PackageManager;
     projects?: Project[];
   } = {}) {
-    this.projects = projects;
     this.files = files;
+    this.packageManager = packageManager;
+    this.projects = projects;
   }
 
   getFiles(): FileWithProject[] {
@@ -77,10 +85,12 @@ export class WorkspaceInfo {
   merge(overrides: {
     files?: FileInfo[];
     projects?: Project[];
+    packageManager?: PackageManager;
   }): WorkspaceInfo {
     return new WorkspaceInfo({
       files: [...this.files, ...(overrides.files ?? [])],
       projects: [...this.projects, ...(overrides.projects ?? [])],
+      packageManager: overrides.packageManager ?? this.packageManager,
     });
   }
 }
@@ -91,7 +101,11 @@ export function createWorkspaceInfo(): WorkspaceInfo {
 
 export function mergeWorkspaceInfo(
   workspaceInfo: WorkspaceInfo,
-  overrides: { files?: FileInfo[]; projects?: Project[] },
+  overrides: {
+    files?: FileInfo[];
+    projects?: Project[];
+    packageManager?: PackageManager;
+  },
 ): WorkspaceInfo {
   return workspaceInfo.merge(overrides);
 }
