@@ -73,19 +73,17 @@ async function _extractJestSetupFiles(
 
   const editor = new SgEditor(jestConfigContent);
 
-  return (
-    editor.root
-      .findAll({ rule: { kind: 'pair' } })
-      .filter((node) => {
-        const key = node.child(0)?.text();
-        return key ? JEST_SETUP_FILE_KEYS.includes(key) : false;
-      })
-      .flatMap((node) =>
-        node.child(2)?.findAll({ rule: { kind: 'string_fragment' } }),
-      )
-      .map((node) => node?.text())
-      .filter((path) => path != null),
-  );
+  return editor.root
+    .findAll({ rule: { kind: 'pair' } })
+    .filter((node) => {
+      const key = node.child(0)?.text();
+      return key ? JEST_SETUP_FILE_KEYS.includes(key) : false;
+    })
+    .flatMap((node) =>
+      node.child(2)?.findAll({ rule: { kind: 'string_fragment' } }),
+    )
+    .map((node) => node?.text())
+    .filter((path) => path != null);
 }
 
 function _vitestConfigContent(setupFiles: string[]): string {
