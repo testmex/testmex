@@ -1,4 +1,5 @@
-name: Trigger Cursor Automation
+
+name: Tidy Up
 
 on:
   push:
