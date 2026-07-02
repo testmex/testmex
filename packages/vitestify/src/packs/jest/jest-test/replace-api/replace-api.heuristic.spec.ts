@@ -11,7 +11,7 @@ import { findingTypes } from '../../identifiers';
 import { replaceApiHeuristic } from './replace-api.heuristic';
 
 describe('replaceApiHeuristic', () => {
-  it.todo('reports findings in code files', async () => {
+  it('reports findings in code files', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(
         WorkspaceFileMother.file({
@@ -31,7 +31,7 @@ describe('replaceApiHeuristic', () => {
         type: findingTypes.jestSymbol,
         project: { name: 'my-app', path: relativePath('apps/my-app') },
         file: {
-          path: relativePath('apps/my-app/src/test-utils.ts'),
+          path: relativePath('apps/my-app/src/testing/utils.ts'),
           tags: [fileTags.code],
         },
       },

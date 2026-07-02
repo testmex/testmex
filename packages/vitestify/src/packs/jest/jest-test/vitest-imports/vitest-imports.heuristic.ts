@@ -4,7 +4,9 @@ import { findingTypes } from '../../identifiers';
 import { jestGlobals } from './jest-globals';
 
 export const vitestImportsHeuristic = defineFileContentHeuristic({
-  predicate: (file) => file.tags.includes(coreFileTags.test),
+  predicate: (file) =>
+    file.tags.includes(coreFileTags.test) ||
+    file.tags.includes(coreFileTags.code),
   inspect: ({ file, project, content }) =>
     _isUsingJestGlobals(content)
       ? [

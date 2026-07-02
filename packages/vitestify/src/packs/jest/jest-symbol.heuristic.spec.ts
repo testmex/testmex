@@ -10,7 +10,7 @@ import { findingTypes } from './identifiers';
 import { jestSymbolHeuristic } from './jest-symbol.heuristic';
 
 describe('jestSymbolHeuristic', () => {
-  it.todo('reports findings in code files', async () => {
+  it('reports findings in code files', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(
         WorkspaceFileMother.file({
