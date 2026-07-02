@@ -26,6 +26,22 @@ vi.mock('./my-module', async () => ({
     );
   });
 
+  it('does not add async twice if function is already async', async () => {
+    expect(
+      await transformTestFile(`\
+jest.mock('./my-module', async () => ({
+  ...jest.requireActual('./my-module'),
+  canCook: () => true,
+}));`),
+    ).toContain(
+      `\
+vi.mock('./my-module', async () => ({
+  ...(await vi.importActual('./my-module')),
+  canCook: () => true,
+}));`,
+    );
+  });
+
   it('wraps concise arrow mock factory returning a value as `{ default: … }`', async () => {
     expect(await transformTestFile(`jest.mock('./logger', () => jest.fn());`))
       .toBe(`\

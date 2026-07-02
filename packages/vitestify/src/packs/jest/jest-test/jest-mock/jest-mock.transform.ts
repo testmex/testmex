@@ -33,6 +33,7 @@ function _rewriteDefaultExportMocks(content: string): string {
   const mockCalls = [
     ...editor.root.findAll('jest.mock($MODULE)'),
     ...editor.root.findAll('jest.mock($MODULE, () => $BODY)'),
+    ...editor.root.findAll('jest.mock($MODULE, async () => $BODY)'),
   ];
 
   for (const jestMockCall of mockCalls) {
@@ -100,7 +101,8 @@ function _replaceJestWithVitestAsyncApi({
     editor.replaceNode(jestCall, importActual);
 
     const enclosing = findEnclosingCallable(jestCall);
-    if (enclosing != null) {
+    /* Make enclosing callable async if it is not already. */
+    if (enclosing != null && enclosing.child(0)?.kind() !== 'async') {
       markCallableAsync({ callable: enclosing, editor });
     }
   }
