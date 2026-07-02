@@ -61,6 +61,7 @@ class NxWorkspaceInfraMother {
           nx: '23.0.0',
         },
       }),
+      [relativePath('pnpm-lock.yaml')]: 'lockfileVersion: 9.0',
       [relativePath('nx.json')]: '{}',
     };
 
