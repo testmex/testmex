@@ -31,5 +31,5 @@ function isTypeScriptFile(path: RelativePath): boolean {
 function isExcludedCodeFile(path: RelativePath): boolean {
   const name = basename(path);
 
-  return EXCLUDED_CODE_FILE_NAMES.includes(name) || name.endsWith('.setup.ts');
+  return EXCLUDED_CODE_FILE_NAMES.includes(name);
 }
