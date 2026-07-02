@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import type { CommandRunner } from '../ports/command-runner';
 import { CommandRunnerPooled } from './command-runner-pooled';
 
