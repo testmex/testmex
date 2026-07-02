@@ -1,4 +1,4 @@
-import { dirname, join } from 'node:path/posix';
+import { join } from 'node:path/posix';
 import type { ReadonlyTree } from '../../../core/domain/tree';
 import type { Finding } from '../../../core/models/finding';
 import {
