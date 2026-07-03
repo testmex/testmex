@@ -148,14 +148,17 @@ describe.skip('legacy suite', () => { /* … */ });
   });
 
   it('does not rewrite describe.only (imports describe only)', async () => {
-    expect(
-      await transformTestFile(`\
-describe.only('focused suite', () => { /* … */ });
-`),
-    ).toBe(`\
-import { describe } from 'vitest';
-describe.only('focused suite', () => { /* … */ });
-`);
+    const content = await transformTestFile(
+      `describe.only('focused suite', () => { /* … */ });`,
+    );
+    /* Keep the assertions inlined.
+     * WallabyJS detects `describe.only` with a regexp so if the line starts with it.
+     * Other files are excluded.
+     * Cf. https://github.com/wallabyjs/public/issues/3643 */
+    expect.soft(content).toContain(`import { describe } from 'vitest';`);
+    expect
+      .soft(content)
+      .toContain(`describe.only('focused suite', () => { /* … */ });`);
   });
 
   it('does not rewrite describe.each (imports describe only)', async () => {
