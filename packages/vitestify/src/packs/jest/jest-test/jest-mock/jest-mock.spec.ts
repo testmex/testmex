@@ -111,6 +111,18 @@ vi.mock('./my-module', () => {
 });`);
   });
 
+  it('skips wrapping when an object is returned', async () => {
+    const input = `\
+jest.mock('./my-module', () => {
+  return { xyz: 42 };
+});`;
+
+    expect(await transformTestFile(input)).toContain(`\
+vi.mock('./my-module', () => {
+  return { xyz: 42 };
+});`);
+  });
+
   it('rewrites `jest.requireMock` to `await vi.importMock` and marks enclosing function `async`', async () => {
     expect(
       await transformTestFile(

@@ -54,7 +54,7 @@ function _rewriteDefaultExportMocks(content: string): string {
     if (factory != null && body != null) {
       if (body.kind() === 'statement_block') {
         /**
-         * `() => { return 42; }` -> `() => { ret`urn { default: 42; } }`
+         * `() => { return 42; }` -> `() => { return { default: 42; } }`
          */
         _rewriteReturnStatements({ body, editor });
       } else if (!_isObjectLiteralReturn(body)) {
@@ -128,15 +128,18 @@ function _rewriteReturnStatements({
   editor: SgEditor;
 }): void {
   for (const returnStmt of body.findAll('return $RETURN')) {
-    const returnTxt = returnStmt.getMatch('RETURN')?.text();
+    const returnValue = returnStmt.getMatch('RETURN');
+    const returnTxt = returnValue?.text();
     if (
       returnTxt != null &&
+      returnValue != null &&
       noIntermediateOfKind(returnStmt, body, [
         'arrow_function',
         'function_expression',
         'function_declaration',
       ]) &&
-      !_objectExpressionHasDefaultProperty(returnStmt)
+      !_objectExpressionHasDefaultProperty(returnStmt) &&
+      !_isObjectLiteralReturn(returnValue)
     ) {
       editor.replaceNode(returnStmt, `return { default: ${returnTxt} };`);
     }
