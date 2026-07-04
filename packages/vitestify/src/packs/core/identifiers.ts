@@ -2,6 +2,7 @@ import { findingType } from '../../core/models/finding';
 import { fileTag } from '../../core/models/workspace-info';
 
 export const findingTypes = {
+  angular: findingType('angular'),
   dom: findingType('dom'),
   testingLibraryJestDom: findingType('testing-library-jest-dom'),
 } as const;
