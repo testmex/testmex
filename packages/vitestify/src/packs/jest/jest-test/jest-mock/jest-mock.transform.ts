@@ -24,11 +24,7 @@ const jestToVitestAsyncApi = {
 function _rewriteDefaultExportMocks(content: string): string {
   const editor = new SgEditor(content);
 
-  for (const [jestApi, vitestAsyncApi] of Object.entries(
-    jestToVitestAsyncApi,
-  )) {
-    _replaceJestWithVitestAsyncApi({ editor, jestApi, vitestAsyncApi });
-  }
+  _replaceJestWithVitestAsyncApi({ editor });
 
   const mockCalls = [
     ...editor.root.findAll('jest.mock($MODULE)'),
@@ -73,20 +69,29 @@ function _rewriteDefaultExportMocks(content: string): string {
 
 function _replaceJestWithVitestAsyncApi({
   editor,
-  jestApi,
-  vitestAsyncApi,
 }: {
   editor: SgEditor;
-  jestApi: string;
-  vitestAsyncApi: string;
 }): void {
-  for (const jestCall of [
-    ...editor.root.findAll(`jest.${jestApi}($MODULE)`),
-    ...editor.root.findAll(
-      `jest.${jestApi}<typeof import($TYPE_MODULE)>($MODULE)`,
-    ),
-    ...editor.root.findAll(`jest.${jestApi}<$TYPE>($MODULE, () => $BODY)`),
-  ]) {
+  const matches = Object.entries(jestToVitestAsyncApi).flatMap(
+    ([jestApi, vitestAsyncApi]) => {
+      return [
+        ...editor.root.findAll(`jest.${jestApi}($MODULE)`),
+        ...editor.root.findAll(
+          `jest.${jestApi}<typeof import($TYPE_MODULE)>($MODULE)`,
+        ),
+        ...editor.root.findAll(`jest.${jestApi}<$TYPE>($MODULE, () => $BODY)`),
+      ].map((jestCall) => ({
+        jestCall,
+        vitestAsyncApi,
+      }));
+    },
+  );
+
+  /* `jest.mock` callback might contain multiple requireActual calls,
+   * but we do not want to add `async` twice. */
+  const markedAsyncCallables = new Set<number>();
+
+  for (const { jestCall, vitestAsyncApi } of matches) {
     const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
 
     const type = jestCall.getMatch('TYPE');
@@ -102,8 +107,9 @@ function _replaceJestWithVitestAsyncApi({
 
     const enclosing = findEnclosingCallable(jestCall);
     /* Make enclosing callable async if it is not already. */
-    if (enclosing != null && enclosing.child(0)?.kind() !== 'async') {
+    if (enclosing != null && !markedAsyncCallables.has(enclosing.id())) {
       markCallableAsync({ callable: enclosing, editor });
+      markedAsyncCallables.add(enclosing.id());
     }
   }
 }

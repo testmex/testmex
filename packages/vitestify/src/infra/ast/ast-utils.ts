@@ -91,10 +91,9 @@ export function markCallableAsync({
   callable: SgNode;
   editor: SgEditor;
 }): void {
-  const params = callable.field('parameters');
-  if (params == null) {
+  if (callable.child(0)?.kind() === 'async') {
     return;
   }
 
-  editor.insertBefore(params, 'async ');
+  editor.insertBefore(callable, 'async ');
 }

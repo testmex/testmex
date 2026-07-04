@@ -42,6 +42,22 @@ vi.mock('./my-module', async () => ({
     );
   });
 
+  it('does not add async twice if requireActual is called twice', async () => {
+    expect(
+      await transformTestFile(`\
+jest.mock('./my-module', () => ({
+  ...jest.requireActual('./my-module'),
+  something: jest.requireActual('./my-module').something,
+}));`),
+    ).toContain(
+      `\
+vi.mock('./my-module', async () => ({
+  ...(await vi.importActual('./my-module')),
+  something: (await vi.importActual('./my-module')).something,
+}));`,
+    );
+  });
+
   it('wraps concise arrow mock factory returning a value as `{ default: … }`', async () => {
     expect(await transformTestFile(`jest.mock('./logger', () => jest.fn());`))
       .toBe(`\
