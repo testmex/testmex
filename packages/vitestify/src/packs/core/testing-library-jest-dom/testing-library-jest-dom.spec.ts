@@ -11,7 +11,7 @@ import { testingLibraryJestDomHeuristic } from './testing-library-jest-dom.heuri
 import { testingLibraryJestDomTransform } from './testing-library-jest-dom.transform';
 
 describe('testing-library-jest-dom', () => {
-  it.todo(
+  it(
     'rewrites @testing-library/jest-dom side-effect import in setup files',
     async () => {
       const workspace = createTestingWorkspace(

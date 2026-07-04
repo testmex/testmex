@@ -32,7 +32,14 @@ export const vitestConfigTransform = defineTransform({
         continue;
       }
 
-      const setupFiles = await _extractJestSetupFiles(tree, file.path);
+      let setupFiles = await _extractJestSetupFiles(tree, file.path);
+
+      setupFiles = _maybeAppendJestDomVitestSetup({
+        findings,
+        projectPath: file.project.path,
+        setupFiles,
+      });
+
       const useJsdom = _projectUsesDom(findings, file.project.path);
       needsJsdom ||= useJsdom;
 
@@ -97,10 +104,7 @@ function _projectUsesDom(
   );
 }
 
-/**
- * @deprecated 🚧 work in progress
- */
-function _appendJestDomVitestSetup({
+function _maybeAppendJestDomVitestSetup({
   setupFiles,
   findings,
   projectPath,
@@ -109,7 +113,22 @@ function _appendJestDomVitestSetup({
   findings: Finding[];
   projectPath: RelativePath;
 }): string[] {
-  throw new Error(`🚧 work in progress`);
+  if (_projectUsesTestingLibraryJestDom(findings, projectPath)) {
+    setupFiles = [...setupFiles, '@testing-library/jest-dom/vitest'];
+  }
+
+  return setupFiles;
+}
+
+function _projectUsesTestingLibraryJestDom(
+  findings: Finding[],
+  projectPath: RelativePath,
+): boolean {
+  return findings.some(
+    (finding) =>
+      finding.type === findingTypes.testingLibraryJestDom &&
+      finding.project.path === projectPath,
+  );
 }
 
 function _vitestConfigContent({
@@ -126,9 +145,10 @@ function _vitestConfigContent({
       : `\
     setupFiles: [
       ${setupFiles
-        .map(
-          (path) =>
-            `join(import.meta.dirname, ${JSON.stringify(path.replace(/^<rootDir>\/?/, './'))})`,
+        .map((path) =>
+          path.startsWith('@')
+            ? `'${path}'`
+            : `join(import.meta.dirname, ${JSON.stringify(path.replace(/^<rootDir>\/?/, './'))})`,
         )
         .join(',\n      ')},
     ],

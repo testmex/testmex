@@ -146,7 +146,7 @@ module.exports = {
     ).toBeNull();
   });
 
-  it.todo(
+  it(
     'adds @testing-library/jest-dom/vitest to setup files when jest-dom is detected',
     async () => {
       const workspace = createTestingWorkspace(
@@ -185,12 +185,11 @@ export default {
       /* Ignore other setup files. */
       content = content?.replace(/join\(.*/, '...') ?? null;
 
-      expect(content).toContain(`
-      setupFiles: [
-        ...
-        '@testing-library/jest-dom/vitest',
-      ],
-    `);
+      expect(content).toContain(`\
+    setupFiles: [
+      ...
+      '@testing-library/jest-dom/vitest',
+    ],`);
     },
   );
 
