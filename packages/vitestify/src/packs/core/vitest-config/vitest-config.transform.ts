@@ -97,6 +97,21 @@ function _projectUsesDom(
   );
 }
 
+/**
+ * @deprecated 🚧 work in progress
+ */
+function _appendJestDomVitestSetup({
+  setupFiles,
+  findings,
+  projectPath,
+}: {
+  setupFiles: string[];
+  findings: Finding[];
+  projectPath: RelativePath;
+}): string[] {
+  throw new Error(`🚧 work in progress`);
+}
+
 function _vitestConfigContent({
   setupFiles,
   useJsdom,

@@ -3,6 +3,7 @@ import { fileTag } from '../../core/models/workspace-info';
 
 export const findingTypes = {
   dom: findingType('dom'),
+  testingLibraryJestDom: findingType('testing-library-jest-dom'),
 } as const;
 
 export const fileTags = {

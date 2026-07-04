@@ -145,6 +145,12 @@ module.exports = {
     ).toBeNull();
   });
 
+  it.todo('adds @testing-library/jest-dom/vitest to setup files when jest-dom is detected', () => {
+    // arrange workspace with jest config and a setup file containing `import '@testing-library/jest-dom';`
+    // run vitestConfigTransform with testingLibraryJestDomHeuristic
+    // assert vitest.config.mts setupFiles includes '@testing-library/jest-dom/vitest'
+  });
+
   it('configures jsdom when dom tests are detected', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app')
