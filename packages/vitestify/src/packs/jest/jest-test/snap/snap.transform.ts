@@ -4,9 +4,7 @@ import { fileTags } from '../../../core/identifiers';
 export const snapTransform = defineFileTransform({
   name: 'snap',
   fileTags: [fileTags.snapshot],
-  apply: _rewriteSnap,
+  apply: (content) => {
+    return content.replaceAll('Array [', '[').replaceAll('Object {', '{');
+  },
 });
-
-function _rewriteSnap(content: string): string {
-  return content.replaceAll('Array [', '[').replaceAll('Object {', '{');
-}

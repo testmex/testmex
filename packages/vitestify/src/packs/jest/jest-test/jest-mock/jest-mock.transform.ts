@@ -12,7 +12,51 @@ import { findingTypes } from '../../identifiers';
 export const jestMockTransform = defineFileTransform({
   name: 'jest-mock',
   findingType: findingTypes.jestSymbol,
-  apply: _rewriteDefaultExportMocks,
+  apply: (content) => {
+    const editor = new SgEditor(content);
+
+    _replaceJestWithVitestAsyncApi({ editor });
+
+    const mockCalls = [
+      ...editor.root.findAll('jest.mock($MODULE)'),
+      ...editor.root.findAll('jest.mock($MODULE, () => $BODY)'),
+      ...editor.root.findAll('jest.mock($MODULE, async () => $BODY)'),
+    ];
+
+    for (const jestMockCall of mockCalls) {
+      const body = jestMockCall.getMatch('BODY');
+      const factory = body?.parent();
+
+      /**
+       * Skip when `default` property is already present:
+       * `jest.mock(…, () => ({ default: … }))`
+       */
+      if (
+        body?.kind() === 'parenthesized_expression' &&
+        _objectExpressionHasDefaultProperty(body)
+      ) {
+        continue;
+      }
+
+      if (factory != null && body != null) {
+        if (body.kind() === 'statement_block') {
+          /**
+           * `() => { return 42; }` -> `() => { return { default: 42; } }`
+           */
+          _rewriteReturnStatements({ body, editor });
+        } else if (!_isObjectLiteralReturn(body)) {
+          /**
+           * `() => (42)` -> `() => ({ default: 42 })`
+           */
+          _rewriteInlineArrow({ body, editor });
+        }
+      }
+
+      _rewriteJestCalleeToVi({ jestMockCall, editor });
+    }
+
+    return editor.commit();
+  },
 });
 
 const jestToVitestAsyncApi = {
@@ -20,52 +64,6 @@ const jestToVitestAsyncApi = {
   requireMock: 'importMock',
   requireActual: 'importActual',
 } as const;
-
-function _rewriteDefaultExportMocks(content: string): string {
-  const editor = new SgEditor(content);
-
-  _replaceJestWithVitestAsyncApi({ editor });
-
-  const mockCalls = [
-    ...editor.root.findAll('jest.mock($MODULE)'),
-    ...editor.root.findAll('jest.mock($MODULE, () => $BODY)'),
-    ...editor.root.findAll('jest.mock($MODULE, async () => $BODY)'),
-  ];
-
-  for (const jestMockCall of mockCalls) {
-    const body = jestMockCall.getMatch('BODY');
-    const factory = body?.parent();
-
-    /**
-     * Skip when `default` property is already present:
-     * `jest.mock(…, () => ({ default: … }))`
-     */
-    if (
-      body?.kind() === 'parenthesized_expression' &&
-      _objectExpressionHasDefaultProperty(body)
-    ) {
-      continue;
-    }
-
-    if (factory != null && body != null) {
-      if (body.kind() === 'statement_block') {
-        /**
-         * `() => { return 42; }` -> `() => { return { default: 42; } }`
-         */
-        _rewriteReturnStatements({ body, editor });
-      } else if (!_isObjectLiteralReturn(body)) {
-        /**
-         * `() => (42)` -> `() => ({ default: 42 })`
-         */
-        _rewriteInlineArrow({ body, editor });
-      }
-    }
-
-    _rewriteJestCalleeToVi({ jestMockCall, editor });
-  }
-
-  return editor.commit();
-}
 
 function _replaceJestWithVitestAsyncApi({
   editor,

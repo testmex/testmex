@@ -7,19 +7,17 @@ import { jestGlobals } from './jest-globals';
 export const vitestImportsTransform = defineFileTransform({
   name: 'vitest-imports',
   findingType: findingTypes.vitestImportsNeeded,
-  apply: _rewriteVitestImports,
+  apply: (content) => {
+    const editor = new SgEditor(content);
+
+    for (const identifierUsage of jestGlobals
+      .map((jestGlobal) => editor.root.find(jestGlobal))
+      .filter((node) => node != null)) {
+      const jestIdentifierText =
+        identifierUsage.text() as (typeof jestGlobals)[number];
+      ensureVitestSymbol({ editor, symbol: jestIdentifierText });
+    }
+
+    return editor.commit();
+  },
 });
-
-function _rewriteVitestImports(content: string): string {
-  const editor = new SgEditor(content);
-
-  for (const identifierUsage of jestGlobals
-    .map((jestGlobal) => editor.root.find(jestGlobal))
-    .filter((node) => node != null)) {
-    const jestIdentifierText =
-      identifierUsage.text() as (typeof jestGlobals)[number];
-    ensureVitestSymbol({ editor, symbol: jestIdentifierText });
-  }
-
-  return editor.commit();
-}

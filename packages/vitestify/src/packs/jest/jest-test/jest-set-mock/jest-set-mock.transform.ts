@@ -6,26 +6,24 @@ import { ensureVitestSymbol } from '../../../../infra/ast/vitest-ast-utils';
 export const jestSetMockTransform = defineFileTransform({
   name: 'jest-set-mock',
   findingType: findingTypes.jestSymbol,
-  apply: _wrapSetMockObjectLiteral,
-});
+  apply: (content) => {
+    const editor = new SgEditor(content);
+    const nodes = editor.root.findAll('jest.setMock($MODULE, $VALUE)');
 
-function _wrapSetMockObjectLiteral(content: string): string {
-  const editor = new SgEditor(content);
-  const nodes = editor.root.findAll('jest.setMock($MODULE, $VALUE)');
+    for (const node of nodes) {
+      const module = node.getMatch('MODULE');
+      const value = node.getMatch('VALUE');
+      if (module == null || value == null) {
+        continue;
+      }
 
-  for (const node of nodes) {
-    const module = node.getMatch('MODULE');
-    const value = node.getMatch('VALUE');
-    if (module == null || value == null) {
-      continue;
+      const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
+      editor.replaceNode(
+        node,
+        `${vi}.mock(${module.text()}, () => (${value.text()}))`,
+      );
     }
 
-    const vi = ensureVitestSymbol({ editor, symbol: 'vi' });
-    editor.replaceNode(
-      node,
-      `${vi}.mock(${module.text()}, () => (${value.text()}))`,
-    );
-  }
-
-  return editor.commit();
-}
+    return editor.commit();
+  },
+});

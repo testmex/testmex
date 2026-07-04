@@ -12,33 +12,31 @@ const jestTypeReplacements = {
 export const jestTypesTransform = defineFileTransform({
   name: 'jest-types',
   findingType: findingTypes.jestSymbol,
-  apply: _rewriteJestTypes,
-});
+  apply: (content) => {
+    const editor = new SgEditor(content);
 
-function _rewriteJestTypes(content: string): string {
-  const editor = new SgEditor(content);
+    for (const node of editor.root.findAll({
+      rule: { kind: 'nested_type_identifier' },
+    })) {
+      const namespace = node.field('module')?.text();
+      const jestTypeName = node.field('name')?.text();
+      if (
+        namespace !== 'jest' ||
+        jestTypeName == null ||
+        !(jestTypeName in jestTypeReplacements)
+      ) {
+        continue;
+      }
 
-  for (const node of editor.root.findAll({
-    rule: { kind: 'nested_type_identifier' },
-  })) {
-    const namespace = node.field('module')?.text();
-    const jestTypeName = node.field('name')?.text();
-    if (
-      namespace !== 'jest' ||
-      jestTypeName == null ||
-      !(jestTypeName in jestTypeReplacements)
-    ) {
-      continue;
+      const replacement =
+        jestTypeReplacements[jestTypeName as keyof typeof jestTypeReplacements];
+
+      editor.replaceNode(
+        node,
+        ensureVitestTypeSymbol({ editor, symbol: replacement }),
+      );
     }
 
-    const replacement =
-      jestTypeReplacements[jestTypeName as keyof typeof jestTypeReplacements];
-
-    editor.replaceNode(
-      node,
-      ensureVitestTypeSymbol({ editor, symbol: replacement }),
-    );
-  }
-
-  return editor.commit();
-}
+    return editor.commit();
+  },
+});
