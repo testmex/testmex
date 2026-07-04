@@ -10,7 +10,6 @@ import { SgEditor } from '../../../infra/ast/sg-editor';
 import { fileTags, findingTypes } from '../identifiers';
 
 const JEST_SETUP_FILE_KEYS = ['setupFiles', 'setupFilesAfterEnv'];
-
 const VITEST_CONFIG_FILE_NAME = 'vitest.config.mts';
 const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
   VITEST_CONFIG_FILE_NAME,
@@ -43,9 +42,14 @@ export const vitestConfigTransform = defineTransform({
       const useJsdom = _projectUsesDom(findings, file.project.path);
       needsJsdom ||= useJsdom;
 
+      const moduleNameMappings = await _extractJestModuleNameMappers(
+        tree,
+        file.path,
+      );
+
       await tree.write(
         relativePath(join(file.project.path, VITEST_CONFIG_FILE_NAME)),
-        _vitestConfigContent({ setupFiles, useJsdom }),
+        _vitestConfigContent({ moduleNameMappings, setupFiles, useJsdom }),
       );
     }
 
@@ -94,6 +98,88 @@ async function _extractJestSetupFiles(
     .filter((path) => path != null);
 }
 
+interface JestModuleNameMapping {
+  find: string;
+  replacement: string;
+}
+
+async function _extractJestModuleNameMappers(
+  tree: ReadonlyTree,
+  jestConfigPath: RelativePath,
+): Promise<JestModuleNameMapping[]> {
+  const jestConfigContent = await tree.maybeReadFile(jestConfigPath);
+  if (jestConfigContent == null) {
+    return [];
+  }
+
+  const editor = new SgEditor(jestConfigContent);
+
+  const moduleNameMapperPair = editor.root
+    .findAll({ rule: { kind: 'pair' } })
+    .find((node) => node.child(0)?.text() === 'moduleNameMapper');
+
+  if (moduleNameMapperPair == null) {
+    return [];
+  }
+
+  return (
+    moduleNameMapperPair
+      .child(2)
+      ?.findAll({ rule: { kind: 'pair' } })
+      .map((pair) => {
+        const find = pair
+          .child(0)
+          ?.find({ rule: { kind: 'string_fragment' } })
+          ?.text();
+        const replacement = pair
+          .child(2)
+          ?.find({ rule: { kind: 'string_fragment' } })
+          ?.text();
+
+        if (find == null || replacement == null) {
+          return null;
+        }
+
+        return { find, replacement };
+      })
+      .filter((mapping) => mapping != null) ?? []
+  );
+}
+
+function _resolveAliasBlock(
+  moduleNameMappings: JestModuleNameMapping[],
+): string {
+  return `\
+  resolve: {
+    alias: [
+${moduleNameMappings
+  .map(
+    (mapping) => `\
+      {
+        find: ${_formatModuleNameMapperFind(mapping.find)},
+        replacement: ${_formatModuleNameMapperReplacement(mapping.replacement)},
+      }`,
+  )
+  .join(',\n')},
+    ],
+  },
+`;
+}
+
+function _formatModuleNameMapperFind(find: string): string {
+  if (find.startsWith('^') || find.endsWith('$')) {
+    return `/${find}/`;
+  }
+
+  return JSON.stringify(find);
+}
+
+function _formatModuleNameMapperReplacement(replacement: string): string {
+  const path = replacement.replace(/^<rootDir>\/?/, '');
+
+  return `join(import.meta.dirname, '${path}')`;
+}
+
 function _projectUsesDom(
   findings: Finding[],
   projectPath: RelativePath,
@@ -132,9 +218,11 @@ function _projectUsesTestingLibraryJestDom(
 }
 
 function _vitestConfigContent({
+  moduleNameMappings,
   setupFiles,
   useJsdom,
 }: {
+  moduleNameMappings: JestModuleNameMapping[];
   setupFiles: string[];
   useJsdom: boolean;
 }): string {
@@ -153,8 +241,16 @@ function _vitestConfigContent({
         .join(',\n      ')},
     ],
 `;
-  const joinImport =
-    setupFiles.length === 0 ? '' : "import { join } from 'node:path';\n";
+  const resolveBlock =
+    moduleNameMappings.length === 0
+      ? ''
+      : _resolveAliasBlock(moduleNameMappings);
+
+  const needsJoinImport =
+    setupFiles.length > 0 || moduleNameMappings.length > 0;
+  const joinImport = needsJoinImport
+    ? "import { join } from 'node:path';\n"
+    : '';
 
   return `\
 ${joinImport}\
@@ -163,6 +259,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [tsconfigPaths()],
+${resolveBlock}\
   test: {
 ${environmentBlock}\
     include: ['**/*.{test,spec}.{ts,tsx}'],

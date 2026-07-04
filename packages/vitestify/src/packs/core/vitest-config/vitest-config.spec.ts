@@ -226,9 +226,39 @@ export default {
 `);
   });
 
-  it.todo('maps jest moduleNameMapper entries to vitest resolve.alias', () => {
-    // arrange workspace with jest config containing moduleNameMapper: { '^react-pdf$': '<rootDir>/__mocks__/react-pdf.js' }
-    // run vitest-config transform
-    // assert vitest.config.mts contains resolve.alias with find: /^react-pdf$/ and replacement: join(import.meta.dirname, '__mocks__/react-pdf.js')
+  it('maps jest moduleNameMapper entries to vitest resolve.alias', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app').withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: `\
+export default {
+  moduleNameMapper: {
+    '^react-pdf$': '<rootDir>/__mocks__/react-pdf.js',
+  },
+};
+`,
+          fileName: 'jest.config.ts',
+          tags: [fileTags.jestConfig],
+        }).build(),
+      ),
+    );
+
+    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+
+    expect(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/vitest.config.mts'),
+      ),
+    ).toContain(`\
+  resolve: {
+    alias: [
+      {
+        find: /^react-pdf$/,
+        replacement: join(import.meta.dirname, '__mocks__/react-pdf.js'),
+      },
+    ],
+  },
+`);
   });
 });
