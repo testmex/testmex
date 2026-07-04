@@ -11,18 +11,6 @@ import { fileTags } from '../identifiers';
 import { testingLibraryJestDomHeuristic } from '../testing-library-jest-dom/testing-library-jest-dom.heuristic';
 import { vitestConfigTransform } from './vitest-config.transform';
 
-const vitestConfigContent = `\
-import tsconfigPaths from 'vite-tsconfig-paths'
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
-  plugins: [tsconfigPaths()],
-  test: {
-    include: ['**/*.{test,spec}.{ts,tsx}'],
-  },
-});
-`;
-
 describe('vitest-config', () => {
   it('generates vitest.config.mts next to jest config', async () => {
     const workspace = createTestingWorkspace(
@@ -42,7 +30,17 @@ describe('vitest-config', () => {
       await workspace.tree.maybeReadFile(
         relativePath('apps/my-app/vitest.config.mts'),
       ),
-    ).toContain(vitestConfigContent);
+    ).toContain(`\
+import tsconfigPaths from 'vite-tsconfig-paths'
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  plugins: [tsconfigPaths()],
+  test: {
+    include: ['**/*.{test,spec}.{ts,tsx}'],
+  },
+});
+`);
   });
 
   it('reuses jest setup files in vitest config', async () => {
@@ -146,52 +144,49 @@ module.exports = {
     ).toBeNull();
   });
 
-  it(
-    'adds @testing-library/jest-dom/vitest to setup files when jest-dom is detected',
-    async () => {
-      const workspace = createTestingWorkspace(
-        WorkspaceMother.withApp('my-app')
-          .withFile(
-            WorkspaceFileMother.file({
-              appName: 'my-app',
-              content: `\
+  it('adds @testing-library/jest-dom/vitest to setup files when jest-dom is detected', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: `\
 export default {
   setupFilesAfterEnv: ['./jest.setup.ts'],
 };
 `,
-              fileName: 'jest.config.ts',
-              tags: [fileTags.jestConfig],
-            }).build(),
-          )
-          .withFile(
-            WorkspaceFileMother.file({
-              appName: 'my-app',
-              content: `import '@testing-library/jest-dom';`,
-              fileName: 'jest.setup.ts',
-              tags: [fileTags.code],
-            }).build(),
-          ),
-      );
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: `import '@testing-library/jest-dom';`,
+            fileName: 'jest.setup.ts',
+            tags: [fileTags.code],
+          }).build(),
+        ),
+    );
 
-      await runTransform({
-        workspace,
-        heuristics: [testingLibraryJestDomHeuristic],
-        transforms: [vitestConfigTransform],
-      });
+    await runTransform({
+      workspace,
+      heuristics: [testingLibraryJestDomHeuristic],
+      transforms: [vitestConfigTransform],
+    });
 
-      let content = await workspace.tree.maybeReadFile(
-        relativePath('apps/my-app/vitest.config.mts'),
-      );
-      /* Ignore other setup files. */
-      content = content?.replace(/join\(.*/, '...') ?? null;
+    let content = await workspace.tree.maybeReadFile(
+      relativePath('apps/my-app/vitest.config.mts'),
+    );
+    /* Ignore other setup files. */
+    content = content?.replace(/join\(.*/, '...') ?? null;
 
-      expect(content).toContain(`\
+    expect(content).toContain(`\
     setupFiles: [
       ...
       '@testing-library/jest-dom/vitest',
     ],`);
-    },
-  );
+  });
 
   it('configures jsdom when dom tests are detected', async () => {
     const workspace = createTestingWorkspace(
@@ -229,5 +224,11 @@ export default {
     include: [...],
   },
 `);
+  });
+
+  it.todo('maps jest moduleNameMapper entries to vitest resolve.alias', () => {
+    // arrange workspace with jest config containing moduleNameMapper: { '^react-pdf$': '<rootDir>/__mocks__/react-pdf.js' }
+    // run vitest-config transform
+    // assert vitest.config.mts contains resolve.alias with find: /^react-pdf$/ and replacement: join(import.meta.dirname, '__mocks__/react-pdf.js')
   });
 });
