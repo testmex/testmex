@@ -6,7 +6,7 @@ import {
 } from '../../core/models/workspace.mother';
 import { WorkspaceInfo } from '../../core/models/workspace-info';
 import { FileSystemFake } from '../../core/ports/file-system.fake';
-import { TestEnricher } from './test-enricher';
+import { TestEnricher } from './test.enricher';
 
 describe(TestEnricher.name, () => {
   it('ignores non test files', async () => {

@@ -6,7 +6,7 @@ import {
 } from '../../core/models/relative-path';
 import { WorkspaceInfo } from '../../core/models/workspace-info';
 import { FileSystemFake } from '../../core/ports/file-system.fake';
-import { PackageManagerEnricher } from './package-manager-enricher';
+import { PackageManagerEnricher } from './package-manager.enricher';
 
 describe(PackageManagerEnricher, () => {
   it('detects pnpm from package.json packageManager field', async () => {

@@ -6,7 +6,7 @@ import {
 } from '../../core/models/workspace.mother';
 import { WorkspaceInfo } from '../../core/models/workspace-info';
 import { FileSystemFake } from '../../core/ports/file-system.fake';
-import { CodeEnricher } from './code-enricher';
+import { CodeEnricher } from './code.enricher';
 
 describe(CodeEnricher.name, () => {
   it('discovers .ts files and tags them as code', async () => {

@@ -1,5 +1,5 @@
 import { definePack } from '../../core/models/pack';
-import { JestEnricher } from './jest-enricher';
+import { JestEnricher } from './jest.enricher';
 import { jestSymbolHeuristic } from './jest-symbol.heuristic';
 import { jestTestTransform } from './jest-test/jest-test.transform';
 import { replaceApiHeuristic } from './jest-test/replace-api/replace-api.heuristic';

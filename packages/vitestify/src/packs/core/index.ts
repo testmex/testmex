@@ -1,10 +1,10 @@
 import { definePack } from '../../core/models/pack';
-import { CodeEnricher } from './code-enricher';
+import { CodeEnricher } from './code.enricher';
 import { domHeuristic } from './dom.heuristic';
 import { testingLibraryJestDomHeuristic } from './testing-library-jest-dom/testing-library-jest-dom.heuristic';
 import { testingLibraryJestDomTransform } from './testing-library-jest-dom/testing-library-jest-dom.transform';
-import { PackageManagerEnricher } from './package-manager-enricher';
-import { TestEnricher } from './test-enricher';
+import { PackageManagerEnricher } from './package-manager.enricher';
+import { TestEnricher } from './test.enricher';
 import { vitestConfigTransform } from './vitest-config/vitest-config.transform';
 
 export default definePack({
