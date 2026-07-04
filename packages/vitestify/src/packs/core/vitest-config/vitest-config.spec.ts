@@ -8,6 +8,7 @@ import {
 import { runTransform } from '../../../testing/run-transform';
 import { domHeuristic } from '../dom.heuristic';
 import { fileTags } from '../identifiers';
+import { testingLibraryJestDomHeuristic } from '../testing-library-jest-dom/testing-library-jest-dom.heuristic';
 import { vitestConfigTransform } from './vitest-config.transform';
 
 const vitestConfigContent = `\
@@ -145,11 +146,53 @@ module.exports = {
     ).toBeNull();
   });
 
-  it.todo('adds @testing-library/jest-dom/vitest to setup files when jest-dom is detected', () => {
-    // arrange workspace with jest config and a setup file containing `import '@testing-library/jest-dom';`
-    // run vitestConfigTransform with testingLibraryJestDomHeuristic
-    // assert vitest.config.mts setupFiles includes '@testing-library/jest-dom/vitest'
-  });
+  it.todo(
+    'adds @testing-library/jest-dom/vitest to setup files when jest-dom is detected',
+    async () => {
+      const workspace = createTestingWorkspace(
+        WorkspaceMother.withApp('my-app')
+          .withFile(
+            WorkspaceFileMother.file({
+              appName: 'my-app',
+              content: `\
+export default {
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+};
+`,
+              fileName: 'jest.config.ts',
+              tags: [fileTags.jestConfig],
+            }).build(),
+          )
+          .withFile(
+            WorkspaceFileMother.file({
+              appName: 'my-app',
+              content: `import '@testing-library/jest-dom';`,
+              fileName: 'jest.setup.ts',
+              tags: [fileTags.code],
+            }).build(),
+          ),
+      );
+
+      await runTransform({
+        workspace,
+        heuristics: [testingLibraryJestDomHeuristic],
+        transforms: [vitestConfigTransform],
+      });
+
+      let content = await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/vitest.config.mts'),
+      );
+      /* Ignore other setup files. */
+      content = content?.replace(/join\(.*/, '...') ?? null;
+
+      expect(content).toContain(`
+      setupFiles: [
+        ...
+        '@testing-library/jest-dom/vitest',
+      ],
+    `);
+    },
+  );
 
   it('configures jsdom when dom tests are detected', async () => {
     const workspace = createTestingWorkspace(
