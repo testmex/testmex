@@ -21,9 +21,9 @@ export const testingLibraryJestDomTransform = defineFileTransform({
       editor.replaceNode(
         imp,
         `if (!process.env.VITEST) {
-    require('@testing-library/jest-dom')
-  }
-  `,
+  require('@testing-library/jest-dom')
+}
+`,
       );
     }
 
