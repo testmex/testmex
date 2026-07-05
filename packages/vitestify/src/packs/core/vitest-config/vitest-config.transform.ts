@@ -1,4 +1,4 @@
-import { join } from 'node:path/posix';
+import { dirname, join } from 'node:path/posix';
 import type { ReadonlyTree, Tree } from '../../../core/domain/tree';
 import type { Finding } from '../../../core/models/finding';
 import {
@@ -34,46 +34,47 @@ export const vitestConfigTransform = defineTransform({
         continue;
       }
 
-      for (const project of file.projects) {
-        if (await _hasVitestConfig(tree, project.path)) {
-          continue;
-        }
+      const jestConfigPath = file.path;
+      const jestDirectory = relativePath(dirname(jestConfigPath));
 
-        let setupFiles = await _extractJestSetupFiles(tree, file.path);
-
-        setupFiles = _maybeAppendJestDomVitestSetup({
-          findings,
-          projectPath: project.path,
-          setupFiles,
-        });
-
-        setupFiles = await _maybeAppendAngularVitestSetup({
-          findings,
-          projectPath: project.path,
-          setupFiles,
-          tree,
-        });
-
-        const useAngular = _projectUsesAngular(findings, project.path);
-        needsAnalog ||= useAngular;
-
-        const useJsdom = _projectUsesDom(findings, project.path);
-
-        const moduleNameMappings = await _extractJestModuleNameMappers(
-          tree,
-          file.path,
-        );
-
-        await tree.write(
-          relativePath(join(project.path, VITEST_CONFIG_FILE_NAME)),
-          _vitestConfigContent({
-            moduleNameMappings,
-            setupFiles,
-            useAngular,
-            useJsdom,
-          }),
-        );
+      if (await _hasVitestConfig(tree, jestConfigPath)) {
+        continue;
       }
+
+      let setupFiles = await _extractJestSetupFiles(tree, file.path);
+
+      setupFiles = _maybeAppendJestDomVitestSetup({
+        findings,
+        projectPath: jestDirectory,
+        setupFiles,
+      });
+
+      setupFiles = await _maybeAppendAngularVitestSetup({
+        findings,
+        projectPath: jestDirectory,
+        setupFiles,
+        tree,
+      });
+
+      const useAngular = _projectUsesAngular(findings, jestDirectory);
+      needsAnalog ||= useAngular;
+
+      const useJsdom = _projectUsesDom(findings, jestDirectory);
+
+      const moduleNameMappings = await _extractJestModuleNameMappers(
+        tree,
+        file.path,
+      );
+
+      await tree.write(
+        relativePath(join(jestDirectory, VITEST_CONFIG_FILE_NAME)),
+        _vitestConfigContent({
+          moduleNameMappings,
+          setupFiles,
+          useAngular,
+          useJsdom,
+        }),
+      );
     }
 
     if (needsAnalog) {
