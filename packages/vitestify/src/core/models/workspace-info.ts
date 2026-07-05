@@ -65,6 +65,18 @@ export class WorkspaceInfo {
       .map(({ path, tags }) => ({ path, tags }));
   }
 
+  merge(overrides: {
+    files?: FileInfo[];
+    projects?: Project[];
+    packageManager?: PackageManager;
+  }): WorkspaceInfo {
+    return new WorkspaceInfo({
+      files: [...this.files, ...(overrides.files ?? [])],
+      projects: [...this.projects, ...(overrides.projects ?? [])],
+      packageManager: overrides.packageManager ?? this.packageManager,
+    });
+  }
+
   private _findProjectForFile(file: FileInfo): Project | undefined {
     let match: Project | undefined;
 
@@ -80,18 +92,6 @@ export class WorkspaceInfo {
     }
 
     return match;
-  }
-
-  merge(overrides: {
-    files?: FileInfo[];
-    projects?: Project[];
-    packageManager?: PackageManager;
-  }): WorkspaceInfo {
-    return new WorkspaceInfo({
-      files: [...this.files, ...(overrides.files ?? [])],
-      projects: [...this.projects, ...(overrides.projects ?? [])],
-      packageManager: overrides.packageManager ?? this.packageManager,
-    });
   }
 }
 
