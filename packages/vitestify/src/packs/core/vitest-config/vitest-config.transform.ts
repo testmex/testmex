@@ -1,5 +1,5 @@
 import { dirname, join } from 'node:path/posix';
-import type { ReadonlyTree, Tree } from '../../../core/domain/tree';
+import type { Tree } from '../../../core/domain/tree';
 import type { Finding } from '../../../core/models/finding';
 import {
   relativePath,
@@ -23,13 +23,6 @@ const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
   'vitest.config.ts',
 ];
 
-interface VitestConfigTransformContext {
-  findings: Finding[];
-  jestConfigDirectory: RelativePath;
-  jestConfigPath: RelativePath;
-  tree: ReadonlyTree;
-}
-
 export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
   apply: async ({ findings, workspace }) => {
@@ -46,54 +39,34 @@ export const vitestConfigTransform = defineTransform({
         findings,
         jestConfigDirectory: relativePath(dirname(jestConfigPath)),
         jestConfigPath,
+        moduleNameMappings: [],
+        setupFiles: [],
         tree,
       };
 
       /* Project already has a vitest config. Skipping... */
-      if (await _hasVitestConfig({ context })) {
+      if (await _hasVitestConfig(context)) {
         continue;
       }
 
-      const useAngular = _projectUsesAngular({ context });
+      _analyzeAngularUsage(context);
+      _analyzeReactUsage(context);
+      _analyzeDomUsage(context);
 
-      let setupFiles = await _extractJestSetupFiles({ context });
+      await _analyzeJestConfig(context);
 
-      setupFiles = _maybeAppendJestDomVitestSetup({ context, setupFiles });
+      _maybeAppendJestDomVitestSetup(context);
 
-      setupFiles = await _maybeAppendAngularVitestSetup({
-        context,
-        setupFiles,
-        tree,
-      });
-
-      const useReact = _projectUsesReact({ context });
-
-      if (useAngular) {
+      if (context.usesAngular) {
+        await _addAngularVitestSetup(context);
         devDependencies.add('@analogjs/vite-plugin-angular');
         devDependencies.add('@analogjs/vitest-angular');
       }
-      if (useReact) {
+      if (context.usesReact) {
         devDependencies.add('@vitejs/plugin-react');
       }
 
-      const useJsdom = _projectUsesDom({ context });
-
-      const moduleNameMappings = await _extractJestModuleNameMappers({
-        context,
-      });
-
-      await tree.write(
-        relativePath(
-          join(context.jestConfigDirectory, VITEST_CONFIG_FILE_NAME),
-        ),
-        _vitestConfigContent({
-          moduleNameMappings,
-          setupFiles,
-          useAngular,
-          useJsdom,
-          useReact,
-        }),
-      );
+      await _writeVitestConfig(context);
 
       if (devDependencies.size > 0) {
         commands.add([info.packageManager, 'add', '-D', ...devDependencies]);
@@ -102,11 +75,21 @@ export const vitestConfigTransform = defineTransform({
   },
 });
 
-async function _hasVitestConfig({
-  context,
-}: {
-  context: Pick<VitestConfigTransformContext, 'jestConfigDirectory' | 'tree'>;
-}): Promise<boolean> {
+interface VitestConfigTransformContext {
+  findings: Finding[];
+  jestConfigDirectory: RelativePath;
+  jestConfigPath: RelativePath;
+  moduleNameMappings: JestModuleNameMapping[];
+  setupFiles: string[];
+  tree: Tree;
+  usesAngular?: boolean;
+  usesJsdom?: boolean;
+  usesReact?: boolean;
+}
+
+async function _hasVitestConfig(
+  context: VitestConfigTransformContext,
+): Promise<boolean> {
   for (const fileName of VITEST_CONFIG_ALTERNATIVE_FILE_NAMES) {
     if (
       (await context.tree.maybeReadFile(
@@ -120,21 +103,20 @@ async function _hasVitestConfig({
   return false;
 }
 
-async function _extractJestSetupFiles({
-  context,
-}: {
-  context: Pick<VitestConfigTransformContext, 'jestConfigPath' | 'tree'>;
-}): Promise<string[]> {
+async function _analyzeJestConfig(
+  context: VitestConfigTransformContext,
+): Promise<void> {
   const jestConfigContent = await context.tree.maybeReadFile(
     context.jestConfigPath,
   );
   if (jestConfigContent == null) {
-    return [];
+    return;
   }
 
   const editor = new SgEditor(jestConfigContent);
 
-  return editor.root
+  /* Extract setup files from jest config */
+  context.setupFiles = editor.root
     .findAll({ rule: { kind: 'pair' } })
     .filter((node) => {
       const key = node.child(0)?.text();
@@ -145,38 +127,13 @@ async function _extractJestSetupFiles({
     )
     .map((node) => node?.text())
     .filter((path) => path != null);
-}
 
-interface JestModuleNameMapping {
-  find: string;
-  replacement: string;
-}
-
-async function _extractJestModuleNameMappers({
-  context,
-}: {
-  context: Pick<VitestConfigTransformContext, 'jestConfigPath' | 'tree'>;
-}): Promise<JestModuleNameMapping[]> {
-  const jestConfigContent = await context.tree.maybeReadFile(
-    context.jestConfigPath,
-  );
-  if (jestConfigContent == null) {
-    return [];
-  }
-
-  const editor = new SgEditor(jestConfigContent);
-
-  const moduleNameMapperPair = editor.root
-    .findAll({ rule: { kind: 'pair' } })
-    .find((node) => node.child(0)?.text() === 'moduleNameMapper');
-
-  if (moduleNameMapperPair == null) {
-    return [];
-  }
-
-  return (
-    moduleNameMapperPair
-      .child(2)
+  /* Extract module name mappings from jest config */
+  context.moduleNameMappings =
+    editor.root
+      .findAll({ rule: { kind: 'pair' } })
+      .find((node) => node.child(0)?.text() === 'moduleNameMapper')
+      ?.child(2)
       ?.findAll({ rule: { kind: 'pair' } })
       .map((pair) => {
         const find = pair
@@ -194,8 +151,12 @@ async function _extractJestModuleNameMappers({
 
         return { find, replacement };
       })
-      .filter((mapping) => mapping != null) ?? []
-  );
+      .filter((mapping) => mapping != null) ?? [];
+}
+
+interface JestModuleNameMapping {
+  find: string;
+  replacement: string;
 }
 
 function _resolveAliasBlock({
@@ -240,15 +201,8 @@ function _formatModuleNameMapperReplacement({
   return `join(import.meta.dirname, '${path}')`;
 }
 
-function _projectUsesDom({
-  context,
-}: {
-  context: Pick<
-    VitestConfigTransformContext,
-    'findings' | 'jestConfigDirectory'
-  >;
-}): boolean {
-  return context.findings.some(
+function _analyzeDomUsage(context: VitestConfigTransformContext): boolean {
+  context.usesJsdom = context.findings.some(
     (finding) =>
       finding.type === findingTypes.dom &&
       finding.projects.some(
@@ -257,49 +211,26 @@ function _projectUsesDom({
   );
 }
 
-function _maybeAppendJestDomVitestSetup({
-  context,
-  setupFiles,
-}: {
-  context: Pick<
-    VitestConfigTransformContext,
-    'findings' | 'jestConfigDirectory'
-  >;
-  setupFiles: string[];
-}): string[] {
-  if (_projectUsesTestingLibraryJestDom({ context })) {
-    setupFiles = [...setupFiles, '@testing-library/jest-dom/vitest'];
-  }
-
-  return setupFiles;
-}
-
-function _projectUsesTestingLibraryJestDom({
-  context,
-}: {
-  context: Pick<
-    VitestConfigTransformContext,
-    'findings' | 'jestConfigDirectory'
-  >;
-}): boolean {
-  return context.findings.some(
+function _maybeAppendJestDomVitestSetup(
+  context: VitestConfigTransformContext,
+): void {
+  const usesTestingLibraryJestDom = context.findings.some(
     (finding) =>
       finding.type === findingTypes.testingLibraryJestDom &&
       finding.projects.some(
         (project) => project.path === context.jestConfigDirectory,
       ),
   );
+  if (usesTestingLibraryJestDom) {
+    context.setupFiles = [
+      ...context.setupFiles,
+      '@testing-library/jest-dom/vitest',
+    ];
+  }
 }
 
-function _projectUsesAngular({
-  context,
-}: {
-  context: Pick<
-    VitestConfigTransformContext,
-    'findings' | 'jestConfigDirectory'
-  >;
-}): boolean {
-  return context.findings.some(
+function _analyzeAngularUsage(context: VitestConfigTransformContext) {
+  context.usesAngular = context.findings.some(
     (finding) =>
       finding.type === findingTypes.angular &&
       finding.projects.some(
@@ -308,15 +239,8 @@ function _projectUsesAngular({
   );
 }
 
-function _projectUsesReact({
-  context,
-}: {
-  context: Pick<
-    VitestConfigTransformContext,
-    'findings' | 'jestConfigDirectory'
-  >;
-}): boolean {
-  return context.findings.some(
+function _analyzeReactUsage(context: VitestConfigTransformContext) {
+  context.usesReact = context.findings.some(
     (finding) =>
       finding.type === findingTypes.react &&
       finding.projects.some(
@@ -325,52 +249,33 @@ function _projectUsesReact({
   );
 }
 
-async function _maybeAppendAngularVitestSetup({
-  context,
-  setupFiles,
-  tree,
-}: {
-  context: Pick<
-    VitestConfigTransformContext,
-    'findings' | 'jestConfigDirectory'
-  >;
-  setupFiles: string[];
-  tree: Tree;
-}): Promise<string[]> {
-  if (!_projectUsesAngular({ context })) {
-    return setupFiles;
-  }
-
-  await tree.write(
+async function _addAngularVitestSetup(
+  context: VitestConfigTransformContext,
+): Promise<void> {
+  await context.tree.write(
     relativePath(join(context.jestConfigDirectory, ANGULAR_SETUP_FILE_NAME)),
     ANGULAR_SETUP_CONTENT,
   );
 
-  return [...setupFiles, './angular.setup.ts'];
+  context.setupFiles = [...context.setupFiles, `./${ANGULAR_SETUP_FILE_NAME}`];
 }
 
-function _vitestConfigContent({
-  moduleNameMappings,
-  setupFiles,
-  useAngular,
-  useJsdom,
-  useReact,
-}: {
-  moduleNameMappings: JestModuleNameMapping[];
-  setupFiles: string[];
-  useAngular: boolean;
-  useJsdom: boolean;
-  useReact: boolean;
-}): string {
-  const angularImport = useAngular
+async function _writeVitestConfig(
+  context: VitestConfigTransformContext,
+): Promise<void> {
+  const angularImport = context.usesAngular
     ? "import angular from '@analogjs/vite-plugin-angular';\n"
     : '';
-  const reactImport = useReact
+  const reactImport = context.usesReact
     ? "import react from '@vitejs/plugin-react';\n"
     : '';
-  const environmentBlock = useJsdom ? `    environment: 'jsdom',\n` : '';
-  const analogPlugin = useAngular ? '    angular({ jit: false }),\n' : '';
-  const reactPlugin = useReact ? '    react(),\n' : '';
+  const environmentBlock = context.usesJsdom
+    ? `    environment: 'jsdom',\n`
+    : '';
+  const analogPlugin = context.usesAngular
+    ? '    angular({ jit: false }),\n'
+    : '';
+  const reactPlugin = context.usesReact ? '    react(),\n' : '';
   const pluginsBlock = `\
   plugins: [
 ${analogPlugin}\
@@ -379,11 +284,11 @@ ${reactPlugin}\
   ],`;
 
   const setupFilesBlock =
-    setupFiles.length === 0
+    context.setupFiles.length === 0
       ? ''
       : `\
     setupFiles: [
-      ${setupFiles
+      ${context.setupFiles
         .map((path) =>
           path.startsWith('@')
             ? `'${path}'`
@@ -393,17 +298,17 @@ ${reactPlugin}\
     ],
 `;
   const resolveBlock =
-    moduleNameMappings.length === 0
+    context.moduleNameMappings.length === 0
       ? ''
-      : _resolveAliasBlock({ moduleNameMappings });
+      : _resolveAliasBlock({ moduleNameMappings: context.moduleNameMappings });
 
   const needsJoinImport =
-    setupFiles.length > 0 || moduleNameMappings.length > 0;
+    context.setupFiles.length > 0 || context.moduleNameMappings.length > 0;
   const joinImport = needsJoinImport
     ? "import { join } from 'node:path';\n"
     : '';
 
-  return `\
+  const content = `\
 ${joinImport}\
 ${angularImport}\
 ${reactImport}\
@@ -420,4 +325,9 @@ ${setupFilesBlock}\
   },
 });
 `;
+
+  await context.tree.write(
+    relativePath(join(context.jestConfigDirectory, VITEST_CONFIG_FILE_NAME)),
+    content,
+  );
 }
