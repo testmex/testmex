@@ -38,37 +38,49 @@ export const vitestConfigTransform = defineTransform({
       const jestConfigPath = file.path;
       const jestDirectory = relativePath(dirname(jestConfigPath));
 
-      if (await _hasVitestConfig(tree, jestConfigPath)) {
+      if (await _hasVitestConfig({ projectRoot: jestConfigPath, tree })) {
         continue;
       }
 
-      let setupFiles = await _extractJestSetupFiles(tree, file.path);
+      let setupFiles = await _extractJestSetupFiles({
+        jestConfigPath,
+        tree,
+      });
 
       setupFiles = _maybeAppendJestDomVitestSetup({
         findings,
-        projectPath: jestDirectory,
+        jestDirectory: jestDirectory,
         setupFiles,
       });
 
       setupFiles = await _maybeAppendAngularVitestSetup({
         findings,
-        projectPath: jestDirectory,
+        jestDirectory: jestDirectory,
         setupFiles,
         tree,
       });
 
-      const useAngular = _projectUsesAngular(findings, jestDirectory);
+      const useAngular = _projectUsesAngular({
+        findings,
+        jestDirectory,
+      });
       needsAnalog ||= useAngular;
 
-      const useReact = _projectUsesReact(findings, jestDirectory);
+      const useReact = _projectUsesReact({
+        findings,
+        jestDirectory: jestDirectory,
+      });
       needsReact ||= useReact;
 
-      const useJsdom = _projectUsesDom(findings, jestDirectory);
+      const useJsdom = _projectUsesDom({
+        findings,
+        jestDirectory: jestDirectory,
+      });
 
-      const moduleNameMappings = await _extractJestModuleNameMappers(
+      const moduleNameMappings = await _extractJestModuleNameMappers({
+        jestConfigPath: file.path,
         tree,
-        file.path,
-      );
+      });
 
       await tree.write(
         relativePath(join(jestDirectory, VITEST_CONFIG_FILE_NAME)),
@@ -101,10 +113,13 @@ export const vitestConfigTransform = defineTransform({
   },
 });
 
-async function _hasVitestConfig(
-  tree: ReadonlyTree,
-  projectRoot: RelativePath,
-): Promise<boolean> {
+async function _hasVitestConfig({
+  projectRoot,
+  tree,
+}: {
+  projectRoot: RelativePath;
+  tree: ReadonlyTree;
+}): Promise<boolean> {
   for (const fileName of VITEST_CONFIG_ALTERNATIVE_FILE_NAMES) {
     if (
       (await tree.maybeReadFile(relativePath(join(projectRoot, fileName)))) !==
@@ -117,10 +132,13 @@ async function _hasVitestConfig(
   return false;
 }
 
-async function _extractJestSetupFiles(
-  tree: ReadonlyTree,
-  jestConfigPath: RelativePath,
-): Promise<string[]> {
+async function _extractJestSetupFiles({
+  jestConfigPath,
+  tree,
+}: {
+  jestConfigPath: RelativePath;
+  tree: ReadonlyTree;
+}): Promise<string[]> {
   const jestConfigContent = await tree.maybeReadFile(jestConfigPath);
   if (jestConfigContent == null) {
     return [];
@@ -146,10 +164,13 @@ interface JestModuleNameMapping {
   replacement: string;
 }
 
-async function _extractJestModuleNameMappers(
-  tree: ReadonlyTree,
-  jestConfigPath: RelativePath,
-): Promise<JestModuleNameMapping[]> {
+async function _extractJestModuleNameMappers({
+  jestConfigPath,
+  tree,
+}: {
+  jestConfigPath: RelativePath;
+  tree: ReadonlyTree;
+}): Promise<JestModuleNameMapping[]> {
   const jestConfigContent = await tree.maybeReadFile(jestConfigPath);
   if (jestConfigContent == null) {
     return [];
@@ -189,9 +210,11 @@ async function _extractJestModuleNameMappers(
   );
 }
 
-function _resolveAliasBlock(
-  moduleNameMappings: JestModuleNameMapping[],
-): string {
+function _resolveAliasBlock({
+  moduleNameMappings,
+}: {
+  moduleNameMappings: JestModuleNameMapping[];
+}): string {
   return `\
   resolve: {
     alias: [
@@ -199,8 +222,10 @@ ${moduleNameMappings
   .map(
     (mapping) => `\
       {
-        find: ${_formatModuleNameMapperFind(mapping.find)},
-        replacement: ${_formatModuleNameMapperReplacement(mapping.replacement)},
+        find: ${_formatModuleNameMapperFind({ find: mapping.find })},
+        replacement: ${_formatModuleNameMapperReplacement({
+          replacement: mapping.replacement,
+        })},
       }`,
   )
   .join(',\n')},
@@ -209,7 +234,7 @@ ${moduleNameMappings
 `;
 }
 
-function _formatModuleNameMapperFind(find: string): string {
+function _formatModuleNameMapperFind({ find }: { find: string }): string {
   if (find.startsWith('^') || find.endsWith('$')) {
     return `/${find}/`;
   }
@@ -217,89 +242,105 @@ function _formatModuleNameMapperFind(find: string): string {
   return JSON.stringify(find);
 }
 
-function _formatModuleNameMapperReplacement(replacement: string): string {
+function _formatModuleNameMapperReplacement({
+  replacement,
+}: {
+  replacement: string;
+}): string {
   const path = replacement.replace(/^<rootDir>\/?/, '');
 
   return `join(import.meta.dirname, '${path}')`;
 }
 
-function _projectUsesDom(
-  findings: Finding[],
-  projectPath: RelativePath,
-): boolean {
+function _projectUsesDom({
+  findings,
+  jestDirectory,
+}: {
+  findings: Finding[];
+  jestDirectory: RelativePath;
+}): boolean {
   return findings.some(
     (finding) =>
       finding.type === findingTypes.dom &&
-      finding.projects.some((project) => project.path === projectPath),
+      finding.projects.some((project) => project.path === jestDirectory),
   );
 }
 
 function _maybeAppendJestDomVitestSetup({
   setupFiles,
   findings,
-  projectPath,
+  jestDirectory,
 }: {
   setupFiles: string[];
   findings: Finding[];
-  projectPath: RelativePath;
+  jestDirectory: RelativePath;
 }): string[] {
-  if (_projectUsesTestingLibraryJestDom(findings, projectPath)) {
+  if (_projectUsesTestingLibraryJestDom({ findings, jestDirectory })) {
     setupFiles = [...setupFiles, '@testing-library/jest-dom/vitest'];
   }
 
   return setupFiles;
 }
 
-function _projectUsesTestingLibraryJestDom(
-  findings: Finding[],
-  projectPath: RelativePath,
-): boolean {
+function _projectUsesTestingLibraryJestDom({
+  findings,
+  jestDirectory,
+}: {
+  findings: Finding[];
+  jestDirectory: RelativePath;
+}): boolean {
   return findings.some(
     (finding) =>
       finding.type === findingTypes.testingLibraryJestDom &&
-      finding.projects.some((project) => project.path === projectPath),
+      finding.projects.some((project) => project.path === jestDirectory),
   );
 }
 
-function _projectUsesAngular(
-  findings: Finding[],
-  projectPath: RelativePath,
-): boolean {
+function _projectUsesAngular({
+  findings,
+  jestDirectory,
+}: {
+  findings: Finding[];
+  jestDirectory: RelativePath;
+}): boolean {
   return findings.some(
     (finding) =>
       finding.type === findingTypes.angular &&
-      finding.projects.some((project) => project.path === projectPath),
+      finding.projects.some((project) => project.path === jestDirectory),
   );
 }
 
-function _projectUsesReact(
-  findings: Finding[],
-  projectPath: RelativePath,
-): boolean {
+function _projectUsesReact({
+  findings,
+  jestDirectory,
+}: {
+  findings: Finding[];
+  jestDirectory: RelativePath;
+}): boolean {
   return findings.some(
     (finding) =>
       finding.type === findingTypes.react &&
-      finding.projects.some((project) => project.path === projectPath),
+      finding.projects.some((project) => project.path === jestDirectory),
   );
 }
 
 async function _maybeAppendAngularVitestSetup({
   setupFiles,
   findings,
-  projectPath,
+  jestDirectory,
   tree,
 }: {
   setupFiles: string[];
   findings: Finding[];
-  projectPath: RelativePath;
+  jestDirectory: RelativePath;
   tree: Tree;
 }): Promise<string[]> {
-  if (!_projectUsesAngular(findings, projectPath)) {
+  if (!_projectUsesAngular({ findings, jestDirectory })) {
     return setupFiles;
   }
 
   await tree.write(
-    relativePath(join(projectPath, ANGULAR_SETUP_FILE_NAME)),
+    relativePath(join(jestDirectory, ANGULAR_SETUP_FILE_NAME)),
     ANGULAR_SETUP_CONTENT,
   );
 
@@ -352,7 +393,7 @@ ${reactPlugin}\
   const resolveBlock =
     moduleNameMappings.length === 0
       ? ''
-      : _resolveAliasBlock(moduleNameMappings);
+      : _resolveAliasBlock({ moduleNameMappings });
 
   const needsJoinImport =
     setupFiles.length > 0 || moduleNameMappings.length > 0;
