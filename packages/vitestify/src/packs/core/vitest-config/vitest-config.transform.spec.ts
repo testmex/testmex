@@ -266,6 +266,7 @@ setupTestBed();
       'npm',
       'add',
       '-D',
+      'vite-tsconfig-paths',
       '@analogjs/vite-plugin-angular',
       '@analogjs/vitest-angular',
     ]);
@@ -351,6 +352,7 @@ setupTestBed();
       'npm',
       'add',
       '-D',
+      'vite-tsconfig-paths',
       '@vitejs/plugin-react',
     ]);
   });

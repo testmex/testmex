@@ -34,8 +34,7 @@ export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
   apply: async ({ findings, workspace }) => {
     const { commands, info, tree } = workspace;
-    let needsAnalog = false;
-    let needsReact = false;
+    const devDependencies = new Set<string>(['vite-tsconfig-paths']);
 
     for (const file of info.getFiles()) {
       if (!file.tags.includes(fileTags.jestConfig)) {
@@ -55,6 +54,8 @@ export const vitestConfigTransform = defineTransform({
         continue;
       }
 
+      const useAngular = _projectUsesAngular({ context });
+
       let setupFiles = await _extractJestSetupFiles({ context });
 
       setupFiles = _maybeAppendJestDomVitestSetup({ context, setupFiles });
@@ -65,11 +66,15 @@ export const vitestConfigTransform = defineTransform({
         tree,
       });
 
-      const useAngular = _projectUsesAngular({ context });
-      needsAnalog ||= useAngular;
-
       const useReact = _projectUsesReact({ context });
-      needsReact ||= useReact;
+
+      if (useAngular) {
+        devDependencies.add('@analogjs/vite-plugin-angular');
+        devDependencies.add('@analogjs/vitest-angular');
+      }
+      if (useReact) {
+        devDependencies.add('@vitejs/plugin-react');
+      }
 
       const useJsdom = _projectUsesDom({ context });
 
@@ -89,24 +94,11 @@ export const vitestConfigTransform = defineTransform({
           useReact,
         }),
       );
-    }
 
-    if (needsAnalog) {
-      commands.add([
-        info.packageManager,
-        'add',
-        '-D',
-        '@analogjs/vite-plugin-angular',
-        '@analogjs/vitest-angular',
-      ]);
+      if (devDependencies.size > 0) {
+        commands.add([info.packageManager, 'add', '-D', ...devDependencies]);
+      }
     }
-
-    if (needsReact) {
-      commands.add([info.packageManager, 'add', '-D', '@vitejs/plugin-react']);
-    }
-
-    commands.add([info.packageManager, 'add', '-D', 'vite-tsconfig-paths']);
-    commands.add([info.packageManager, 'add', '-D', 'vitest']);
   },
 });
 
