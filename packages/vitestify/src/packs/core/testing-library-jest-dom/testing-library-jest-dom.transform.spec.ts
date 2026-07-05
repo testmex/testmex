@@ -7,7 +7,7 @@ import {
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
 import { fileTags } from '../identifiers';
-import { testingLibraryJestDomHeuristic } from './testing-library-jest-dom.heuristic';
+import { testingLibraryHeuristic } from '../testing-library-heuristic';
 import { testingLibraryJestDomTransform } from './testing-library-jest-dom.transform';
 
 describe('testing-library-jest-dom', () => {
@@ -25,7 +25,7 @@ describe('testing-library-jest-dom', () => {
 
     await runTransform({
       workspace,
-      heuristics: [testingLibraryJestDomHeuristic],
+      heuristics: [testingLibraryHeuristic],
       transforms: [testingLibraryJestDomTransform],
     });
 

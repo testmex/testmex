@@ -3,7 +3,7 @@ import { angularHeuristic } from './angular.heuristic';
 import { reactHeuristic } from './react.heuristic';
 import { CodeEnricher } from './code.enricher';
 import { domHeuristic } from './dom.heuristic';
-import { testingLibraryJestDomHeuristic } from './testing-library-jest-dom/testing-library-jest-dom.heuristic';
+import { testingLibraryHeuristic } from './testing-library-heuristic';
 import { testingLibraryJestDomTransform } from './testing-library-jest-dom/testing-library-jest-dom.transform';
 import { PackageManagerEnricher } from './package-manager.enricher';
 import { TestEnricher } from './test.enricher';
@@ -20,7 +20,7 @@ export default definePack({
     angularHeuristic,
     domHeuristic,
     reactHeuristic,
-    testingLibraryJestDomHeuristic,
+    testingLibraryHeuristic,
   ],
   transforms: [testingLibraryJestDomTransform, vitestConfigTransform],
 });

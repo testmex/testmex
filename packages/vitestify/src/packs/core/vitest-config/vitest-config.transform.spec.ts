@@ -10,7 +10,7 @@ import { angularHeuristic } from '../angular.heuristic';
 import { reactHeuristic } from '../react.heuristic';
 import { domHeuristic } from '../dom.heuristic';
 import { fileTags } from '../identifiers';
-import { testingLibraryJestDomHeuristic } from '../testing-library-jest-dom/testing-library-jest-dom.heuristic';
+import { testingLibraryHeuristic } from '../testing-library-heuristic';
 import { vitestConfigTransform } from './vitest-config.transform';
 
 describe('vitest-config', () => {
@@ -435,7 +435,7 @@ async function transform(workspace: ReturnType<typeof createTestingWorkspace>) {
       angularHeuristic,
       reactHeuristic,
       domHeuristic,
-      testingLibraryJestDomHeuristic,
+      testingLibraryHeuristic,
     ],
     transforms: [vitestConfigTransform],
   });

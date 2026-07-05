@@ -5,7 +5,9 @@ export const findingTypes = {
   angular: findingType('angular'),
   dom: findingType('dom'),
   react: findingType('react'),
+  testingLibraryAngular: findingType('testing-library-angular'),
   testingLibraryJestDom: findingType('testing-library-jest-dom'),
+  testingLibraryReact: findingType('testing-library-react'),
 } as const;
 
 export const fileTags = {
