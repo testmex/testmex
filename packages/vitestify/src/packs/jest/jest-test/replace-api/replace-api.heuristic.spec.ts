@@ -29,7 +29,7 @@ describe('replaceApiHeuristic', () => {
     expect(findings).toEqual([
       {
         type: findingTypes.jestSymbol,
-        project: { name: 'my-app', path: relativePath('apps/my-app') },
+        projects: [{ name: 'my-app', path: relativePath('apps/my-app') }],
         file: {
           path: relativePath('apps/my-app/src/testing/utils.ts'),
           tags: [fileTags.code],

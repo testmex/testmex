@@ -9,7 +9,7 @@ export const replaceApiHeuristic = defineFileContentHeuristic({
   predicate: (file) =>
     file.tags.includes(coreFileTags.test) ||
     file.tags.includes(coreFileTags.code),
-  inspect: ({ file, project, content }) => {
+  inspect: ({ file, projects, content }) => {
     if (!replaceApiPattern.test(content)) {
       return [];
     }
@@ -17,7 +17,7 @@ export const replaceApiHeuristic = defineFileContentHeuristic({
     return [
       {
         type: findingTypes.jestSymbol,
-        project,
+        projects,
         file,
       },
     ];

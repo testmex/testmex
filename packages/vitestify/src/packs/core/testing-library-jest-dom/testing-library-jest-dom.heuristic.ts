@@ -5,7 +5,7 @@ const JEST_DOM_IMPORT_PATTERN = /['"]@testing-library\/jest-dom['"]/;
 
 export const testingLibraryJestDomHeuristic = defineFileContentHeuristic({
   predicate: (file) => file.tags.includes(fileTags.code),
-  inspect: ({ file, project, content }) => {
+  inspect: ({ file, projects, content }) => {
     if (!JEST_DOM_IMPORT_PATTERN.test(content)) {
       return [];
     }
@@ -13,7 +13,7 @@ export const testingLibraryJestDomHeuristic = defineFileContentHeuristic({
     return [
       {
         type: findingTypes.testingLibraryJestDom,
-        project,
+        projects,
         file,
       },
     ];

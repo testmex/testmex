@@ -6,7 +6,7 @@ const ANGULAR_PATTERN = /['"]@angular\//;
 export const angularHeuristic = defineFileContentHeuristic({
   predicate: (file) =>
     file.tags.includes(fileTags.code) || file.tags.includes(fileTags.test),
-  inspect: ({ file, project, content }) => {
+  inspect: ({ file, projects, content }) => {
     if (!ANGULAR_PATTERN.test(content)) {
       return [];
     }
@@ -14,7 +14,7 @@ export const angularHeuristic = defineFileContentHeuristic({
     return [
       {
         type: findingTypes.angular,
-        project,
+        projects,
         file,
       },
     ];

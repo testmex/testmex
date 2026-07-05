@@ -4,7 +4,7 @@ import type { FileInfo, Project } from '../models/workspace-info';
 
 export interface FileContentInspectionArgs {
   file: FileInfo;
-  project: Project;
+  projects: Project[];
   content: string;
 }
 
@@ -23,15 +23,11 @@ export function defineFileContentHeuristic({
         info
           .getFiles()
           .filter((file) => predicate(file))
-          .flatMap(({ projects, ...file }) =>
-            projects.map(async (project) => {
-              const content = await tree.maybeReadFile(file.path);
+          .map(async ({ projects, ...file }) => {
+            const content = await tree.maybeReadFile(file.path);
 
-              return content === null
-                ? []
-                : inspect({ file, project, content });
-            }),
-          ),
+            return content === null ? [] : inspect({ file, projects, content });
+          }),
       );
 
       return findingsList.flat();

@@ -8,7 +8,7 @@ export const jestSymbolHeuristic = defineFileContentHeuristic({
   predicate: (file) =>
     file.tags.includes(coreFileTags.test) ||
     file.tags.includes(coreFileTags.code),
-  inspect: ({ file, project, content }) => {
+  inspect: ({ file, projects, content }) => {
     if (!jestSymbolPattern.test(content)) {
       return [];
     }
@@ -16,7 +16,7 @@ export const jestSymbolHeuristic = defineFileContentHeuristic({
     return [
       {
         type: findingTypes.jestSymbol,
-        project,
+        projects,
         file,
       },
     ];

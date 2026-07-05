@@ -220,7 +220,8 @@ function _projectUsesDom(
 ): boolean {
   return findings.some(
     (finding) =>
-      finding.type === findingTypes.dom && finding.project.path === projectPath,
+      finding.type === findingTypes.dom &&
+      finding.projects.some((project) => project.path === projectPath),
   );
 }
 
@@ -247,7 +248,7 @@ function _projectUsesTestingLibraryJestDom(
   return findings.some(
     (finding) =>
       finding.type === findingTypes.testingLibraryJestDom &&
-      finding.project.path === projectPath,
+      finding.projects.some((project) => project.path === projectPath),
   );
 }
 
@@ -258,7 +259,7 @@ function _projectUsesAngular(
   return findings.some(
     (finding) =>
       finding.type === findingTypes.angular &&
-      finding.project.path === projectPath,
+      finding.projects.some((project) => project.path === projectPath),
   );
 }
 

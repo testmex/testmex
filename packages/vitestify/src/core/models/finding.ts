@@ -10,6 +10,6 @@ declare const __findingTypeBrand: unique symbol;
 
 export interface Finding {
   type: FindingType;
-  project: Project;
+  projects: Project[];
   file?: FileInfo;
 }
