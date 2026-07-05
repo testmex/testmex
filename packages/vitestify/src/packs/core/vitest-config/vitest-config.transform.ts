@@ -1,5 +1,5 @@
 import { join } from 'node:path/posix';
-import type { ReadonlyTree } from '../../../core/domain/tree';
+import type { ReadonlyTree, Tree } from '../../../core/domain/tree';
 import type { Finding } from '../../../core/models/finding';
 import {
   relativePath,
@@ -9,6 +9,13 @@ import { defineTransform } from '../../../core/models/transform';
 import { SgEditor } from '../../../infra/ast/sg-editor';
 import { fileTags, findingTypes } from '../identifiers';
 
+const ANGULAR_SETUP_CONTENT = `\
+import '@angular/compiler';
+import { setupTestBed } from '@analogjs/vitest-angular/setup-testbed';
+
+setupTestBed();
+`;
+const ANGULAR_SETUP_FILE_NAME = 'angular.setup.ts';
 const JEST_SETUP_FILE_KEYS = ['setupFiles', 'setupFilesAfterEnv'];
 const VITEST_CONFIG_FILE_NAME = 'vitest.config.mts';
 const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
@@ -20,6 +27,7 @@ export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
   apply: async ({ findings, workspace }) => {
     const { commands, info, tree } = workspace;
+    let needsAngular = false;
     let needsJsdom = false;
 
     for (const file of info.getFiles()) {
@@ -39,6 +47,16 @@ export const vitestConfigTransform = defineTransform({
         setupFiles,
       });
 
+      setupFiles = await _maybeAppendAngularVitestSetup({
+        findings,
+        projectPath: file.project.path,
+        setupFiles,
+        tree,
+      });
+
+      const useAngular = _projectUsesAngular(findings, file.project.path);
+      needsAngular ||= useAngular;
+
       const useJsdom = _projectUsesDom(findings, file.project.path);
       needsJsdom ||= useJsdom;
 
@@ -49,8 +67,23 @@ export const vitestConfigTransform = defineTransform({
 
       await tree.write(
         relativePath(join(file.project.path, VITEST_CONFIG_FILE_NAME)),
-        _vitestConfigContent({ moduleNameMappings, setupFiles, useJsdom }),
+        _vitestConfigContent({
+          moduleNameMappings,
+          setupFiles,
+          useAngular,
+          useJsdom,
+        }),
       );
+    }
+
+    if (needsAngular) {
+      commands.add([
+        info.packageManager,
+        'add',
+        '-D',
+        '@analogjs/vite-plugin-angular',
+        '@analogjs/vitest-angular',
+      ]);
     }
 
     commands.add([info.packageManager, 'add', '-D', 'vite-tsconfig-paths']);
@@ -217,16 +250,62 @@ function _projectUsesTestingLibraryJestDom(
   );
 }
 
+function _projectUsesAngular(
+  findings: Finding[],
+  projectPath: RelativePath,
+): boolean {
+  return findings.some(
+    (finding) =>
+      finding.type === findingTypes.angular &&
+      finding.project.path === projectPath,
+  );
+}
+
+async function _maybeAppendAngularVitestSetup({
+  setupFiles,
+  findings,
+  projectPath,
+  tree,
+}: {
+  setupFiles: string[];
+  findings: Finding[];
+  projectPath: RelativePath;
+  tree: Tree;
+}): Promise<string[]> {
+  if (!_projectUsesAngular(findings, projectPath)) {
+    return setupFiles;
+  }
+
+  await tree.write(
+    relativePath(join(projectPath, ANGULAR_SETUP_FILE_NAME)),
+    ANGULAR_SETUP_CONTENT,
+  );
+
+  return [...setupFiles, './angular.setup.ts'];
+}
+
 function _vitestConfigContent({
   moduleNameMappings,
   setupFiles,
+  useAngular,
   useJsdom,
 }: {
   moduleNameMappings: JestModuleNameMapping[];
   setupFiles: string[];
+  useAngular: boolean;
   useJsdom: boolean;
 }): string {
+  const angularImport = useAngular
+    ? "import angular from '@analogjs/vite-plugin-angular';\n"
+    : '';
   const environmentBlock = useJsdom ? `    environment: 'jsdom',\n` : '';
+  const analogPlugin = useAngular ? '    angular({ jit: false }),\n' : '';
+  const pluginsBlock = `\
+  plugins: [
+${analogPlugin}\
+    tsconfigPaths(),
+  ],`;
+
   const setupFilesBlock =
     setupFiles.length === 0
       ? ''
@@ -254,11 +333,12 @@ function _vitestConfigContent({
 
   return `\
 ${joinImport}\
+${angularImport}\
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [tsconfigPaths()],
+${pluginsBlock}
 ${resolveBlock}\
   test: {
 ${environmentBlock}\

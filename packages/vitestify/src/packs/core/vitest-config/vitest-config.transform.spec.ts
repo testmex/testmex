@@ -6,6 +6,7 @@ import {
   WorkspaceMother,
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
+import { angularHeuristic } from '../angular.heuristic';
 import { domHeuristic } from '../dom.heuristic';
 import { fileTags } from '../identifiers';
 import { testingLibraryJestDomHeuristic } from '../testing-library-jest-dom/testing-library-jest-dom.heuristic';
@@ -35,7 +36,9 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [tsconfigPaths()],
+  plugins: [
+    tsconfigPaths(),
+  ],
   test: {
     include: ['**/*.{test,spec}.{ts,tsx}'],
   },
@@ -71,7 +74,9 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [tsconfigPaths()],
+  plugins: [
+    tsconfigPaths(),
+  ],
   test: {
     include: ['**/*.{test,spec}.{ts,tsx}'],
     setupFiles: [
@@ -188,6 +193,80 @@ export default {
     ],`);
   });
 
+  it('generates angular vitest config when angular is detected', async () => {
+    const workspace = createAngularWorkspace();
+
+    await runTransform({
+      workspace,
+      heuristics: [angularHeuristic],
+      transforms: [vitestConfigTransform],
+    });
+
+    expect(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/angular.setup.ts'),
+      ),
+    ).toBe(`\
+import '@angular/compiler';
+import { setupTestBed } from '@analogjs/vitest-angular/setup-testbed';
+
+setupTestBed();
+`);
+
+    const config = await workspace.tree.maybeReadFile(
+      relativePath('apps/my-app/vitest.config.mts'),
+    );
+
+    expect
+      .soft(config)
+      .toContain(`import angular from '@analogjs/vite-plugin-angular';`);
+    expect.soft(config).toContain(`plugins: [
+    angular({ jit: false }),`);
+    expect.soft(config).toContain(`\
+    setupFiles: [
+      join(import.meta.dirname, "./angular.setup.ts"),
+    ],`);
+  });
+
+  it('installs analog angular packages when angular is detected', async () => {
+    const workspace = createAngularWorkspace();
+
+    await runTransform({
+      workspace,
+      heuristics: [angularHeuristic],
+      transforms: [vitestConfigTransform],
+    });
+
+    expect(workspace.commands.all()).toContainEqual([
+      'npm',
+      'add',
+      '-D',
+      '@analogjs/vite-plugin-angular',
+      '@analogjs/vitest-angular',
+    ]);
+  });
+
+  it('does not generate angular.setup.ts when angular is absent', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app').withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: 'export default {}',
+          fileName: 'jest.config.ts',
+          tags: [fileTags.jestConfig],
+        }).build(),
+      ),
+    );
+
+    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+
+    expect(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/angular.setup.ts'),
+      ),
+    ).toBeNull();
+  });
+
   it('configures jsdom when dom tests are detected', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app')
@@ -262,3 +341,25 @@ export default {
 `);
   });
 });
+
+function createAngularWorkspace() {
+  return createTestingWorkspace(
+    WorkspaceMother.withApp('my-app')
+      .withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: 'export default {}',
+          fileName: 'jest.config.ts',
+          tags: [fileTags.jestConfig],
+        }).build(),
+      )
+      .withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: `import { Component } from '@angular/core';`,
+          fileName: 'app.component.ts',
+          tags: [fileTags.code],
+        }).build(),
+      ),
+  );
+}
