@@ -7,6 +7,7 @@ import {
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
 import { angularHeuristic } from '../angular.heuristic';
+import { reactHeuristic } from '../react.heuristic';
 import { domHeuristic } from '../dom.heuristic';
 import { fileTags } from '../identifiers';
 import { testingLibraryJestDomHeuristic } from '../testing-library-jest-dom/testing-library-jest-dom.heuristic';
@@ -25,7 +26,7 @@ describe('vitest-config', () => {
       ),
     );
 
-    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+    await transform(workspace);
 
     expect(
       await workspace.tree.maybeReadFile(
@@ -62,7 +63,7 @@ export default {
       ),
     );
 
-    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+    await transform(workspace);
 
     expect(
       await workspace.tree.maybeReadFile(
@@ -104,7 +105,7 @@ module.exports = {
       ),
     );
 
-    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+    await transform(workspace);
 
     expect(
       await workspace.tree.maybeReadFile(
@@ -128,7 +129,7 @@ module.exports = {
       ),
     );
 
-    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+    await transform(workspace);
 
     expect(
       await workspace.tree.maybeReadFile(
@@ -140,7 +141,7 @@ module.exports = {
   it('does not generate vitest.config.mts when there is no jest config', async () => {
     const workspace = createTestingWorkspace(WorkspaceMother.withApp('my-app'));
 
-    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+    await transform(workspace);
 
     expect(
       await workspace.tree.maybeReadFile(
@@ -174,11 +175,7 @@ export default {
         ),
     );
 
-    await runTransform({
-      workspace,
-      heuristics: [testingLibraryJestDomHeuristic],
-      transforms: [vitestConfigTransform],
-    });
+    await transform(workspace);
 
     let content = await workspace.tree.maybeReadFile(
       relativePath('apps/my-app/vitest.config.mts'),
@@ -214,11 +211,7 @@ export default {
         ),
     );
 
-    await runTransform({
-      workspace,
-      heuristics: [angularHeuristic],
-      transforms: [vitestConfigTransform],
-    });
+    await transform(workspace);
 
     expect(
       await workspace.tree.maybeReadFile(
@@ -267,11 +260,7 @@ setupTestBed();
         ),
     );
 
-    await runTransform({
-      workspace,
-      heuristics: [angularHeuristic],
-      transforms: [vitestConfigTransform],
-    });
+    await transform(workspace);
 
     expect(workspace.commands.all()).toContainEqual([
       'npm',
@@ -294,13 +283,76 @@ setupTestBed();
       ),
     );
 
-    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+    await transform(workspace);
 
     expect(
       await workspace.tree.maybeReadFile(
         relativePath('apps/my-app/angular.setup.ts'),
       ),
     ).toBeNull();
+  });
+
+  it('generates react vitest config when react is detected', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: `import { useState } from 'react';`,
+            fileName: 'app.tsx',
+            tags: [fileTags.code],
+          }).build(),
+        ),
+    );
+
+    await transform(workspace);
+
+    const config = await workspace.tree.maybeReadFile(
+      relativePath('apps/my-app/vitest.config.mts'),
+    );
+
+    expect.soft(config).toContain(`import react from '@vitejs/plugin-react';`);
+    expect.soft(config).toContain(`plugins: [
+    react(),`);
+  });
+
+  it('installs @vitejs/plugin-react when react is detected', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: `import { useState } from 'react';`,
+            fileName: 'app.tsx',
+            tags: [fileTags.code],
+          }).build(),
+        ),
+    );
+
+    await transform(workspace);
+
+    expect(workspace.commands.all()).toContainEqual([
+      'npm',
+      'add',
+      '-D',
+      '@vitejs/plugin-react',
+    ]);
   });
 
   it('configures jsdom when dom tests are detected', async () => {
@@ -323,11 +375,7 @@ setupTestBed();
         ),
     );
 
-    await runTransform({
-      workspace,
-      heuristics: [domHeuristic],
-      transforms: [vitestConfigTransform],
-    });
+    await transform(workspace);
 
     const config = await workspace.tree.maybeReadFile(
       relativePath('apps/my-app/vitest.config.mts'),
@@ -359,7 +407,7 @@ export default {
       ),
     );
 
-    await runTransform({ workspace, transforms: [vitestConfigTransform] });
+    await transform(workspace);
 
     expect(
       await workspace.tree.maybeReadFile(
@@ -377,3 +425,16 @@ export default {
 `);
   });
 });
+
+async function transform(workspace: ReturnType<typeof createTestingWorkspace>) {
+  await runTransform({
+    workspace,
+    heuristics: [
+      angularHeuristic,
+      reactHeuristic,
+      domHeuristic,
+      testingLibraryJestDomHeuristic,
+    ],
+    transforms: [vitestConfigTransform],
+  });
+}

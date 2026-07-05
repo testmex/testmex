@@ -28,6 +28,7 @@ export const vitestConfigTransform = defineTransform({
   apply: async ({ findings, workspace }) => {
     const { commands, info, tree } = workspace;
     let needsAnalog = false;
+    let needsReact = false;
 
     for (const file of info.getFiles()) {
       if (!file.tags.includes(fileTags.jestConfig)) {
@@ -59,6 +60,9 @@ export const vitestConfigTransform = defineTransform({
       const useAngular = _projectUsesAngular(findings, jestDirectory);
       needsAnalog ||= useAngular;
 
+      const useReact = _projectUsesReact(findings, jestDirectory);
+      needsReact ||= useReact;
+
       const useJsdom = _projectUsesDom(findings, jestDirectory);
 
       const moduleNameMappings = await _extractJestModuleNameMappers(
@@ -73,6 +77,7 @@ export const vitestConfigTransform = defineTransform({
           setupFiles,
           useAngular,
           useJsdom,
+          useReact,
         }),
       );
     }
@@ -85,6 +90,10 @@ export const vitestConfigTransform = defineTransform({
         '@analogjs/vite-plugin-angular',
         '@analogjs/vitest-angular',
       ]);
+    }
+
+    if (needsReact) {
+      commands.add([info.packageManager, 'add', '-D', '@vitejs/plugin-react']);
     }
 
     commands.add([info.packageManager, 'add', '-D', 'vite-tsconfig-paths']);
@@ -263,6 +272,17 @@ function _projectUsesAngular(
   );
 }
 
+function _projectUsesReact(
+  findings: Finding[],
+  projectPath: RelativePath,
+): boolean {
+  return findings.some(
+    (finding) =>
+      finding.type === findingTypes.react &&
+      finding.projects.some((project) => project.path === projectPath),
+  );
+}
+
 async function _maybeAppendAngularVitestSetup({
   setupFiles,
   findings,
@@ -291,20 +311,27 @@ function _vitestConfigContent({
   setupFiles,
   useAngular,
   useJsdom,
+  useReact,
 }: {
   moduleNameMappings: JestModuleNameMapping[];
   setupFiles: string[];
   useAngular: boolean;
   useJsdom: boolean;
+  useReact: boolean;
 }): string {
   const angularImport = useAngular
     ? "import angular from '@analogjs/vite-plugin-angular';\n"
     : '';
+  const reactImport = useReact
+    ? "import react from '@vitejs/plugin-react';\n"
+    : '';
   const environmentBlock = useJsdom ? `    environment: 'jsdom',\n` : '';
   const analogPlugin = useAngular ? '    angular({ jit: false }),\n' : '';
+  const reactPlugin = useReact ? '    react(),\n' : '';
   const pluginsBlock = `\
   plugins: [
 ${analogPlugin}\
+${reactPlugin}\
     tsconfigPaths(),
   ],`;
 
@@ -336,6 +363,7 @@ ${analogPlugin}\
   return `\
 ${joinImport}\
 ${angularImport}\
+${reactImport}\
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config';
 

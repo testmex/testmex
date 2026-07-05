@@ -1,5 +1,6 @@
 import { definePack } from '../../core/models/pack';
 import { angularHeuristic } from './angular.heuristic';
+import { reactHeuristic } from './react.heuristic';
 import { CodeEnricher } from './code.enricher';
 import { domHeuristic } from './dom.heuristic';
 import { testingLibraryJestDomHeuristic } from './testing-library-jest-dom/testing-library-jest-dom.heuristic';
@@ -15,6 +16,11 @@ export default definePack({
     (args) => new TestEnricher(args),
     (args) => new PackageManagerEnricher(args),
   ],
-  heuristics: [angularHeuristic, domHeuristic, testingLibraryJestDomHeuristic],
+  heuristics: [
+    angularHeuristic,
+    domHeuristic,
+    reactHeuristic,
+    testingLibraryJestDomHeuristic,
+  ],
   transforms: [testingLibraryJestDomTransform, vitestConfigTransform],
 });
