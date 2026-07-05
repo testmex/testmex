@@ -27,8 +27,7 @@ export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
   apply: async ({ findings, workspace }) => {
     const { commands, info, tree } = workspace;
-    let needsAngular = false;
-    let needsJsdom = false;
+    let needsAnalog = false;
 
     for (const file of info.getFiles()) {
       if (!file.tags.includes(fileTags.jestConfig)) {
@@ -55,10 +54,9 @@ export const vitestConfigTransform = defineTransform({
       });
 
       const useAngular = _projectUsesAngular(findings, file.project.path);
-      needsAngular ||= useAngular;
+      needsAnalog ||= useAngular;
 
       const useJsdom = _projectUsesDom(findings, file.project.path);
-      needsJsdom ||= useJsdom;
 
       const moduleNameMappings = await _extractJestModuleNameMappers(
         tree,
@@ -76,7 +74,7 @@ export const vitestConfigTransform = defineTransform({
       );
     }
 
-    if (needsAngular) {
+    if (needsAnalog) {
       commands.add([
         info.packageManager,
         'add',
