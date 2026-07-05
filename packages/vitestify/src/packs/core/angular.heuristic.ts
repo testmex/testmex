@@ -1,7 +1,7 @@
 import { defineFileContentHeuristic } from '../../core/domain/define-file-content-heuristic';
 import { fileTags, findingTypes } from './identifiers';
 
-const ANGULAR_PATTERN = /@angular\//;
+const ANGULAR_PATTERN = /['"]@angular\//;
 
 export const angularHeuristic = defineFileContentHeuristic({
   predicate: (file) =>

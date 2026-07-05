@@ -61,4 +61,22 @@ describe('angularHeuristic', () => {
 
     expect(findings).toEqual([]);
   });
+
+  it('returns no findings when @angular appears without quotes', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app').withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: `// migrate @angular/core imports manually`,
+          fileName: 'src/app/utils.ts',
+          tags: [fileTags.code],
+        }).build(),
+      ),
+    );
+
+    const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
+    const findings = await analyzer.analyze(workspace);
+
+    expect(findings).toEqual([]);
+  });
 });
