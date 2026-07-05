@@ -2,7 +2,6 @@ import { defineFileContentHeuristic } from '../../core/domain/define-file-conten
 import type { Finding } from '../../core/models/finding';
 import { fileTags, findingTypes } from './identifiers';
 
-const ANGULAR_IMPORT_PATTERN = /['"]@testing-library\/angular['"]/;
 const JEST_DOM_IMPORT_PATTERN = /['"]@testing-library\/jest-dom['"]/;
 const REACT_IMPORT_PATTERN = /['"]@testing-library\/react['"]/;
 
@@ -18,14 +17,6 @@ export const testingLibraryHeuristic = defineFileContentHeuristic({
     ) {
       findings.push({
         type: findingTypes.testingLibraryJestDom,
-        projects,
-        file,
-      });
-    }
-
-    if (ANGULAR_IMPORT_PATTERN.test(content)) {
-      findings.push({
-        type: findingTypes.testingLibraryAngular,
         projects,
         file,
       });

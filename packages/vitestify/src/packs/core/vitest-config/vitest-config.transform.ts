@@ -17,6 +17,15 @@ setupTestBed();
 `;
 const ANGULAR_SETUP_FILE_NAME = 'angular.setup.ts';
 const JEST_SETUP_FILE_KEYS = ['setupFiles', 'setupFilesAfterEnv'];
+const TESTING_LIBRARY_SETUP_CONTENT = `\
+import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
+
+afterEach(() => {
+  cleanup();
+});
+`;
+const TESTING_LIBRARY_SETUP_FILE_NAME = 'testing-library.setup.ts';
 const VITEST_CONFIG_FILE_NAME = 'vitest.config.mts';
 const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
   VITEST_CONFIG_FILE_NAME,
@@ -52,6 +61,7 @@ export const vitestConfigTransform = defineTransform({
       _analyzeAngularUsage(context);
       _analyzeReactUsage(context);
       _analyzeDomUsage(context);
+      _analyzeTestingLibraryReactUsage(context);
 
       await _analyzeJestConfig(context);
 
@@ -65,6 +75,8 @@ export const vitestConfigTransform = defineTransform({
       if (context.usesReact) {
         devDependencies.add('@vitejs/plugin-react');
       }
+
+      await _maybeAddTestingLibraryReactSetup(context);
 
       await _writeVitestConfig(context);
 
@@ -85,6 +97,7 @@ interface VitestConfigTransformContext {
   usesAngular?: boolean;
   usesJsdom?: boolean;
   usesReact?: boolean;
+  usesTestingLibraryReact?: boolean;
 }
 
 async function _hasVitestConfig(
@@ -247,6 +260,38 @@ function _analyzeReactUsage(context: VitestConfigTransformContext) {
         (project) => project.path === context.jestConfigDirectory,
       ),
   );
+}
+
+function _analyzeTestingLibraryReactUsage(
+  context: VitestConfigTransformContext,
+): void {
+  context.usesTestingLibraryReact = context.findings.some(
+    (finding) =>
+      finding.type === findingTypes.testingLibraryReact &&
+      finding.projects.some(
+        (project) => project.path === context.jestConfigDirectory,
+      ),
+  );
+}
+
+async function _maybeAddTestingLibraryReactSetup(
+  context: VitestConfigTransformContext,
+): Promise<void> {
+  if (!context.usesTestingLibraryReact) {
+    return;
+  }
+
+  await context.tree.write(
+    relativePath(
+      join(context.jestConfigDirectory, TESTING_LIBRARY_SETUP_FILE_NAME),
+    ),
+    TESTING_LIBRARY_SETUP_CONTENT,
+  );
+
+  context.setupFiles = [
+    ...context.setupFiles,
+    `./${TESTING_LIBRARY_SETUP_FILE_NAME}`,
+  ];
 }
 
 async function _addAngularVitestSetup(

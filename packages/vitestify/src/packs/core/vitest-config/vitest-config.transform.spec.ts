@@ -426,6 +426,95 @@ export default {
   },
 `);
   });
+
+  it('generates testing-library.setup.ts when react testing library is detected', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.testFile({
+            appName: 'my-app',
+            content: `import { render } from '@testing-library/react';`,
+            fileName: 'src/app/app.spec.tsx',
+          }).build(),
+        ),
+    );
+
+    await transform(workspace);
+
+    expect(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/testing-library.setup.ts'),
+      ),
+    ).toBe(`\
+import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
+
+afterEach(() => {
+  cleanup();
+});
+`);
+  });
+
+  it('adds testing-library.setup.ts to vitest config setup files', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.testFile({
+            appName: 'my-app',
+            content: `import { render } from '@testing-library/react';`,
+            fileName: 'src/app/app.spec.tsx',
+          }).build(),
+        ),
+    );
+
+    await transform(workspace);
+
+    expect(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/vitest.config.mts'),
+      ),
+    ).toContain(`\
+    setupFiles: [
+      join(import.meta.dirname, "./testing-library.setup.ts"),
+    ],`);
+  });
+
+  it('does not generate testing-library.setup.ts when react testing library is absent', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app').withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: 'export default {}',
+          fileName: 'jest.config.ts',
+          tags: [fileTags.jestConfig],
+        }).build(),
+      ),
+    );
+
+    await transform(workspace);
+
+    expect(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/testing-library.setup.ts'),
+      ),
+    ).toBeNull();
+  });
 });
 
 async function transform(workspace: ReturnType<typeof createTestingWorkspace>) {

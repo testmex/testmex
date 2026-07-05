@@ -29,25 +29,6 @@ describe('testingLibraryHeuristic', () => {
     ]);
   });
 
-  it('reports angular findings in test files', async () => {
-    const workspace = createTestingWorkspace(
-      WorkspaceMother.withApp('my-app').withFile(
-        WorkspaceFileMother.testFile({
-          appName: 'my-app',
-          content: `import { render } from '@testing-library/angular';`,
-          fileName: 'src/app/app.component.spec.ts',
-        }).build(),
-      ),
-    );
-
-    const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
-    const findings = await analyzer.analyze(workspace);
-
-    expect(findings).toMatchObject([
-      { type: findingTypes.testingLibraryAngular },
-    ]);
-  });
-
   it('reports multiple findings in the same file', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(
@@ -55,7 +36,7 @@ describe('testingLibraryHeuristic', () => {
           appName: 'my-app',
           content: `\
 import '@testing-library/jest-dom';
-import { render } from '@testing-library/angular';
+import { render } from '@testing-library/react';
 `,
           fileName: 'jest.setup.ts',
           tags: [fileTags.code],
@@ -68,7 +49,7 @@ import { render } from '@testing-library/angular';
 
     expect(findings).toMatchObject([
       { type: findingTypes.testingLibraryJestDom },
-      { type: findingTypes.testingLibraryAngular },
+      { type: findingTypes.testingLibraryReact },
     ]);
   });
 
