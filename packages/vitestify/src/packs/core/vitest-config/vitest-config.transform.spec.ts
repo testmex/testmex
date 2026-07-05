@@ -194,7 +194,25 @@ export default {
   });
 
   it('generates angular vitest config when angular is detected', async () => {
-    const workspace = createAngularWorkspace();
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: `import { Component } from '@angular/core';`,
+            fileName: 'app.component.ts',
+            tags: [fileTags.code],
+          }).build(),
+        ),
+    );
 
     await runTransform({
       workspace,
@@ -229,7 +247,25 @@ setupTestBed();
   });
 
   it('installs analog angular packages when angular is detected', async () => {
-    const workspace = createAngularWorkspace();
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: `import { Component } from '@angular/core';`,
+            fileName: 'app.component.ts',
+            tags: [fileTags.code],
+          }).build(),
+        ),
+    );
 
     await runTransform({
       workspace,
@@ -341,25 +377,3 @@ export default {
 `);
   });
 });
-
-function createAngularWorkspace() {
-  return createTestingWorkspace(
-    WorkspaceMother.withApp('my-app')
-      .withFile(
-        WorkspaceFileMother.file({
-          appName: 'my-app',
-          content: 'export default {}',
-          fileName: 'jest.config.ts',
-          tags: [fileTags.jestConfig],
-        }).build(),
-      )
-      .withFile(
-        WorkspaceFileMother.file({
-          appName: 'my-app',
-          content: `import { Component } from '@angular/core';`,
-          fileName: 'app.component.ts',
-          tags: [fileTags.code],
-        }).build(),
-      ),
-  );
-}
