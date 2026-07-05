@@ -23,14 +23,15 @@ export function defineFileContentHeuristic({
         info
           .getFiles()
           .filter((file) => predicate(file))
-          .map(async (entry) => {
-            const { project, ...file } = entry;
-            const content = await tree.maybeReadFile(file.path);
+          .flatMap(({ projects, ...file }) =>
+            projects.map(async (project) => {
+              const content = await tree.maybeReadFile(file.path);
 
-            return content === null
-              ? []
-              : inspect({ file, project, content });
-          }),
+              return content === null
+                ? []
+                : inspect({ file, project, content });
+            }),
+          ),
       );
 
       return findingsList.flat();

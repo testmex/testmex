@@ -34,44 +34,46 @@ export const vitestConfigTransform = defineTransform({
         continue;
       }
 
-      if (await _hasVitestConfig(tree, file.project.path)) {
-        continue;
-      }
+      for (const project of file.projects) {
+        if (await _hasVitestConfig(tree, project.path)) {
+          continue;
+        }
 
-      let setupFiles = await _extractJestSetupFiles(tree, file.path);
+        let setupFiles = await _extractJestSetupFiles(tree, file.path);
 
-      setupFiles = _maybeAppendJestDomVitestSetup({
-        findings,
-        projectPath: file.project.path,
-        setupFiles,
-      });
-
-      setupFiles = await _maybeAppendAngularVitestSetup({
-        findings,
-        projectPath: file.project.path,
-        setupFiles,
-        tree,
-      });
-
-      const useAngular = _projectUsesAngular(findings, file.project.path);
-      needsAnalog ||= useAngular;
-
-      const useJsdom = _projectUsesDom(findings, file.project.path);
-
-      const moduleNameMappings = await _extractJestModuleNameMappers(
-        tree,
-        file.path,
-      );
-
-      await tree.write(
-        relativePath(join(file.project.path, VITEST_CONFIG_FILE_NAME)),
-        _vitestConfigContent({
-          moduleNameMappings,
+        setupFiles = _maybeAppendJestDomVitestSetup({
+          findings,
+          projectPath: project.path,
           setupFiles,
-          useAngular,
-          useJsdom,
-        }),
-      );
+        });
+
+        setupFiles = await _maybeAppendAngularVitestSetup({
+          findings,
+          projectPath: project.path,
+          setupFiles,
+          tree,
+        });
+
+        const useAngular = _projectUsesAngular(findings, project.path);
+        needsAnalog ||= useAngular;
+
+        const useJsdom = _projectUsesDom(findings, project.path);
+
+        const moduleNameMappings = await _extractJestModuleNameMappers(
+          tree,
+          file.path,
+        );
+
+        await tree.write(
+          relativePath(join(project.path, VITEST_CONFIG_FILE_NAME)),
+          _vitestConfigContent({
+            moduleNameMappings,
+            setupFiles,
+            useAngular,
+            useJsdom,
+          }),
+        );
+      }
     }
 
     if (needsAnalog) {

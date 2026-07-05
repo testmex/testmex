@@ -10,8 +10,8 @@ export interface FileInfo {
   tags: FileTag[];
 }
 
-export interface FileWithProject extends FileInfo {
-  project: Project;
+export interface FileWithProjects extends FileInfo {
+  projects: Project[];
 }
 
 export type FileTag = string & {
@@ -47,11 +47,11 @@ export class WorkspaceInfo {
     this.projects = projects;
   }
 
-  getFiles(): FileWithProject[] {
+  getFiles(): FileWithProjects[] {
     return this.files.flatMap((file) => {
-      const project = this._findProjectForFile(file);
+      const projects = _findProjectsForFile(file, this.projects);
 
-      return project === undefined ? [] : [{ ...file, project }];
+      return [{ ...file, projects }];
     });
   }
 
@@ -59,8 +59,10 @@ export class WorkspaceInfo {
     const path = relativePath(nameOrPath);
 
     return this.getFiles()
-      .filter(
-        ({ project }) => project.name === nameOrPath || project.path === path,
+      .filter(({ projects }) =>
+        projects.some(
+          (project) => project.name === nameOrPath || project.path === path,
+        ),
       )
       .map(({ path, tags }) => ({ path, tags }));
   }
@@ -76,23 +78,43 @@ export class WorkspaceInfo {
       packageManager: overrides.packageManager ?? this.packageManager,
     });
   }
+}
 
-  private _findProjectForFile(file: FileInfo): Project | undefined {
-    let match: Project | undefined;
+function _findProjectsForFile(file: FileInfo, projects: Project[]): Project[] {
+  const matches = projects.filter(
+    (project) =>
+      file.path === project.path || file.path.startsWith(`${project.path}/`),
+  );
 
-    for (const project of this.projects) {
-      if (
-        file.path === project.path ||
-        file.path.startsWith(`${project.path}/`)
-      ) {
-        if (match === undefined || project.path.length > match.path.length) {
-          match = project;
-        }
-      }
-    }
+  return _deduplicateProjects(matches);
+}
 
-    return match;
+function _deduplicateProjects(projects: Project[]): Project[] {
+  const byPath = new Map<RelativePath, Project[]>();
+
+  for (const project of projects) {
+    const group = byPath.get(project.path) ?? [];
+    group.push(project);
+    byPath.set(project.path, group);
   }
+
+  return [...byPath.values()].flatMap(_mergeProjectsAtSamePath);
+}
+
+function _mergeProjectsAtSamePath(projects: Project[]): Project[] {
+  const names = new Set(
+    projects.flatMap((project) =>
+      project.name === undefined ? [] : [project.name],
+    ),
+  );
+
+  if (names.size > 1) {
+    return [...names].map((name) => ({ path: projects[0].path, name }));
+  }
+
+  const name = names.size === 1 ? [...names][0] : undefined;
+
+  return [{ path: projects[0].path, name }];
 }
 
 export function createWorkspaceInfo(): WorkspaceInfo {
