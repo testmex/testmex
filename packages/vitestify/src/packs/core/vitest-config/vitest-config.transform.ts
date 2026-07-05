@@ -23,6 +23,13 @@ const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
   'vitest.config.ts',
 ];
 
+interface VitestConfigTransformContext {
+  findings: Finding[];
+  jestConfigDirectory: RelativePath;
+  jestConfigPath: RelativePath;
+  tree: ReadonlyTree;
+}
+
 export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
   apply: async ({ findings, workspace }) => {
@@ -36,54 +43,44 @@ export const vitestConfigTransform = defineTransform({
       }
 
       const jestConfigPath = file.path;
-      const jestDirectory = relativePath(dirname(jestConfigPath));
+      const context: VitestConfigTransformContext = {
+        findings,
+        jestConfigDirectory: relativePath(dirname(jestConfigPath)),
+        jestConfigPath,
+        tree,
+      };
 
-      if (await _hasVitestConfig({ projectRoot: jestConfigPath, tree })) {
+      /* Project already has a vitest config. Skipping... */
+      if (await _hasVitestConfig({ context })) {
         continue;
       }
 
-      let setupFiles = await _extractJestSetupFiles({
-        jestConfigPath,
-        tree,
-      });
+      let setupFiles = await _extractJestSetupFiles({ context });
 
-      setupFiles = _maybeAppendJestDomVitestSetup({
-        findings,
-        jestDirectory: jestDirectory,
-        setupFiles,
-      });
+      setupFiles = _maybeAppendJestDomVitestSetup({ context, setupFiles });
 
       setupFiles = await _maybeAppendAngularVitestSetup({
-        findings,
-        jestDirectory: jestDirectory,
+        context,
         setupFiles,
         tree,
       });
 
-      const useAngular = _projectUsesAngular({
-        findings,
-        jestDirectory,
-      });
+      const useAngular = _projectUsesAngular({ context });
       needsAnalog ||= useAngular;
 
-      const useReact = _projectUsesReact({
-        findings,
-        jestDirectory: jestDirectory,
-      });
+      const useReact = _projectUsesReact({ context });
       needsReact ||= useReact;
 
-      const useJsdom = _projectUsesDom({
-        findings,
-        jestDirectory: jestDirectory,
-      });
+      const useJsdom = _projectUsesDom({ context });
 
       const moduleNameMappings = await _extractJestModuleNameMappers({
-        jestConfigPath: file.path,
-        tree,
+        context,
       });
 
       await tree.write(
-        relativePath(join(jestDirectory, VITEST_CONFIG_FILE_NAME)),
+        relativePath(
+          join(context.jestConfigDirectory, VITEST_CONFIG_FILE_NAME),
+        ),
         _vitestConfigContent({
           moduleNameMappings,
           setupFiles,
@@ -114,16 +111,15 @@ export const vitestConfigTransform = defineTransform({
 });
 
 async function _hasVitestConfig({
-  projectRoot,
-  tree,
+  context,
 }: {
-  projectRoot: RelativePath;
-  tree: ReadonlyTree;
+  context: Pick<VitestConfigTransformContext, 'jestConfigDirectory' | 'tree'>;
 }): Promise<boolean> {
   for (const fileName of VITEST_CONFIG_ALTERNATIVE_FILE_NAMES) {
     if (
-      (await tree.maybeReadFile(relativePath(join(projectRoot, fileName)))) !==
-      null
+      (await context.tree.maybeReadFile(
+        relativePath(join(context.jestConfigDirectory, fileName)),
+      )) !== null
     ) {
       return true;
     }
@@ -133,13 +129,13 @@ async function _hasVitestConfig({
 }
 
 async function _extractJestSetupFiles({
-  jestConfigPath,
-  tree,
+  context,
 }: {
-  jestConfigPath: RelativePath;
-  tree: ReadonlyTree;
+  context: Pick<VitestConfigTransformContext, 'jestConfigPath' | 'tree'>;
 }): Promise<string[]> {
-  const jestConfigContent = await tree.maybeReadFile(jestConfigPath);
+  const jestConfigContent = await context.tree.maybeReadFile(
+    context.jestConfigPath,
+  );
   if (jestConfigContent == null) {
     return [];
   }
@@ -165,13 +161,13 @@ interface JestModuleNameMapping {
 }
 
 async function _extractJestModuleNameMappers({
-  jestConfigPath,
-  tree,
+  context,
 }: {
-  jestConfigPath: RelativePath;
-  tree: ReadonlyTree;
+  context: Pick<VitestConfigTransformContext, 'jestConfigPath' | 'tree'>;
 }): Promise<JestModuleNameMapping[]> {
-  const jestConfigContent = await tree.maybeReadFile(jestConfigPath);
+  const jestConfigContent = await context.tree.maybeReadFile(
+    context.jestConfigPath,
+  );
   if (jestConfigContent == null) {
     return [];
   }
@@ -253,29 +249,33 @@ function _formatModuleNameMapperReplacement({
 }
 
 function _projectUsesDom({
-  findings,
-  jestDirectory,
+  context,
 }: {
-  findings: Finding[];
-  jestDirectory: RelativePath;
+  context: Pick<
+    VitestConfigTransformContext,
+    'findings' | 'jestConfigDirectory'
+  >;
 }): boolean {
-  return findings.some(
+  return context.findings.some(
     (finding) =>
       finding.type === findingTypes.dom &&
-      finding.projects.some((project) => project.path === jestDirectory),
+      finding.projects.some(
+        (project) => project.path === context.jestConfigDirectory,
+      ),
   );
 }
 
 function _maybeAppendJestDomVitestSetup({
+  context,
   setupFiles,
-  findings,
-  jestDirectory,
 }: {
+  context: Pick<
+    VitestConfigTransformContext,
+    'findings' | 'jestConfigDirectory'
+  >;
   setupFiles: string[];
-  findings: Finding[];
-  jestDirectory: RelativePath;
 }): string[] {
-  if (_projectUsesTestingLibraryJestDom({ findings, jestDirectory })) {
+  if (_projectUsesTestingLibraryJestDom({ context })) {
     setupFiles = [...setupFiles, '@testing-library/jest-dom/vitest'];
   }
 
@@ -283,64 +283,74 @@ function _maybeAppendJestDomVitestSetup({
 }
 
 function _projectUsesTestingLibraryJestDom({
-  findings,
-  jestDirectory,
+  context,
 }: {
-  findings: Finding[];
-  jestDirectory: RelativePath;
+  context: Pick<
+    VitestConfigTransformContext,
+    'findings' | 'jestConfigDirectory'
+  >;
 }): boolean {
-  return findings.some(
+  return context.findings.some(
     (finding) =>
       finding.type === findingTypes.testingLibraryJestDom &&
-      finding.projects.some((project) => project.path === jestDirectory),
+      finding.projects.some(
+        (project) => project.path === context.jestConfigDirectory,
+      ),
   );
 }
 
 function _projectUsesAngular({
-  findings,
-  jestDirectory,
+  context,
 }: {
-  findings: Finding[];
-  jestDirectory: RelativePath;
+  context: Pick<
+    VitestConfigTransformContext,
+    'findings' | 'jestConfigDirectory'
+  >;
 }): boolean {
-  return findings.some(
+  return context.findings.some(
     (finding) =>
       finding.type === findingTypes.angular &&
-      finding.projects.some((project) => project.path === jestDirectory),
+      finding.projects.some(
+        (project) => project.path === context.jestConfigDirectory,
+      ),
   );
 }
 
 function _projectUsesReact({
-  findings,
-  jestDirectory,
+  context,
 }: {
-  findings: Finding[];
-  jestDirectory: RelativePath;
+  context: Pick<
+    VitestConfigTransformContext,
+    'findings' | 'jestConfigDirectory'
+  >;
 }): boolean {
-  return findings.some(
+  return context.findings.some(
     (finding) =>
       finding.type === findingTypes.react &&
-      finding.projects.some((project) => project.path === jestDirectory),
+      finding.projects.some(
+        (project) => project.path === context.jestConfigDirectory,
+      ),
   );
 }
 
 async function _maybeAppendAngularVitestSetup({
+  context,
   setupFiles,
-  findings,
-  jestDirectory,
   tree,
 }: {
+  context: Pick<
+    VitestConfigTransformContext,
+    'findings' | 'jestConfigDirectory'
+  >;
   setupFiles: string[];
-  findings: Finding[];
-  jestDirectory: RelativePath;
   tree: Tree;
 }): Promise<string[]> {
-  if (!_projectUsesAngular({ findings, jestDirectory })) {
+  if (!_projectUsesAngular({ context })) {
     return setupFiles;
   }
 
   await tree.write(
-    relativePath(join(jestDirectory, ANGULAR_SETUP_FILE_NAME)),
+    relativePath(join(context.jestConfigDirectory, ANGULAR_SETUP_FILE_NAME)),
     ANGULAR_SETUP_CONTENT,
   );
 
