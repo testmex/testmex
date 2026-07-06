@@ -1,6 +1,7 @@
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
 import { SgEditor } from '../../../infra/ast/sg-editor';
 import { fileTags } from '../../core/identifiers';
+import { findJestConfig } from '../jest-ast-utils';
 
 export const configTestPathPatternsTransform = defineFileTransform({
   name: 'config-test-path-patterns',
@@ -8,15 +9,9 @@ export const configTestPathPatternsTransform = defineFileTransform({
   apply: (content) => {
     const editor = new SgEditor(content);
 
-    const configPairs = editor.root
-      .find('module.exports = $CONFIG')
-      ?.getMatch('CONFIG')
-      ?.children()
-      ?.filter((c) => c.kind() === 'pair');
+    const config = findJestConfig(editor.root);
 
-    const testPathPatternsPair = configPairs?.find(
-      (pair) => pair.child(0)?.text() === 'testPathPatterns',
-    );
+    const testPathPatternsPair = config?.testPathPatterns;
 
     /* `testPathPatterns` option exists. */
     if (testPathPatternsPair) {
@@ -41,7 +36,7 @@ export const configTestPathPatternsTransform = defineFileTransform({
       }
     } else {
       /* `testPathPatterns` option is not present (probably because it's in a preset). */
-      const lastPair = configPairs?.at(-1);
+      const lastPair = Object.values(config ?? {}).at(-1);
 
       if (lastPair) {
         editor.replaceNode(

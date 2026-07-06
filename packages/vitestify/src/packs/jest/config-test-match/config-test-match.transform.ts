@@ -1,6 +1,7 @@
 import { defineFileTransform } from '../../../core/domain/define-file-transform';
 import { SgEditor } from '../../../infra/ast/sg-editor';
 import { fileTags } from '../../core/identifiers';
+import { findJestConfig } from '../jest-ast-utils';
 
 export const configTestMatchTransform = defineFileTransform({
   name: 'config-test-match',
@@ -11,18 +12,12 @@ export const configTestMatchTransform = defineFileTransform({
   apply: (content) => {
     const editor = new SgEditor(content);
 
-    const configPairs = editor.root
-      .find('module.exports = $CONFIG')
-      ?.getMatch('CONFIG')
-      ?.children()
-      ?.filter((c) => c.kind() === 'pair');
+    const config = findJestConfig(editor.root);
 
-    const testMatchPair = configPairs?.find(
-      (pair) => pair.child(0)?.text() === 'testMatch',
-    );
+    const testMatchPair = config?.testMatch;
 
     if (!testMatchPair) {
-      const lastPair = configPairs?.at(-1);
+      const lastPair = Object.values(config ?? {}).at(-1);
 
       if (lastPair) {
         editor.replaceNode(
