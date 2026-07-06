@@ -47,6 +47,29 @@ export default defineConfig({
 `);
   });
 
+  it('installs vitest', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app').withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: 'export default {}',
+          fileName: 'jest.config.ts',
+          tags: [fileTags.jestConfig],
+        }).build(),
+      ),
+    );
+
+    await transform(workspace);
+
+    expect(workspace.commands.all()).toContainEqual([
+      'npm',
+      'add',
+      '-D',
+      'vite-tsconfig-paths',
+      'vitest',
+    ]);
+  });
+
   it('reuses jest setup files in vitest config', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(
@@ -262,15 +285,13 @@ setupTestBed();
 
     await transform(workspace);
 
-    expect(workspace.commands.all()).toContainEqual([
-      'npm',
-      'add',
-      '-D',
-      'vite-tsconfig-paths',
-      'vitest',
-      '@analogjs/vite-plugin-angular',
-      '@analogjs/vitest-angular',
-    ]);
+    expect(workspace.commands.all()).toContainEqual(
+      expect.arrayContaining([
+        'npm',
+        '@analogjs/vite-plugin-angular',
+        '@analogjs/vitest-angular',
+      ]),
+    );
   });
 
   it('does not generate angular.setup.ts when angular is absent', async () => {
@@ -349,13 +370,9 @@ setupTestBed();
 
     await transform(workspace);
 
-    expect(workspace.commands.all()).toContainEqual([
-      'npm',
-      'add',
-      '-D',
-      'vite-tsconfig-paths',
-      '@vitejs/plugin-react',
-    ]);
+    expect(workspace.commands.all()).toContainEqual(
+      expect.arrayContaining(['npm', '@vitejs/plugin-react']),
+    );
   });
 
   it('configures jsdom when dom tests are detected', async () => {
