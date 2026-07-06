@@ -36,7 +36,7 @@ export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
   apply: async ({ findings, workspace }) => {
     const { commands, info, tree } = workspace;
-    const devDependencies = new Set<string>(['vite-tsconfig-paths']);
+    const devDependencies = new Set<string>(['vite-tsconfig-paths', 'vitest']);
 
     for (const file of info.getFiles()) {
       if (!file.tags.includes(fileTags.jestConfig)) {

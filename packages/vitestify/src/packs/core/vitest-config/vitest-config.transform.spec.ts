@@ -267,6 +267,7 @@ setupTestBed();
       'add',
       '-D',
       'vite-tsconfig-paths',
+      'vitest',
       '@analogjs/vite-plugin-angular',
       '@analogjs/vitest-angular',
     ]);
