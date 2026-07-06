@@ -28,9 +28,25 @@ module.exports = {
 `);
   });
 
-  it.todo('overwrite existing "testMatch"', () => {
-    // transform jest config with testMatch: ["**/.*\\.spec\\.(ts|tsx)"]
-    // assert testMatch was replaced with ["**/.*\\.jest\\.(cts|tsx)"]
+  it('overwrite existing "testMatch"', async ({ annotate }) => {
+    annotate('just overwrite the existing "testMatch" to keep things simple');
+
+    const transformed = await transformJestConfig(`
+module.exports = {
+  preset: '../../jest.preset.js',
+  testEnvironment: 'node',
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+  testMatch: ["**/.*\\\\.anything\\\\.spec\\\\.(ts|tsx)"],
+};
+`);
+    expect(transformed).toContain(`\
+module.exports = {
+  preset: '../../jest.preset.js',
+  testEnvironment: 'node',
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+  testMatch: ["**/.*\\\\.jest\\\\.(cts|tsx)"],
+};
+`);
   });
 });
 

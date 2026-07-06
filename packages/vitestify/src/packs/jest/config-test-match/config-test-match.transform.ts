@@ -6,9 +6,6 @@ import { findJestConfig } from '../jest-ast-utils';
 export const configTestMatchTransform = defineFileTransform({
   name: 'config-test-match',
   fileTags: [fileTags.jestConfig],
-  /**
-   * @deprecated 🚧 work in progress
-   */
   apply: (content) => {
     const editor = new SgEditor(content);
 
@@ -16,7 +13,12 @@ export const configTestMatchTransform = defineFileTransform({
 
     const testMatchPair = config?.testMatch;
 
-    if (!testMatchPair) {
+    if (testMatchPair) {
+      editor.replaceNode(
+        testMatchPair,
+        `testMatch: ["**/.*\\\\.jest\\\\.(cts|tsx)"]`,
+      );
+    } else {
       const lastPair = Object.values(config ?? {}).at(-1);
 
       if (lastPair) {
