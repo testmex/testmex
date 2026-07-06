@@ -74,13 +74,6 @@ module.exports = {
       `testPathPatterns: ["**/.*\\\\.(jest)\\\\.(cts|tsx)"]`,
     );
   });
-
-  it.todo(
-    'transform ".spec.ts" and ".test.ts" to ".jest.ts" in "testPathIgnorePatterns"',
-    () => {
-      throw new Error('🚧 Work in progress!');
-    },
-  );
 });
 
 async function transformJestConfig(content: string) {
