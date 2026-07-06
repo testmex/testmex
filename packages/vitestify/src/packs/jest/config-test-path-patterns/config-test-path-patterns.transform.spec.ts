@@ -23,7 +23,7 @@ module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testPathPatterns: ["**/.*\\.jest\\.(ts|tsx)"],
+  testPathPatterns: ["**/.*\\\\.jest\\\\.(ts|tsx)"],
 };
 `);
   });
@@ -34,7 +34,7 @@ module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testPathPatterns: ["**/.*\\.spec\\.(ts|tsx)"],
+  testPathPatterns: ["**/.*\\\\.spec\\\\.(ts|tsx)"],
 };
     `);
     expect(transformed).toContain(`\
@@ -42,7 +42,7 @@ module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testPathPatterns: ["**/.*\\.jest\\.(ts|tsx)"],
+  testPathPatterns: ["**/.*\\\\.jest\\\\.(ts|tsx)"],
 };
     `);
   });
@@ -53,11 +53,11 @@ module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testPathPatterns: ["**/.*\\.test\\.(ts|tsx)"],
+  testPathPatterns: ["**/.*\\\\.test\\\\.(ts|tsx)"],
 };
     `);
     expect(transformed).toContain(
-      `testPathPatterns: ["**/.*\\.jest\\.(ts|tsx)"]`,
+      `testPathPatterns: ["**/.*\\\\.jest\\\\.(ts|tsx)"]`,
     );
   });
 
@@ -67,11 +67,11 @@ module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testPathPatterns: ["**/.*\\.(spec|test)\\.(ts|tsx)"],
+  testPathPatterns: ["**/.*\\\\.(spec|test)\\\\.(ts|tsx)"],
 };
     `);
     expect(transformed).toContain(
-      `testPathPatterns: ["**/.*\\.(jest)\\.(ts|tsx)"]`,
+      `testPathPatterns: ["**/.*\\\\.(jest)\\\\.(ts|tsx)"]`,
     );
   });
 

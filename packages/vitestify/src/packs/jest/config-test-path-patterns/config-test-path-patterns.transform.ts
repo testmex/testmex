@@ -47,7 +47,7 @@ export const configTestPathPatternsTransform = defineFileTransform({
         editor.replaceNode(
           lastPair,
           `${lastPair.text()},
-  testPathPatterns: ["**/.*\\.jest\\.(ts|tsx)"]`,
+  testPathPatterns: ["**/.*\\\\.jest\\\\.(ts|tsx)"]`,
         );
       }
     }
