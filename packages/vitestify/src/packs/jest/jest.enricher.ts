@@ -41,7 +41,9 @@ export class JestEnricher implements Enricher {
       'jest.config.ts',
       'jest.config.js',
       'jest.config.mjs',
+      'jest.config.mts',
       'jest.config.cjs',
+      'jest.config.cts',
     ];
 
     return files
