@@ -10,7 +10,7 @@ import { fileTags } from '../../core/identifiers';
 import { configTestMatchTransform } from './config-test-match.transform';
 
 describe(configTestMatchTransform.name, () => {
-  it.todo('add "testMatch" to match ".jest.cts" and ".jest.tsx"', async () => {
+  it('add "testMatch" to match ".jest.cts" and ".jest.tsx"', async () => {
     const transformed = await transformJestConfig(`
 module.exports = {
   preset: '../../jest.preset.js',
