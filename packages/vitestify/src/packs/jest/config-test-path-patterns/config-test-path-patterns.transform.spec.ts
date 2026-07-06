@@ -10,7 +10,7 @@ import { fileTags } from '../../core/identifiers';
 import { configTestPathPatternsTransform } from './config-test-path-patterns.transform';
 
 describe(configTestPathPatternsTransform.name, () => {
-  it('add "testPathPatterns" to match ".jest.ts"', async () => {
+  it('add "testPathPatterns" to match ".jest.cts"', async () => {
     const transformed = await transformJestConfig(`
 module.exports = {
   preset: '../../jest.preset.js',
@@ -23,12 +23,12 @@ module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testPathPatterns: ["**/.*\\\\.jest\\\\.(ts|tsx)"],
+  testPathPatterns: ["**/.*\\\\.jest\\\\.(cts|tsx)"],
 };
 `);
   });
 
-  it('transform ".spec.ts" to ".jest.ts" in "testPathPatterns"', async () => {
+  it('transform ".spec.ts" to ".jest.cts" in "testPathPatterns"', async () => {
     const transformed = await transformJestConfig(`
 module.exports = {
   preset: '../../jest.preset.js',
@@ -42,12 +42,12 @@ module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testPathPatterns: ["**/.*\\\\.jest\\\\.(ts|tsx)"],
+  testPathPatterns: ["**/.*\\\\.jest\\\\.(cts|tsx)"],
 };
     `);
   });
 
-  it('transform ".test.ts" to ".jest.ts" in "testPathPatterns"', async () => {
+  it('transform ".test.ts" to ".jest.cts" in "testPathPatterns"', async () => {
     const transformed = await transformJestConfig(`
 module.exports = {
   preset: '../../jest.preset.js',
@@ -57,11 +57,11 @@ module.exports = {
 };
     `);
     expect(transformed).toContain(
-      `testPathPatterns: ["**/.*\\\\.jest\\\\.(ts|tsx)"]`,
+      `testPathPatterns: ["**/.*\\\\.jest\\\\.(cts|tsx)"]`,
     );
   });
 
-  it('transform ".(spec|test).ts" to ".jest.ts" in "testPathPatterns"', async () => {
+  it('transform ".(spec|test).ts" to ".jest.cts" in "testPathPatterns"', async () => {
     const transformed = await transformJestConfig(`
 module.exports = {
   preset: '../../jest.preset.js',
@@ -71,7 +71,7 @@ module.exports = {
 };
     `);
     expect(transformed).toContain(
-      `testPathPatterns: ["**/.*\\\\.(jest)\\\\.(ts|tsx)"]`,
+      `testPathPatterns: ["**/.*\\\\.(jest)\\\\.(cts|tsx)"]`,
     );
   });
 

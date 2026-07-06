@@ -32,6 +32,8 @@ export const configTestPathPatternsTransform = defineFileTransform({
           newPattern = newPattern.replaceAll(doubleJest, 'jest');
         }
 
+        newPattern = newPattern.replaceAll('(ts|tsx)', '(cts|tsx)');
+
         editor.replaceNode(pattern, newPattern);
       }
     } else {
@@ -42,7 +44,7 @@ export const configTestPathPatternsTransform = defineFileTransform({
         editor.replaceNode(
           lastPair,
           `${lastPair.text()},
-  testPathPatterns: ["**/.*\\\\.jest\\\\.(ts|tsx)"]`,
+  testPathPatterns: ["**/.*\\\\.jest\\\\.(cts|tsx)"]`,
         );
       }
     }
