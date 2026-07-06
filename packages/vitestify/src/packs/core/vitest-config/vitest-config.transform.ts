@@ -214,7 +214,7 @@ function _formatModuleNameMapperReplacement({
   return `join(import.meta.dirname, '${path}')`;
 }
 
-function _analyzeDomUsage(context: VitestConfigTransformContext): boolean {
+function _analyzeDomUsage(context: VitestConfigTransformContext): void {
   context.usesJsdom = context.findings.some(
     (finding) =>
       finding.type === findingTypes.dom &&
