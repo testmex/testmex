@@ -7,6 +7,7 @@ import { jestTypesTransform } from './jest-types/jest-types.transform';
 import { jestViTransform } from './jest-vi/jest-vi.transform';
 import { replaceApiTransform } from './replace-api/replace-api.transform';
 import { snapTransform } from './snap/snap.transform';
+import { renameJestToSpecTransform } from './rename-jest-to-spec/rename-jest-to-spec.transform';
 import { vitestImportsTransform } from './vitest-imports/vitest-imports.transform';
 
 export const jestTestTransform = defineTransformGroup('jest-test', [
@@ -19,4 +20,5 @@ export const jestTestTransform = defineTransformGroup('jest-test', [
   replaceApiTransform,
   snapTransform,
   vitestImportsTransform,
+  renameJestToSpecTransform,
 ]);

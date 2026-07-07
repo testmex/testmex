@@ -20,7 +20,7 @@ describe(Vitestify, () => {
 
     expect(
       await fileSystem.maybeReadFile(
-        relativePath('apps/my-app/src/app.jest.cts'),
+        relativePath('apps/my-app/src/app.spec.ts'),
       ),
     ).toContain("vi.mock('./foo');");
   });
