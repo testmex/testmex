@@ -1,11 +1,7 @@
 import debug from 'debug';
-import { EnricherFactory, type EnrichResult } from '../core/models/enricher';
 import { Tree } from '../core/domain/tree';
-import { ReadonlyWorkspace, Workspace } from '../core/domain/workspace';
-import {
-  createWorkspaceInfo,
-  type WorkspaceInfo,
-} from '../core/models/workspace-info';
+import { Workspace } from '../core/domain/workspace';
+import { EnricherFactory } from '../core/models/enricher';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
 
@@ -33,14 +29,14 @@ export class Scanner {
       factory({ commandRunner: this._commandRunner }),
     );
 
-    let workspaceInfo = createWorkspaceInfo();
     let count = 0;
+    const workspace = new Workspace({ tree });
     for (const enricher of enrichers) {
-      const workspace = new ReadonlyWorkspace({ info: workspaceInfo, tree });
-      const result = await enricher.enrich(workspace);
+      const result = await enricher.enrich(workspace.asReadonly());
 
-      workspaceInfo = _applyEnrichResult(tree, workspaceInfo, result);
-      count = tree.getFiles().length;
+      workspace.applyEnrichment(result);
+
+      count = workspace.getFiles().length;
       if (count > 0) {
         log(`found ${count} files`);
       }
@@ -50,23 +46,6 @@ export class Scanner {
       log('no files found');
     }
 
-    return new Workspace({ info: workspaceInfo, tree });
+    return workspace;
   }
-}
-
-function _applyEnrichResult(
-  tree: Tree,
-  workspaceInfo: WorkspaceInfo,
-  result: EnrichResult,
-): WorkspaceInfo {
-  for (const fileInfo of result.fileInfos ?? []) {
-    for (const tag of fileInfo.tags) {
-      tree.tag(fileInfo.path, tag);
-    }
-  }
-
-  return workspaceInfo.merge({
-    projects: result.projects,
-    packageManager: result.packageManager,
-  });
 }

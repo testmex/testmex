@@ -1,19 +1,9 @@
 import type { CommandRunner } from '../ports/command-runner';
 import type { ReadonlyWorkspace } from '../domain/workspace';
-import type {
-  FileInfo,
-  PackageManager,
-  Project,
-} from './workspace-info';
-
-export interface EnrichResult {
-  fileInfos?: FileInfo[];
-  packageManager?: PackageManager;
-  projects?: Project[];
-}
+import type { WorkspaceEnrichment } from './workspace-info';
 
 export interface Enricher {
-  enrich(workspace: ReadonlyWorkspace): Promise<EnrichResult>;
+  enrich(workspace: ReadonlyWorkspace): Promise<WorkspaceEnrichment>;
 }
 
 export interface EnricherFactoryArgs {

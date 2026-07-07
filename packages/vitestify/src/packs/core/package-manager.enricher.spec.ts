@@ -5,7 +5,7 @@ import {
   relativePath,
   type RelativePath,
 } from '../../core/models/relative-path';
-import { createWorkspaceInfo } from '../../core/models/workspace-info';
+import { WorkspaceInfo } from '../../core/models/workspace-info';
 import { FileSystemFake } from '../../core/ports/file-system.fake';
 import { PackageManagerEnricher } from './package-manager.enricher';
 
@@ -109,7 +109,7 @@ async function enrich(files: Record<RelativePath, string>) {
 
   return enricher.enrich(
     new ReadonlyWorkspace({
-      info: createWorkspaceInfo(),
+      info: new WorkspaceInfo(),
       tree: new Tree({ fileSystem }),
     }),
   );

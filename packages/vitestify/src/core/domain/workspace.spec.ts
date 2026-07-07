@@ -166,6 +166,41 @@ describe(Workspace.name, () => {
       },
     ]);
   });
+
+  it('applyEnrichment() tags files on the tree', () => {
+    const workspace = new Workspace({
+      tree: new Tree({ fileSystem: new FileSystemFake() }),
+    });
+
+    workspace.applyEnrichment({
+      fileInfos: [
+        {
+          path: relativePath('src/app.ts'),
+          tags: [fileTag('code')],
+        },
+      ],
+    });
+
+    expect(workspace.getFiles()).toMatchObject([
+      { path: 'src/app.ts', tags: ['code'] },
+    ]);
+  });
+
+  it('applyEnrichment() merges projects and package manager into info', () => {
+    const workspace = new Workspace({
+      tree: new Tree({ fileSystem: new FileSystemFake() }),
+    });
+
+    workspace.applyEnrichment({
+      projects: [{ name: 'my-app', path: relativePath('apps/my-app') }],
+      packageManager: 'pnpm',
+    });
+
+    expect(workspace.info).toMatchObject({
+      projects: [{ name: 'my-app', path: 'apps/my-app' }],
+      packageManager: 'pnpm',
+    });
+  });
 });
 
 function workspaceWithFiles(

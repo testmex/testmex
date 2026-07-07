@@ -28,6 +28,12 @@ export const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn'] as const;
 
 export type PackageManager = (typeof PACKAGE_MANAGERS)[number];
 
+export interface WorkspaceEnrichment {
+  fileInfos?: FileInfo[];
+  packageManager?: PackageManager;
+  projects?: Project[];
+}
+
 export class WorkspaceInfo {
   readonly packageManager: PackageManager;
   readonly projects: Project[];
@@ -56,14 +62,4 @@ export class WorkspaceInfo {
 
 export function createWorkspaceInfo(): WorkspaceInfo {
   return new WorkspaceInfo();
-}
-
-export function mergeWorkspaceInfo(
-  workspaceInfo: WorkspaceInfo,
-  overrides: {
-    projects?: Project[];
-    packageManager?: PackageManager;
-  },
-): WorkspaceInfo {
-  return workspaceInfo.merge(overrides);
 }

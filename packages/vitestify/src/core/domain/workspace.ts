@@ -1,10 +1,11 @@
 import type { ReadonlyTree, Tree } from './tree';
 import type { Command } from '../ports/command-runner';
 import { relativePath, type RelativePath } from '../models/relative-path';
-import type {
+import {
   FileInfo,
   FileWithProjects,
   Project,
+  WorkspaceEnrichment,
   WorkspaceInfo,
 } from '../models/workspace-info';
 
@@ -24,7 +25,13 @@ export class ReadonlyWorkspace {
   readonly info: WorkspaceInfo;
   readonly tree: ReadonlyTree;
 
-  constructor({ info, tree }: { info: WorkspaceInfo; tree: ReadonlyTree }) {
+  constructor({
+    info = new WorkspaceInfo(),
+    tree,
+  }: {
+    info?: WorkspaceInfo;
+    tree: ReadonlyTree;
+  }) {
     this.info = info;
     this.tree = tree;
   }
@@ -52,6 +59,7 @@ export class ReadonlyWorkspace {
 
 export class Workspace extends ReadonlyWorkspace {
   readonly commands: CommandQueue;
+  override info: WorkspaceInfo;
   override readonly tree: Tree;
 
   constructor({
@@ -59,13 +67,27 @@ export class Workspace extends ReadonlyWorkspace {
     tree,
     commands = new CommandQueue(),
   }: {
-    info: WorkspaceInfo;
+    info?: WorkspaceInfo;
     tree: Tree;
     commands?: CommandQueue;
   }) {
     super({ info, tree });
     this.commands = commands;
+    this.info = info ?? new WorkspaceInfo();
     this.tree = tree;
+  }
+
+  applyEnrichment(enrichment: WorkspaceEnrichment): void {
+    for (const fileInfo of enrichment.fileInfos ?? []) {
+      for (const tag of fileInfo.tags) {
+        this.tree.tag(fileInfo.path, tag);
+      }
+    }
+
+    this.info = this.info.merge({
+      projects: enrichment.projects,
+      packageManager: enrichment.packageManager,
+    });
   }
 
   asReadonly(): ReadonlyWorkspace {

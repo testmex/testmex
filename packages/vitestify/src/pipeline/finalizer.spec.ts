@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
-import { createWorkspaceInfo } from '../core/models/workspace-info';
+import { WorkspaceInfo } from '../core/models/workspace-info';
 import type { Command, CommandRunner } from '../core/ports/command-runner';
 import { FileSystemFake } from '../core/ports/file-system.fake';
 import { Finalizer } from './finalizer';
@@ -17,7 +17,7 @@ describe(Finalizer, () => {
     };
     const finalizer = new Finalizer({ commandRunner });
     const workspace = new Workspace({
-      info: createWorkspaceInfo(),
+      info: new WorkspaceInfo(),
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
 
