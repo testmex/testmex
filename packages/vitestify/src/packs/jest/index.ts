@@ -10,7 +10,7 @@ import { jestRenameTestFilesTransform } from './jest-rename-test-files/jest-rena
 
 export default definePack({
   name: 'jest',
-  enricherFactories: [(args) => new JestEnricher(args)],
+  enricherFactories: [() => new JestEnricher()],
   heuristics: [
     jestSymbolHeuristic,
     replaceApiHeuristic,
