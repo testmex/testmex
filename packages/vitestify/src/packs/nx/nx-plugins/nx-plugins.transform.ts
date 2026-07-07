@@ -3,7 +3,7 @@ import { defineTransform } from '../../../core/models/transform';
 
 export const nxPluginsTransform = defineTransform({
   name: 'nx-plugins',
-  apply: async ({ workspace }) => {
+  apply: async (workspace) => {
     const { commands, tree } = workspace;
     const nxJsonPath = relativePath('nx.json');
     const nxJson = await tree.maybeReadJsonFile<NxJson>(nxJsonPath);

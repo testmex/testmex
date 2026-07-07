@@ -22,9 +22,9 @@ describe('testingLibraryHeuristic', () => {
     );
 
     const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toMatchObject([
+    expect(workspace.findings).toMatchObject([
       { type: findingTypes.testingLibraryJestDom },
     ]);
   });
@@ -45,9 +45,9 @@ import { render } from '@testing-library/react';
     );
 
     const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toMatchObject([
+    expect(workspace.findings).toMatchObject([
       { type: findingTypes.testingLibraryJestDom },
       { type: findingTypes.testingLibraryReact },
     ]);
@@ -65,9 +65,9 @@ import { render } from '@testing-library/react';
     );
 
     const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toMatchObject([
+    expect(workspace.findings).toMatchObject([
       { type: findingTypes.testingLibraryReact },
     ]);
   });
@@ -85,8 +85,8 @@ import { render } from '@testing-library/react';
     );
 
     const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toEqual([]);
+    expect(workspace.findings).toEqual([]);
   });
 });

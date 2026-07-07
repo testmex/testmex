@@ -11,7 +11,7 @@ export const vitestImportsNeededHeuristic = defineFileContentHeuristic({
     _isUsingJestGlobals(content)
       ? [
           {
-            file,
+            filePath: file.path,
             projects,
             type: findingTypes.vitestImportsNeeded,
           },

@@ -1,14 +1,8 @@
-import type { Finding } from './finding';
 import type { Workspace } from '../domain/workspace';
-
-export interface TransformApplyArgs {
-  findings: Finding[];
-  workspace: Readonly<Workspace>;
-}
 
 export interface Transform {
   name: string;
-  apply(args: TransformApplyArgs): Promise<void>;
+  apply(workspace: Workspace): Promise<void>;
 }
 
 export function defineTransform(args: Transform): Transform {
@@ -21,9 +15,9 @@ export function defineTransformGroup(
 ): Transform {
   return defineTransform({
     name,
-    apply: async (args) => {
+    apply: async (workspace) => {
       for (const transform of transforms) {
-        await transform.apply(args);
+        await transform.apply(workspace);
       }
     },
   });

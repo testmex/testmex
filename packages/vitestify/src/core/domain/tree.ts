@@ -1,14 +1,10 @@
 import { FileSystemCached } from './file-system-cached';
 import type { FileSystem } from '../ports/file-system';
 import type { RelativePath } from '../models/relative-path';
-import type { FileInfo, FileTag } from '../models/workspace-info';
 
 export class Tree {
   private readonly _fileSystemCached: FileSystemCached;
-  // TIDYUP: merge `_fileTags` and `_fileStates` into a single map:
-  // new Map<RelativePath, { state: FileState , tags: FileTag[]}>
   private readonly _fileStates = new Map<RelativePath, FileState>();
-  private readonly _fileTags = new Map<RelativePath, FileTag[]>();
 
   constructor({ fileSystem }: { fileSystem: FileSystem }) {
     this._fileSystemCached = new FileSystemCached(fileSystem);
@@ -17,7 +13,7 @@ export class Tree {
   async maybeReadFile(path: RelativePath): Promise<string | null> {
     const state = this._fileStates.get(path);
 
-    if (isDeletedOrGhost(state)) {
+    if (_isDeletedOrGhost(state)) {
       return null;
     }
 
@@ -55,7 +51,7 @@ export class Tree {
     newPath: RelativePath,
   ): Promise<void> {
     const state = this._fileStates.get(originalPath);
-    const content = isCreatedOrUpdated(state)
+    const content = _isCreatedOrUpdated(state)
       ? state.content
       : await this._fileSystemCached.maybeReadFile(originalPath);
 
@@ -73,33 +69,16 @@ export class Tree {
       content,
       originalPath,
     });
-
-    _moveTags(this._fileTags, originalPath, newPath);
   }
 
   delete(path: RelativePath): void {
     this._fileStates.set(path, { type: 'delete' });
-    this._fileTags.delete(path);
-  }
-
-  getFiles(): FileInfo[] {
-    return [...this._fileTags.entries()]
-      .filter(([path]) => !isDeletedOrGhost(this._fileStates.get(path)))
-      .map(([path, tags]) => ({ path, tags }));
-  }
-
-  tag(path: RelativePath, tag: FileTag): void {
-    const tags = this._fileTags.get(path) ?? [];
-
-    if (!tags.includes(tag)) {
-      this._fileTags.set(path, [...tags, tag]);
-    }
   }
 
   changes(): Change[] {
     return Array.from(this._fileStates.entries())
       .map(([path, state]) => ({ path, ...state }))
-      .filter((state): state is Change => !isGhost(state));
+      .filter((state): state is Change => !_isGhost(state));
   }
 
   async commit(): Promise<void> {
@@ -122,7 +101,7 @@ export class Tree {
 
 export type ReadonlyTree = Pick<
   Tree,
-  'getFiles' | 'maybeReadFile' | 'maybeReadJsonFile' | 'scanDirectory'
+  'maybeReadFile' | 'maybeReadJsonFile' | 'scanDirectory'
 >;
 
 export type Change = { path: RelativePath } & (
@@ -158,43 +137,18 @@ interface UpdateState {
   originalPath?: RelativePath;
 }
 
-function isCreatedOrUpdated(
+function _isCreatedOrUpdated(
   state: FileState | undefined,
 ): state is CreateState | UpdateState {
   return state?.type === 'create' || state?.type === 'update';
 }
 
-function isDeletedOrGhost(
+function _isDeletedOrGhost(
   state: FileState | undefined,
 ): state is DeleteState | GhostState {
-  return state?.type === 'delete' || isGhost(state);
+  return state?.type === 'delete' || _isGhost(state);
 }
 
-function isGhost(state: FileState | undefined): state is GhostState {
+function _isGhost(state: FileState | undefined): state is GhostState {
   return state?.type === 'ghost';
-}
-
-function _moveTags(
-  fileTags: Map<RelativePath, FileTag[]>,
-  originalPath: RelativePath,
-  newPath: RelativePath,
-): void {
-  const tags = fileTags.get(originalPath);
-
-  if (tags === undefined) {
-    return;
-  }
-
-  fileTags.delete(originalPath);
-
-  const existingTags = fileTags.get(newPath) ?? [];
-  const mergedTags = [...existingTags];
-
-  for (const tag of tags) {
-    if (!mergedTags.includes(tag)) {
-      mergedTags.push(tag);
-    }
-  }
-
-  fileTags.set(newPath, mergedTags);
 }

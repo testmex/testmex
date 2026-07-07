@@ -15,7 +15,7 @@ export const reactHeuristic = defineFileContentHeuristic({
       {
         type: findingTypes.react,
         projects,
-        file,
+        filePath: file.path,
       },
     ];
   },

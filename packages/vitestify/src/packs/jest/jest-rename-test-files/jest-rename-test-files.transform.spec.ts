@@ -12,47 +12,60 @@ import { jestRenameTestFilesTransform } from './jest-rename-test-files.transform
 describe(jestRenameTestFilesTransform.name, () => {
   it('renames jest tests ending in .spec.ts to .jest.cts', async () => {
     const fileName = 'src/app.spec.ts';
-    const { tree } = await runJestRenameTestFile({
+    const { workspace } = await runJestRenameTestFile({
       content: 'jest.spyOn(service, "method");',
       fileName,
     });
 
     expect
       .soft(
-        await tree.maybeReadFile(relativePath('apps/my-app/src/app.jest.cts')),
+        await workspace.tree.maybeReadFile(
+          relativePath('apps/my-app/src/app.jest.cts'),
+        ),
       )
       .toBe('jest.spyOn(service, "method");');
     expect
       .soft(
-        await tree.maybeReadFile(relativePath('apps/my-app/src/app.spec.ts')),
+        await workspace.tree.maybeReadFile(
+          relativePath('apps/my-app/src/app.spec.ts'),
+        ),
       )
       .toBeNull();
-    expect.soft(tree.getFiles()).toEqual([
+    expect.soft(workspace.getFiles()).toMatchObject([
       {
         path: 'apps/my-app/src/app.jest.cts',
         tags: ['test'],
+      },
+    ]);
+    expect.soft(workspace.findings).toMatchObject([
+      {
+        filePath: 'apps/my-app/src/app.jest.cts',
       },
     ]);
   });
 
   it('renames jest tests ending in .spec.tsx to .jest.tsx', async () => {
     const fileName = 'src/app.spec.tsx';
-    const { tree } = await runJestRenameTestFile({
+    const { workspace } = await runJestRenameTestFile({
       content: 'jest.spyOn(service, "method");',
       fileName,
     });
 
     expect
       .soft(
-        await tree.maybeReadFile(relativePath(`apps/my-app/src/app.jest.tsx`)),
+        await workspace.tree.maybeReadFile(
+          relativePath(`apps/my-app/src/app.jest.tsx`),
+        ),
       )
       .toBe('jest.spyOn(service, "method");');
     expect
       .soft(
-        await tree.maybeReadFile(relativePath('apps/my-app/src/app.spec.tsx')),
+        await workspace.tree.maybeReadFile(
+          relativePath('apps/my-app/src/app.spec.tsx'),
+        ),
       )
       .toBeNull();
-    expect.soft(tree.getFiles()).toEqual([
+    expect.soft(workspace.getFiles()).toMatchObject([
       {
         path: 'apps/my-app/src/app.jest.tsx',
         tags: ['test'],
@@ -62,13 +75,15 @@ describe(jestRenameTestFilesTransform.name, () => {
 
   it('skips files that are not jest tests', async () => {
     const fileName = 'src/app.spec.ts';
-    const { tree } = await runJestRenameTestFile({
+    const { workspace } = await runJestRenameTestFile({
       content: 'it("works", () => {});',
       fileName,
     });
 
     expect(
-      await tree.maybeReadFile(relativePath('apps/my-app/src/app.spec.ts')),
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/src/app.spec.ts'),
+      ),
     ).toBe('it("works", () => {});');
   });
 });
@@ -97,5 +112,5 @@ async function runJestRenameTestFile({
     transforms: [jestRenameTestFilesTransform],
   });
 
-  return { tree: workspace.tree };
+  return { workspace };
 }

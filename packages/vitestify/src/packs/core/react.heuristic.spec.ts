@@ -22,9 +22,9 @@ describe('reactHeuristic', () => {
     );
 
     const analyzer = new Analyzer({ heuristics: [reactHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toMatchObject([{ type: findingTypes.react }]);
+    expect(workspace.findings).toMatchObject([{ type: findingTypes.react }]);
   });
 
   it('returns no findings when react appears without quotes', async () => {
@@ -40,8 +40,8 @@ describe('reactHeuristic', () => {
     );
 
     const analyzer = new Analyzer({ heuristics: [reactHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toEqual([]);
+    expect(workspace.findings).toEqual([]);
   });
 });

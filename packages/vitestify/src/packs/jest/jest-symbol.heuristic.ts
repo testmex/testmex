@@ -17,7 +17,7 @@ export const jestSymbolHeuristic = defineFileContentHeuristic({
       {
         type: findingTypes.jestSymbol,
         projects,
-        file,
+        filePath: file.path,
       },
     ];
   },

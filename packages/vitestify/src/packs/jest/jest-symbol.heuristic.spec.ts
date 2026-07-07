@@ -23,8 +23,8 @@ describe('jestSymbolHeuristic', () => {
     );
 
     const analyzer = new Analyzer({ heuristics: [jestSymbolHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toMatchObject([{ type: findingTypes.jestSymbol }]);
+    expect(workspace.findings).toMatchObject([{ type: findingTypes.jestSymbol }]);
   });
 });

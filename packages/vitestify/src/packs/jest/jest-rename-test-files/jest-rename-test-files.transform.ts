@@ -1,5 +1,4 @@
 import { defineTransform } from '../../../core/models/transform';
-import type { FileInfo } from '../../../core/models/workspace-info';
 import {
   relativePath,
   type RelativePath,
@@ -8,17 +7,18 @@ import { findingTypes } from '../identifiers';
 
 export const jestRenameTestFilesTransform = defineTransform({
   name: 'jest-rename-test-files',
-  apply: async ({ findings, workspace }) => {
-    const jestTestFiles = findings
+  apply: async (workspace) => {
+    const jestTestPaths = workspace.findings
       .filter((finding) => finding.type === findingTypes.jestSymbol)
-      .map((finding) => finding.file)
-      .filter((file): file is FileInfo => file !== undefined);
+      .flatMap((finding) =>
+        finding.filePath === undefined ? [] : [finding.filePath],
+      );
 
-    for (const file of jestTestFiles) {
-      const renamedPath = renameJestTestFile(file.path);
+    for (const path of jestTestPaths) {
+      const renamedPath = renameJestTestFile(path);
 
       if (renamedPath !== null) {
-        await workspace.tree.rename(file.path, renamedPath);
+        await workspace.rename(path, renamedPath);
       }
     }
   },

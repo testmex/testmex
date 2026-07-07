@@ -18,7 +18,7 @@ export const replaceApiHeuristic = defineFileContentHeuristic({
       {
         type: findingTypes.jestSymbol,
         projects,
-        file,
+        filePath: file.path,
       },
     ];
   },

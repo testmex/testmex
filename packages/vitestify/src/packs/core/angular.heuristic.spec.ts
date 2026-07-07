@@ -22,9 +22,9 @@ describe('angularHeuristic', () => {
     );
 
     const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toMatchObject([{ type: findingTypes.angular }]);
+    expect(workspace.findings).toMatchObject([{ type: findingTypes.angular }]);
   });
 
   it('reports findings in test files', async () => {
@@ -39,9 +39,9 @@ describe('angularHeuristic', () => {
     );
 
     const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toMatchObject([{ type: findingTypes.angular }]);
+    expect(workspace.findings).toMatchObject([{ type: findingTypes.angular }]);
   });
 
   it('returns no findings when angular is absent', async () => {
@@ -57,9 +57,9 @@ describe('angularHeuristic', () => {
     );
 
     const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toEqual([]);
+    expect(workspace.findings).toEqual([]);
   });
 
   it('returns no findings when @angular appears without quotes', async () => {
@@ -75,8 +75,8 @@ describe('angularHeuristic', () => {
     );
 
     const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toEqual([]);
+    expect(workspace.findings).toEqual([]);
   });
 });

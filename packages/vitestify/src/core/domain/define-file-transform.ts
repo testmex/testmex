@@ -1,6 +1,6 @@
 import type { FindingType } from '../models/finding';
 import { defineTransform, type Transform } from '../models/transform';
-import type { FileInfo, FileTag } from '../models/workspace-info';
+import type { FileTag } from '../models/workspace-info';
 
 interface DefineFileTransformBase {
   name: string;
@@ -13,33 +13,35 @@ export type DefineFileTransformArgs = DefineFileTransformBase &
 export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
     name: args.name,
-    apply: async ({ findings, workspace }) => {
-      const { tree } = workspace;
+    apply: async (workspace) => {
+      const { findings, tree } = workspace;
 
       const fileTags = 'fileTags' in args ? args.fileTags : undefined;
 
-      const taggedFiles =
+      const taggedPaths =
         fileTags !== undefined
           ? workspace
               .getFiles()
               .filter((file) =>
                 fileTags.every((tag) => file.tags.includes(tag)),
               )
+              .map((file) => file.path)
           : undefined;
 
-      const findingFiles =
+      const findingPaths =
         'findingType' in args
           ? findings
               .filter((finding) => finding.type === args.findingType)
-              .map((finding) => finding.file)
-              .filter((file): file is FileInfo => file !== undefined)
+              .flatMap((finding) =>
+                finding.filePath === undefined ? [] : [finding.filePath],
+              )
           : undefined;
 
-      for (const file of taggedFiles ?? findingFiles ?? []) {
-        const content = await tree.maybeReadFile(file.path);
+      for (const path of taggedPaths ?? findingPaths ?? []) {
+        const content = await tree.maybeReadFile(path);
 
         if (content != null) {
-          await tree.write(file.path, args.apply(content));
+          await tree.write(path, args.apply(content));
         }
       }
     },

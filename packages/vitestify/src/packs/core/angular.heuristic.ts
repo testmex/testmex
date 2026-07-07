@@ -15,7 +15,7 @@ export const angularHeuristic = defineFileContentHeuristic({
       {
         type: findingTypes.angular,
         projects,
-        file,
+        filePath: file.path,
       },
     ];
   },

@@ -18,7 +18,7 @@ export const testingLibraryHeuristic = defineFileContentHeuristic({
       findings.push({
         type: findingTypes.testingLibraryJestDom,
         projects,
-        file,
+        filePath: file.path,
       });
     }
 
@@ -26,7 +26,7 @@ export const testingLibraryHeuristic = defineFileContentHeuristic({
       findings.push({
         type: findingTypes.testingLibraryReact,
         projects,
-        file,
+        filePath: file.path,
       });
     }
 

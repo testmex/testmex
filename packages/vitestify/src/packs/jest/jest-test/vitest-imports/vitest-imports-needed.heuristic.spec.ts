@@ -23,9 +23,9 @@ describe('vitestImportsNeededHeuristic', () => {
     );
 
     const analyzer = new Analyzer({ heuristics: [vitestImportsNeededHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toMatchObject([
+    expect(workspace.findings).toMatchObject([
       { type: findingTypes.vitestImportsNeeded },
     ]);
   });

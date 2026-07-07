@@ -12,18 +12,18 @@ import {
 export function createTestingWorkspace(mother: WorkspaceMother): Workspace {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(mother.buildFiles());
-  const tree = new Tree({ fileSystem });
+  const workspace = new Workspace({
+    info: mother.buildWorkspaceInfo(),
+    tree: new Tree({ fileSystem }),
+  });
 
   for (const { path, tags } of Object.values(mother.buildFileInfos())) {
     for (const tag of tags) {
-      tree.tag(path, tag);
+      workspace.tag(path, tag);
     }
   }
 
-  return new Workspace({
-    info: mother.buildWorkspaceInfo(),
-    tree,
-  });
+  return workspace;
 }
 
 export class WorkspaceMother {

@@ -14,7 +14,7 @@ export const domHeuristic = defineFileContentHeuristic({
       {
         type: findingTypes.dom,
         projects,
-        file,
+        filePath: file.path,
       },
     ];
   },

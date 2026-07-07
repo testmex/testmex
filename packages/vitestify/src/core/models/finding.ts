@@ -1,4 +1,5 @@
-import type { FileInfo, Project } from './workspace-info';
+import type { Project } from './workspace-info';
+import type { RelativePath } from './relative-path';
 
 export type FindingType = string & { readonly [__findingTypeBrand]: true };
 
@@ -11,5 +12,5 @@ declare const __findingTypeBrand: unique symbol;
 export interface Finding {
   type: FindingType;
   projects: Project[];
-  file?: FileInfo;
+  filePath?: RelativePath;
 }

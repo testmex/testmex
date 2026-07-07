@@ -4,7 +4,7 @@ import { relativePath } from '../../../core/models/relative-path';
 
 export const nxProjectJsonTransform = defineTransform({
   name: 'nx-project-json',
-  apply: async ({ workspace }) => {
+  apply: async (workspace) => {
     const { info, tree } = workspace;
 
     for (const project of info.projects) {

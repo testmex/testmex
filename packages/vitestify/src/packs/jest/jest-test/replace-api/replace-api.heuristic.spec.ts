@@ -24,16 +24,13 @@ describe('replaceApiHeuristic', () => {
     );
 
     const analyzer = new Analyzer({ heuristics: [replaceApiHeuristic] });
-    const findings = await analyzer.analyze(workspace);
+    await analyzer.analyze(workspace);
 
-    expect(findings).toEqual([
+    expect(workspace.findings).toEqual([
       {
         type: findingTypes.jestSymbol,
-        projects: [{ name: 'my-app', path: relativePath('apps/my-app') }],
-        file: {
-          path: relativePath('apps/my-app/src/testing/utils.ts'),
-          tags: [fileTags.code],
-        },
+        projects: [{ name: 'my-app', path: 'apps/my-app' }],
+        filePath: 'apps/my-app/src/testing/utils.ts',
       },
     ]);
   });

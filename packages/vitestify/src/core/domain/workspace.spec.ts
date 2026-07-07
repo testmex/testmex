@@ -4,6 +4,7 @@ import { Workspace } from './workspace';
 import { relativePath, type RelativePath } from '../models/relative-path';
 import { FileSystemFake } from '../ports/file-system.fake';
 import { fileTag, WorkspaceInfo, type FileTag } from '../models/workspace-info';
+import { findingType } from '../models/finding';
 
 describe(Workspace.name, () => {
   it('returns a file with its matching project', () => {
@@ -167,7 +168,7 @@ describe(Workspace.name, () => {
     ]);
   });
 
-  it('applyEnrichment() tags files on the tree', () => {
+  it('applyEnrichment() tags files on the workspace', () => {
     const workspace = new Workspace({
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
@@ -184,6 +185,136 @@ describe(Workspace.name, () => {
     expect(workspace.getFiles()).toMatchObject([
       { path: 'src/app.ts', tags: ['code'] },
     ]);
+  });
+
+  it('tag() adds a tag retrievable via getFiles()', () => {
+    const workspace = new Workspace({
+      tree: new Tree({ fileSystem: new FileSystemFake() }),
+    });
+    const path = relativePath('apps/my-app/src/app.spec.ts');
+
+    workspace.tag(path, fileTag('test'));
+
+    expect(workspace.getFiles()).toEqual([
+      {
+        path: 'apps/my-app/src/app.spec.ts',
+        tags: ['test'],
+        projects: [],
+      },
+    ]);
+  });
+
+  it('duplicate tag() calls are idempotent', () => {
+    const workspace = new Workspace({
+      tree: new Tree({ fileSystem: new FileSystemFake() }),
+    });
+    const path = relativePath('apps/my-app/src/app.spec.ts');
+    const tag = fileTag('test');
+
+    workspace.tag(path, tag);
+    workspace.tag(path, tag);
+
+    expect(workspace.getFiles()).toEqual([
+      {
+        path: 'apps/my-app/src/app.spec.ts',
+        tags: ['test'],
+        projects: [],
+      },
+    ]);
+  });
+
+  it('rename() keeps tags', async () => {
+    const fileSystem = new FileSystemFake();
+    const originalPath = relativePath('apps/my-app/src/app.spec.ts');
+    const newPath = relativePath('apps/my-app/src/app.jest.cts');
+    const workspace = new Workspace({
+      tree: new Tree({ fileSystem }),
+    });
+
+    fileSystem.configure({
+      [originalPath]: 'it("works", () => {});',
+    });
+    workspace.tag(originalPath, fileTag('test'));
+
+    await workspace.rename(originalPath, newPath);
+
+    expect(workspace.getFiles()).toEqual([
+      {
+        path: 'apps/my-app/src/app.jest.cts',
+        tags: ['test'],
+        projects: [],
+      },
+    ]);
+  });
+
+  it('rename() updates finding paths', async () => {
+    const fileSystem = new FileSystemFake();
+    const originalPath = relativePath('apps/my-app/src/app.spec.ts');
+    const newPath = relativePath('apps/my-app/src/app.jest.cts');
+    const workspace = new Workspace({
+      tree: new Tree({ fileSystem }),
+    });
+
+    fileSystem.configure({
+      [originalPath]: 'it("works", () => {});',
+    });
+    workspace.addFindings([
+      {
+        type: findingType('jest-symbol'),
+        projects: [],
+        filePath: originalPath,
+      },
+    ]);
+
+    await workspace.rename(originalPath, newPath);
+
+    expect(workspace.findings).toEqual([
+      {
+        type: findingType('jest-symbol'),
+        projects: [],
+        filePath: 'apps/my-app/src/app.jest.cts',
+      },
+    ]);
+  });
+
+  it('delete() removes file from getFiles()', () => {
+    const fileSystem = new FileSystemFake();
+    const path = relativePath('apps/my-app/main.ts');
+    const workspace = new Workspace({
+      tree: new Tree({ fileSystem }),
+    });
+
+    fileSystem.configure({
+      [path]: 'console.log("hello");',
+    });
+    workspace.tag(path, fileTag('code'));
+
+    workspace.delete(path);
+
+    expect(workspace.getFiles()).toEqual([]);
+  });
+
+  it('delete() removes findings', () => {
+    const fileSystem = new FileSystemFake();
+    const path = relativePath('apps/my-app/main.ts');
+    const workspace = new Workspace({
+      tree: new Tree({ fileSystem }),
+    });
+
+    fileSystem.configure({
+      [path]: 'console.log("hello");',
+    });
+    workspace.addFindings([
+      {
+        type: findingType('code'),
+        projects: [],
+        filePath: path,
+      },
+    ]);
+
+    workspace.delete(path);
+
+    expect(workspace.findings).toEqual([]);
   });
 
   it('applyEnrichment() merges projects and package manager into info', () => {
@@ -207,15 +338,18 @@ function workspaceWithFiles(
   files: { path: RelativePath; tags?: FileTag[] }[],
   info: ConstructorParameters<typeof WorkspaceInfo>[0] = {},
 ): Workspace {
-  const tree = new Tree({ fileSystem: new FileSystemFake() });
+  const workspace = new Workspace({
+    info: new WorkspaceInfo(info),
+    tree: new Tree({ fileSystem: new FileSystemFake() }),
+  });
 
   for (const file of files) {
     const tags = file.tags ?? [fileTag('tracked')];
 
     for (const tag of tags) {
-      tree.tag(file.path, tag);
+      workspace.tag(file.path, tag);
     }
   }
 
-  return new Workspace({ info: new WorkspaceInfo(info), tree });
+  return workspace;
 }

@@ -17,6 +17,6 @@ export async function runTransform({
 }: RunTransformOptions): Promise<void> {
   const analyzer = new Analyzer({ heuristics });
   const transformer = new Transformer({ transforms });
-  const findings = await analyzer.analyze(workspace);
-  await transformer.transform({ findings, workspace });
+  await analyzer.analyze(workspace);
+  await transformer.transform(workspace);
 }

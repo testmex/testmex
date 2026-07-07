@@ -48,8 +48,8 @@ export class Vitestify {
 
   async run(): Promise<void> {
     const workspace = await this._scanner.scanWorkspace();
-    const findings = await this._analyzer.analyze(workspace);
-    await this._transformer.transform({ findings, workspace });
+    await this._analyzer.analyze(workspace);
+    await this._transformer.transform(workspace);
     await this._finalizer.finalize(workspace);
   }
 }
