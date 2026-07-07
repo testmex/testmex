@@ -1,6 +1,6 @@
-import { FileSystemCached } from './file-system-cached';
-import type { FileSystem } from '../ports/file-system';
 import type { RelativePath } from '../models/relative-path';
+import type { FileSystem } from '../ports/file-system';
+import { FileSystemCached } from './file-system-cached';
 
 export class Tree {
   private readonly _fileSystemCached: FileSystemCached;

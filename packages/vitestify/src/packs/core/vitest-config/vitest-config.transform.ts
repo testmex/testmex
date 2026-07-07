@@ -1,5 +1,4 @@
 import { dirname, join } from 'node:path/posix';
-import type { Tree } from '../../../core/domain/tree';
 import type { Finding } from '../../../core/models/finding';
 import {
   relativePath,
@@ -8,6 +7,7 @@ import {
 import { defineTransform } from '../../../core/models/transform';
 import { SgEditor } from '../../../infra/ast/sg-editor';
 import { fileTags, findingTypes } from '../identifiers';
+import type { WorkspaceTree } from '../../../core/domain/workspace';
 
 const ANGULAR_SETUP_CONTENT = `\
 import '@angular/compiler';
@@ -93,7 +93,7 @@ interface VitestConfigTransformContext {
   jestConfigPath: RelativePath;
   moduleNameMappings: JestModuleNameMapping[];
   setupFiles: string[];
-  tree: Tree;
+  tree: WorkspaceTree;
   usesAngular?: boolean;
   usesJsdom?: boolean;
   usesReact?: boolean;

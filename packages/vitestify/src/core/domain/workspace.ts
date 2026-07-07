@@ -1,8 +1,8 @@
-import type { ReadonlyTree, Tree } from './tree';
-import type { Command } from '../ports/command-runner';
 import type { Finding } from '../models/finding';
 import { relativePath, type RelativePath } from '../models/relative-path';
 import { WorkspaceEnrichment, WorkspaceInfo } from '../models/workspace-info';
+import type { Command } from '../ports/command-runner';
+import type { ReadonlyTree, Tree } from './tree';
 
 export class ReadonlyWorkspace {
   readonly info: WorkspaceInfo;
@@ -56,7 +56,8 @@ export class ReadonlyWorkspace {
 export class Workspace extends ReadonlyWorkspace {
   readonly commands: CommandQueue;
   override info: WorkspaceInfo;
-  override readonly tree: Tree;
+  private readonly _tree: Tree;
+  override readonly tree: WorkspaceTree;
 
   constructor({
     info = new WorkspaceInfo(),
@@ -70,6 +71,7 @@ export class Workspace extends ReadonlyWorkspace {
     super({ info, tree });
     this.commands = commands;
     this.info = info;
+    this._tree = tree;
     this.tree = tree;
   }
 
@@ -100,7 +102,7 @@ export class Workspace extends ReadonlyWorkspace {
   }
 
   delete(path: RelativePath): void {
-    this.tree.delete(path);
+    this._tree.delete(path);
     this._fileTags.delete(path);
     _removeFindingsForPath(this._findings, path);
   }
@@ -109,7 +111,7 @@ export class Workspace extends ReadonlyWorkspace {
     originalPath: RelativePath,
     newPath: RelativePath,
   ): Promise<void> {
-    await this.tree.rename(originalPath, newPath);
+    await this._tree.rename(originalPath, newPath);
     _moveTags(this._fileTags, originalPath, newPath);
     _updateFindingPaths(this._findings, originalPath, newPath);
   }
@@ -122,6 +124,9 @@ export class Workspace extends ReadonlyWorkspace {
     }
   }
 }
+
+export type WorkspaceTree = ReadonlyTree &
+  Pick<Tree, 'maybeReadFile' | 'maybeReadJsonFile' | 'write' | 'commit'>;
 
 export interface Project {
   name?: string;

@@ -39,12 +39,15 @@ async function _detectFromLockFiles(
   workspace: ReadonlyWorkspace,
 ): Promise<PackageManager | undefined> {
   if (
-    (await workspace.tree.maybeReadFile(relativePath('pnpm-lock.yaml'))) !== null
+    (await workspace.tree.maybeReadFile(relativePath('pnpm-lock.yaml'))) !==
+    null
   ) {
     return 'pnpm';
   }
 
-  if ((await workspace.tree.maybeReadFile(relativePath('yarn.lock'))) !== null) {
+  if (
+    (await workspace.tree.maybeReadFile(relativePath('yarn.lock'))) !== null
+  ) {
     return 'yarn';
   }
 
