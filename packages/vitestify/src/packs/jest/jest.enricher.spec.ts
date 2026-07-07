@@ -74,18 +74,56 @@ describe(JestEnricher.name, () => {
     });
   });
 
-  it.todo('tags setup file referenced in setupFiles when it exists', () => {
-    // given jest.config.ts with setupFiles: ['<rootDir>/src/test-setup.ts']
-    // and apps/my-app/src/test-setup.ts exists
-    // when jest enricher runs
-    // assert apps/my-app/src/test-setup.ts is tagged as jest-setup
+  it('tags setup file referenced in setupFiles when it exists', async () => {
+    const mother = WorkspaceMother.withApp('my-app')
+      .withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: `export default {
+  setupFiles: ['<rootDir>/src/test-setup.ts'],
+};`,
+          fileName: 'jest.config.ts',
+        }).build(),
+      )
+      .withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: 'import "@testing-library/jest-dom";',
+          fileName: 'src/test-setup.ts',
+        }).build(),
+      );
+
+    const result = await enrich(mother);
+
+    expect(result.fileInfos).toContainEqual({
+      path: 'apps/my-app/src/test-setup.ts',
+      tags: ['jest-setup'],
+    });
   });
 
-  it.todo('does not tag a file that is not referenced in jest config', () => {
-    // given apps/my-app/src/test-setup.ts exists
-    // and jest.config.ts does not reference it in setupFiles or setupFilesAfterEnv
-    // when jest enricher runs
-    // assert apps/my-app/src/test-setup.ts is not tagged as jest-setup
+  it('does not tag a file that is not referenced in jest config', async () => {
+    const mother = WorkspaceMother.withApp('my-app')
+      .withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: 'export default {};',
+          fileName: 'jest.config.ts',
+        }).build(),
+      )
+      .withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: 'import "@testing-library/jest-dom";',
+          fileName: 'src/test-setup.ts',
+        }).build(),
+      );
+
+    const result = await enrich(mother);
+
+    expect(result.fileInfos).not.toContainEqual({
+      path: 'apps/my-app/src/test-setup.ts',
+      tags: ['jest-setup'],
+    });
   });
 });
 
