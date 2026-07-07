@@ -17,7 +17,7 @@ export class Analyzer {
     const findings: Finding[] = [];
     for (const [index, heuristic] of this._heuristics.entries()) {
       log('heuristic %d/%d', index + 1, this._heuristics.length);
-      findings.push(...(await heuristic.inspect(workspace)));
+      findings.push(...(await heuristic.inspect(workspace.asReadonly())));
     }
     log('discovered %d findings', findings.length);
     return findings;

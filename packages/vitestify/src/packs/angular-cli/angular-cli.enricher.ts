@@ -1,22 +1,16 @@
 import { relativePath } from '../../core/models/relative-path';
-import { type Project, WorkspaceInfo } from '../../core/models/workspace-info';
+import { type Project } from '../../core/models/workspace-info';
 import { Enricher } from '../../core/models/enricher';
-import type { ReadonlyTree } from '../../core/domain/tree';
+import type { ReadonlyWorkspace } from '../../core/domain/workspace';
 
 export class AngularCliEnricher implements Enricher {
-  private readonly _tree: ReadonlyTree;
-
-  constructor({ tree }: { tree: ReadonlyTree }) {
-    this._tree = tree;
-  }
-
-  async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
-    const angularJson = await this._tree.maybeReadFile(
+  async enrich(workspace: ReadonlyWorkspace) {
+    const angularJson = await workspace.tree.maybeReadFile(
       relativePath('angular.json'),
     );
 
     if (angularJson === null) {
-      return workspaceInfo;
+      return {};
     }
 
     const config: AngularJson = JSON.parse(angularJson);
@@ -28,7 +22,7 @@ export class AngularCliEnricher implements Enricher {
       }),
     );
 
-    return workspaceInfo.merge({ projects });
+    return { projects };
   }
 }
 

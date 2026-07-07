@@ -14,13 +14,13 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
     name: args.name,
     apply: async ({ findings, workspace }) => {
-      const { info, tree } = workspace;
+      const { tree } = workspace;
 
       const fileTags = 'fileTags' in args ? args.fileTags : undefined;
 
       const taggedFiles =
         fileTags !== undefined
-          ? info
+          ? workspace
               .getFiles()
               .filter((file) =>
                 fileTags.every((tag) => file.tags.includes(tag)),

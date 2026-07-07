@@ -1,28 +1,21 @@
 import { basename, dirname } from 'node:path/posix';
-import type { ReadonlyTree } from '../../core/domain/tree';
 import { Enricher } from '../../core/models/enricher';
+import type { ReadonlyWorkspace } from '../../core/domain/workspace';
 import { relativePath } from '../../core/models/relative-path';
-import {
-  type FileInfo,
-  type WorkspaceInfo,
-} from '../../core/models/workspace-info';
 import { fileTags } from '../core/identifiers';
 
 export class JestEnricher implements Enricher {
-  private readonly _tree: ReadonlyTree;
+  async enrich(workspace: ReadonlyWorkspace) {
+    const jestConfigPaths = await this._discoverJestConfigPaths(workspace);
 
-  constructor({ tree }: { tree: ReadonlyTree }) {
-    this._tree = tree;
-  }
-
-  async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
-    const files = await this._discoverJestConfigFiles();
-
-    return workspaceInfo.merge({
-      files,
-      projects: files.flatMap((file) => {
-        const path = relativePath(dirname(file.path));
-        const alreadyExists = workspaceInfo.projects.some(
+    return {
+      fileInfos: jestConfigPaths.map((path) => ({
+        path,
+        tags: [fileTags.jestConfig],
+      })),
+      projects: jestConfigPaths.flatMap((filePath) => {
+        const path = relativePath(dirname(filePath));
+        const alreadyExists = workspace.info.projects.some(
           (project) => project.path === path,
         );
 
@@ -32,11 +25,11 @@ export class JestEnricher implements Enricher {
 
         return [{ path }];
       }),
-    });
+    };
   }
 
-  private async _discoverJestConfigFiles(): Promise<FileInfo[]> {
-    const files = await this._tree.scanDirectory();
+  private async _discoverJestConfigPaths(workspace: ReadonlyWorkspace) {
+    const files = await workspace.tree.scanDirectory();
     const jestConfigAlternativeFileNames = [
       'jest.config.ts',
       'jest.config.js',
@@ -46,15 +39,10 @@ export class JestEnricher implements Enricher {
       'jest.config.cts',
     ];
 
-    return files
-      .filter((path) =>
-        jestConfigAlternativeFileNames.some((name) =>
-          basename(path).endsWith(name),
-        ),
-      )
-      .map((path) => ({
-        path,
-        tags: [fileTags.jestConfig],
-      }));
+    return files.filter((path) =>
+      jestConfigAlternativeFileNames.some((name) =>
+        basename(path).endsWith(name),
+      ),
+    );
   }
 }

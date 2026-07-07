@@ -17,9 +17,9 @@ describe(Scanner.name, () => {
 
     configureWorkspace(angularCliWorkspaceMother.withApp('my-app'));
 
-    const { info } = await scanner.scanWorkspace();
+    const workspace = await scanner.scanWorkspace();
 
-    expect.soft(info.projects).toMatchObject([
+    expect.soft(workspace.info.projects).toMatchObject([
       {
         name: 'my-app',
         path: relativePath('apps/my-app'),
@@ -32,9 +32,9 @@ describe(Scanner.name, () => {
 
     configureWorkspace(nxWorkspaceMother.withApp('my-app'));
 
-    const { info } = await scanner.scanWorkspace();
+    const workspace = await scanner.scanWorkspace();
 
-    expect.soft(info.projects).toMatchObject([
+    expect.soft(workspace.info.projects).toMatchObject([
       {
         name: 'my-app',
         path: relativePath('apps/my-app'),
@@ -51,9 +51,9 @@ describe(Scanner.name, () => {
         .withAppFile('my-app', 'jest.config.ts', 'export default {}'),
     );
 
-    const { info } = await scanner.scanWorkspace();
+    const workspace = await scanner.scanWorkspace();
 
-    expect(info.getProjectFiles('my-app')).toMatchObject([
+    expect(workspace.getProjectFiles('my-app')).toMatchObject([
       {
         path: relativePath('apps/my-app/jest.config.ts'),
         tags: ['jest-config'],
@@ -70,9 +70,9 @@ describe(Scanner.name, () => {
         .withAppFile('my-app', 'src/app.spec.ts', 'it("works", () => {})'),
     );
 
-    const { info } = await scanner.scanWorkspace();
+    const workspace = await scanner.scanWorkspace();
 
-    expect(info.getProjectFiles('my-app')).toMatchObject([
+    expect(workspace.getProjectFiles('my-app')).toMatchObject([
       {
         path: relativePath('apps/my-app/src/app.spec.ts'),
         tags: ['test'],
@@ -94,9 +94,9 @@ describe(Scanner.name, () => {
           ),
       );
 
-      const { info } = await scanner.scanWorkspace();
+      const workspace = await scanner.scanWorkspace();
 
-      expect.soft(info.projects).toEqual(
+      expect.soft(workspace.info.projects).toEqual(
         expect.arrayContaining([
           {
             name: 'backend-recipes-core',
@@ -107,7 +107,7 @@ describe(Scanner.name, () => {
           } satisfies Partial<Project>,
         ]),
       );
-      expect.soft(info.getProjectFiles('libs/backend')).toMatchObject([
+      expect.soft(workspace.getProjectFiles('libs/backend')).toMatchObject([
         {
           path: relativePath('libs/backend/jest.config.ts'),
           tags: ['jest-config'],

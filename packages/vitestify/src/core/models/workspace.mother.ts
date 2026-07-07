@@ -1,6 +1,6 @@
 import { FileSystemFake } from '../../core/ports/file-system.fake';
 import { Tree } from '../domain/tree';
-import { defineWorkspace, type Workspace } from '../domain/workspace';
+import { Workspace } from '../domain/workspace';
 import { relativePath, type RelativePath } from './relative-path';
 import {
   FileTag,
@@ -12,10 +12,17 @@ import {
 export function createTestingWorkspace(mother: WorkspaceMother): Workspace {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(mother.buildFiles());
+  const tree = new Tree({ fileSystem });
 
-  return defineWorkspace({
+  for (const { path, tags } of Object.values(mother.buildFileInfos())) {
+    for (const tag of tags) {
+      tree.tag(path, tag);
+    }
+  }
+
+  return new Workspace({
     info: mother.buildWorkspaceInfo(),
-    tree: new Tree({ fileSystem }),
+    tree,
   });
 }
 
@@ -53,14 +60,16 @@ export class WorkspaceMother {
     const name = this._state.name;
     const root = relativePath(`apps/${name}`);
 
-    const files: FileInfo[] = Object.values(this._state.appFiles).map(
-      ({ path, tags }) => ({ path, tags }),
-    );
-
     return new WorkspaceInfo({
-      files,
       projects: [{ name, path: root }],
     });
+  }
+
+  buildFileInfos(): FileInfo[] {
+    return Object.values(this._state.appFiles).map(({ path, tags }) => ({
+      path,
+      tags,
+    }));
   }
 }
 

@@ -1,36 +1,29 @@
-import type { ReadonlyTree } from '../../core/domain/tree';
 import { Enricher } from '../../core/models/enricher';
+import type { ReadonlyWorkspace } from '../../core/domain/workspace';
 import { relativePath } from '../../core/models/relative-path';
 import {
   PACKAGE_MANAGERS,
   type PackageManager,
-  type WorkspaceInfo,
 } from '../../core/models/workspace-info';
 
 export class PackageManagerEnricher implements Enricher {
-  private readonly _tree: ReadonlyTree;
-
-  constructor({ tree }: { tree: ReadonlyTree }) {
-    this._tree = tree;
-  }
-
-  async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
+  async enrich(workspace: ReadonlyWorkspace) {
     const packageManager =
-      (await _detectFromPackageJson(this._tree)) ??
-      (await _detectFromLockFiles(this._tree));
+      (await _detectFromPackageJson(workspace)) ??
+      (await _detectFromLockFiles(workspace));
 
     if (packageManager === undefined) {
-      return workspaceInfo;
+      return {};
     }
 
-    return workspaceInfo.merge({ packageManager });
+    return { packageManager };
   }
 }
 
 async function _detectFromPackageJson(
-  tree: ReadonlyTree,
+  workspace: ReadonlyWorkspace,
 ): Promise<PackageManager | undefined> {
-  const packageJson = await tree.maybeReadJsonFile<PackageJson>(
+  const packageJson = await workspace.tree.maybeReadJsonFile<PackageJson>(
     relativePath('package.json'),
   );
 
@@ -43,17 +36,22 @@ async function _detectFromPackageJson(
 }
 
 async function _detectFromLockFiles(
-  tree: ReadonlyTree,
+  workspace: ReadonlyWorkspace,
 ): Promise<PackageManager | undefined> {
-  if ((await tree.maybeReadFile(relativePath('pnpm-lock.yaml'))) !== null) {
+  if (
+    (await workspace.tree.maybeReadFile(relativePath('pnpm-lock.yaml'))) !== null
+  ) {
     return 'pnpm';
   }
 
-  if ((await tree.maybeReadFile(relativePath('yarn.lock'))) !== null) {
+  if ((await workspace.tree.maybeReadFile(relativePath('yarn.lock'))) !== null) {
     return 'yarn';
   }
 
-  if ((await tree.maybeReadFile(relativePath('package-lock.json'))) !== null) {
+  if (
+    (await workspace.tree.maybeReadFile(relativePath('package-lock.json'))) !==
+    null
+  ) {
     return 'npm';
   }
 

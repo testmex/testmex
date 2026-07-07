@@ -18,13 +18,13 @@ export function defineFileContentHeuristic({
   inspect,
 }: DefineFileContentHeuristicArgs): Heuristic {
   return defineHeuristic({
-    inspect: async ({ info, tree }) => {
+    inspect: async (workspace) => {
       const findingsList = await Promise.all(
-        info
+        workspace
           .getFiles()
           .filter((file) => predicate(file))
           .map(async ({ projects, ...file }) => {
-            const content = await tree.maybeReadFile(file.path);
+            const content = await workspace.tree.maybeReadFile(file.path);
 
             return content === null ? [] : inspect({ file, projects, content });
           }),

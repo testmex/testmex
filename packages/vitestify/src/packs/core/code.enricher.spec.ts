@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../../core/domain/tree';
+import { ReadonlyWorkspace } from '../../core/domain/workspace';
 import {
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../core/models/workspace.mother';
-import { WorkspaceInfo } from '../../core/models/workspace-info';
 import { FileSystemFake } from '../../core/ports/file-system.fake';
 import { CodeEnricher } from './code.enricher';
 
@@ -18,9 +18,9 @@ describe(CodeEnricher.name, () => {
       }).build(),
     );
 
-    const files = await enrich(mother);
+    const result = await enrich(mother);
 
-    expect(files).toEqual([
+    expect(result.fileInfos).toEqual([
       {
         path: 'apps/my-app/src/app.ts',
         tags: ['code'],
@@ -37,9 +37,9 @@ describe(CodeEnricher.name, () => {
       }).build(),
     );
 
-    const files = await enrich(mother);
+    const result = await enrich(mother);
 
-    expect(files).toEqual([
+    expect(result.fileInfos).toEqual([
       {
         path: 'apps/my-app/src/app.tsx',
         tags: ['code'],
@@ -56,9 +56,9 @@ describe(CodeEnricher.name, () => {
       }).build(),
     );
 
-    const files = await enrich(mother);
+    const result = await enrich(mother);
 
-    expect(files).toEqual([]);
+    expect(result.fileInfos).toEqual([]);
   });
 
   it('ignores .d.ts files', async () => {
@@ -70,9 +70,9 @@ describe(CodeEnricher.name, () => {
       }).build(),
     );
 
-    const files = await enrich(mother);
+    const result = await enrich(mother);
 
-    expect(files).toEqual([]);
+    expect(result.fileInfos).toEqual([]);
   });
 
   it('ignores jest.config.ts', async () => {
@@ -84,9 +84,9 @@ describe(CodeEnricher.name, () => {
       }).build(),
     );
 
-    const files = await enrich(mother);
+    const result = await enrich(mother);
 
-    expect(files).toEqual([]);
+    expect(result.fileInfos).toEqual([]);
   });
 });
 
@@ -94,14 +94,13 @@ async function enrich(mother: WorkspaceMother) {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(mother.buildFiles());
 
-  const enricher = new CodeEnricher({ tree: new Tree({ fileSystem }) });
-  const workspaceInfo = mother.buildWorkspaceInfo();
-  const result = await enricher.enrich(
-    new WorkspaceInfo({
-      files: [],
-      projects: workspaceInfo.projects,
+  const tree = new Tree({ fileSystem });
+  const enricher = new CodeEnricher();
+
+  return enricher.enrich(
+    new ReadonlyWorkspace({
+      info: mother.buildWorkspaceInfo(),
+      tree,
     }),
   );
-
-  return result.getProjectFiles('my-app');
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { relativePath } from '../models/relative-path';
+import { fileTag } from '../models/workspace-info';
 import { FileSystemFake } from '../ports/file-system.fake';
 import { Tree } from '../domain/tree';
 
@@ -114,6 +115,70 @@ describe(Tree.name, () => {
     expect
       .soft(await tree.maybeReadFile(relativePath('apps/my-app/main-moved.ts')))
       .toBe('console.log("good bye");');
+  });
+
+  it('tag() adds a tag retrievable via getFiles()', () => {
+    const { tree } = setUp();
+    const path = relativePath('apps/my-app/src/app.spec.ts');
+
+    tree.tag(path, fileTag('test'));
+
+    expect(tree.getFiles()).toEqual([
+      {
+        path: 'apps/my-app/src/app.spec.ts',
+        tags: ['test'],
+      },
+    ]);
+  });
+
+  it('duplicate tag() calls are idempotent', () => {
+    const { tree } = setUp();
+    const path = relativePath('apps/my-app/src/app.spec.ts');
+    const tag = fileTag('test');
+
+    tree.tag(path, tag);
+    tree.tag(path, tag);
+
+    expect(tree.getFiles()).toEqual([
+      {
+        path: 'apps/my-app/src/app.spec.ts',
+        tags: ['test'],
+      },
+    ]);
+  });
+
+  it('rename() keeps tags', async () => {
+    const { fileSystem, tree } = setUp();
+    const originalPath = relativePath('apps/my-app/src/app.spec.ts');
+    const newPath = relativePath('apps/my-app/src/app.jest.cts');
+
+    fileSystem.configure({
+      [originalPath]: 'it("works", () => {});',
+    });
+    tree.tag(originalPath, fileTag('test'));
+
+    await tree.rename(originalPath, newPath);
+
+    expect(tree.getFiles()).toEqual([
+      {
+        path: 'apps/my-app/src/app.jest.cts',
+        tags: ['test'],
+      },
+    ]);
+  });
+
+  it('delete() removes file from getFiles()', () => {
+    const { fileSystem, tree } = setUp();
+    const path = relativePath('apps/my-app/main.ts');
+
+    fileSystem.configure({
+      [path]: 'console.log("hello");',
+    });
+    tree.tag(path, fileTag('code'));
+
+    tree.delete(path);
+
+    expect(tree.getFiles()).toEqual([]);
   });
 
   it('`commit()` flushes all staged changes to FileSystem', async () => {

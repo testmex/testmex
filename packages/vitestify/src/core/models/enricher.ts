@@ -1,13 +1,22 @@
 import type { CommandRunner } from '../ports/command-runner';
-import type { ReadonlyTree } from '../domain/tree';
-import type { WorkspaceInfo } from './workspace-info';
+import type { ReadonlyWorkspace } from '../domain/workspace';
+import type {
+  FileInfo,
+  PackageManager,
+  Project,
+} from './workspace-info';
+
+export interface EnrichResult {
+  fileInfos?: FileInfo[];
+  packageManager?: PackageManager;
+  projects?: Project[];
+}
 
 export interface Enricher {
-  enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo>;
+  enrich(workspace: ReadonlyWorkspace): Promise<EnrichResult>;
 }
 
 export interface EnricherFactoryArgs {
-  tree: ReadonlyTree;
   commandRunner: CommandRunner;
 }
 

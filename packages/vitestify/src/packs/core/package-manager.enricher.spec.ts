@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../../core/domain/tree';
+import { ReadonlyWorkspace } from '../../core/domain/workspace';
 import {
   relativePath,
   type RelativePath,
 } from '../../core/models/relative-path';
-import { WorkspaceInfo } from '../../core/models/workspace-info';
+import { createWorkspaceInfo } from '../../core/models/workspace-info';
 import { FileSystemFake } from '../../core/ports/file-system.fake';
 import { PackageManagerEnricher } from './package-manager.enricher';
 
@@ -91,12 +92,12 @@ describe(PackageManagerEnricher, () => {
     expect(result.packageManager).toBe('pnpm');
   });
 
-  it('fallbacks to packageManager npm when nothing matches', async () => {
+  it('returns empty result when nothing matches', async () => {
     const result = await enrich({
       [relativePath('package.json')]: JSON.stringify({}),
     });
 
-    expect(result.packageManager).toBe('npm');
+    expect(result).toEqual({});
   });
 });
 
@@ -104,9 +105,12 @@ async function enrich(files: Record<RelativePath, string>) {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(files);
 
-  const enricher = new PackageManagerEnricher({
-    tree: new Tree({ fileSystem }),
-  });
+  const enricher = new PackageManagerEnricher();
 
-  return enricher.enrich(new WorkspaceInfo());
+  return enricher.enrich(
+    new ReadonlyWorkspace({
+      info: createWorkspaceInfo(),
+      tree: new Tree({ fileSystem }),
+    }),
+  );
 }

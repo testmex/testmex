@@ -1,38 +1,29 @@
-import type { ReadonlyTree } from '../../core/domain/tree';
 import { hasNx } from '../../core/domain/tree-helpers/has-nx';
 import { Enricher } from '../../core/models/enricher';
+import type { ReadonlyWorkspace } from '../../core/domain/workspace';
 import { relativePath } from '../../core/models/relative-path';
-import { WorkspaceInfo } from '../../core/models/workspace-info';
 import type { CommandRunner } from '../../core/ports/command-runner';
 
 export class NxEnricher implements Enricher {
   private readonly _commandRunner: CommandRunner;
-  private readonly _tree: ReadonlyTree;
 
-  constructor({
-    commandRunner,
-    tree,
-  }: {
-    commandRunner: CommandRunner;
-    tree: ReadonlyTree;
-  }) {
+  constructor({ commandRunner }: { commandRunner: CommandRunner }) {
     this._commandRunner = commandRunner;
-    this._tree = tree;
   }
 
-  async enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo> {
-    if (!(await hasNx(this._tree))) {
-      return workspaceInfo;
+  async enrich(workspace: ReadonlyWorkspace) {
+    if (!(await hasNx(workspace.tree))) {
+      return {};
     }
 
     const graph = await this._runNxGraphCommand();
 
-    return workspaceInfo.merge({
+    return {
       projects: Object.values(graph.graph.nodes).map((node) => ({
         name: node.name,
         path: relativePath(node.data.root),
       })),
-    });
+    };
   }
 
   private async _runNxGraphCommand(): Promise<NxGraph> {

@@ -1,8 +1,11 @@
 import debug from 'debug';
-import { EnricherFactory } from '../core/models/enricher';
+import { EnricherFactory, type EnrichResult } from '../core/models/enricher';
 import { Tree } from '../core/domain/tree';
-import { defineWorkspace, type Workspace } from '../core/domain/workspace';
-import { createWorkspaceInfo } from '../core/models/workspace-info';
+import { ReadonlyWorkspace, Workspace } from '../core/domain/workspace';
+import {
+  createWorkspaceInfo,
+  type WorkspaceInfo,
+} from '../core/models/workspace-info';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
 
@@ -27,14 +30,17 @@ export class Scanner {
     log('scanning workspace');
     const tree = new Tree({ fileSystem: this._fileSystem });
     const enrichers = this._enricherFactories.map((factory) =>
-      factory({ commandRunner: this._commandRunner, tree }),
+      factory({ commandRunner: this._commandRunner }),
     );
 
     let workspaceInfo = createWorkspaceInfo();
     let count = 0;
     for (const enricher of enrichers) {
-      workspaceInfo = await enricher.enrich(workspaceInfo);
-      count += workspaceInfo.files.length;
+      const workspace = new ReadonlyWorkspace({ info: workspaceInfo, tree });
+      const result = await enricher.enrich(workspace);
+
+      workspaceInfo = _applyEnrichResult(tree, workspaceInfo, result);
+      count = tree.getFiles().length;
       if (count > 0) {
         log(`found ${count} files`);
       }
@@ -44,6 +50,23 @@ export class Scanner {
       log('no files found');
     }
 
-    return defineWorkspace({ info: workspaceInfo, tree });
+    return new Workspace({ info: workspaceInfo, tree });
   }
+}
+
+function _applyEnrichResult(
+  tree: Tree,
+  workspaceInfo: WorkspaceInfo,
+  result: EnrichResult,
+): WorkspaceInfo {
+  for (const fileInfo of result.fileInfos ?? []) {
+    for (const tag of fileInfo.tags) {
+      tree.tag(fileInfo.path, tag);
+    }
+  }
+
+  return workspaceInfo.merge({
+    projects: result.projects,
+    packageManager: result.packageManager,
+  });
 }
