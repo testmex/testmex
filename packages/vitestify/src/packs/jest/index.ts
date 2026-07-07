@@ -6,7 +6,7 @@ import { replaceApiHeuristic } from './jest-test/replace-api/replace-api.heurist
 import { vitestImportsNeededHeuristic } from './jest-test/vitest-imports/vitest-imports-needed.heuristic';
 import { configTestMatchTransform } from './config-test-match/config-test-match.transform';
 import { configTestPathPatternsTransform } from './config-test-path-patterns/config-test-path-patterns.transform';
-import { jestRenameTestFilesTransform } from './jest-rename-test-files/jest-rename-test-files.transform';
+import { renameSpecToJestTransform } from './rename-spec-to-jest/rename-spec-to-jest.transform';
 
 export default definePack({
   name: 'jest',
@@ -19,7 +19,7 @@ export default definePack({
   transforms: [
     configTestPathPatternsTransform,
     configTestMatchTransform,
-    jestRenameTestFilesTransform,
+    renameSpecToJestTransform,
     jestTestTransform,
   ],
 });

@@ -7,12 +7,12 @@ import {
 } from '../../../core/models/workspace.mother';
 import { runTransform } from '../../../testing/run-transform';
 import { jestSymbolHeuristic } from '../jest-symbol.heuristic';
-import { jestRenameTestFilesTransform } from './jest-rename-test-files.transform';
+import { renameSpecToJestTransform } from './rename-spec-to-jest.transform';
 
-describe(jestRenameTestFilesTransform.name, () => {
+describe(renameSpecToJestTransform.name, () => {
   it('renames jest tests ending in .spec.ts to .jest.cts', async () => {
     const fileName = 'src/app.spec.ts';
-    const { workspace } = await runJestRenameTestFile({
+    const { workspace } = await runRenameSpecToJest({
       content: 'jest.spyOn(service, "method");',
       fileName,
     });
@@ -46,7 +46,7 @@ describe(jestRenameTestFilesTransform.name, () => {
 
   it('renames jest tests ending in .spec.tsx to .jest.tsx', async () => {
     const fileName = 'src/app.spec.tsx';
-    const { workspace } = await runJestRenameTestFile({
+    const { workspace } = await runRenameSpecToJest({
       content: 'jest.spyOn(service, "method");',
       fileName,
     });
@@ -75,7 +75,7 @@ describe(jestRenameTestFilesTransform.name, () => {
 
   it('skips files that are not jest tests', async () => {
     const fileName = 'src/app.spec.ts';
-    const { workspace } = await runJestRenameTestFile({
+    const { workspace } = await runRenameSpecToJest({
       content: 'it("works", () => {});',
       fileName,
     });
@@ -88,7 +88,7 @@ describe(jestRenameTestFilesTransform.name, () => {
   });
 });
 
-async function runJestRenameTestFile({
+async function runRenameSpecToJest({
   content,
   fileName,
 }: {
@@ -109,7 +109,7 @@ async function runJestRenameTestFile({
   await runTransform({
     workspace,
     heuristics: [jestSymbolHeuristic],
-    transforms: [jestRenameTestFilesTransform],
+    transforms: [renameSpecToJestTransform],
   });
 
   return { workspace };
