@@ -7,6 +7,7 @@ import { testingLibraryHeuristic } from './testing-library-heuristic';
 import { testingLibraryJestDomTransform } from './testing-library-jest-dom/testing-library-jest-dom.transform';
 import { PackageManagerEnricher } from './package-manager.enricher';
 import { TestEnricher } from './test.enricher';
+import { tsconfigTransform } from './tsconfig/tsconfig.transform';
 import { vitestConfigTransform } from './vitest-config/vitest-config.transform';
 
 export default definePack({
@@ -22,5 +23,9 @@ export default definePack({
     reactHeuristic,
     testingLibraryHeuristic,
   ],
-  transforms: [testingLibraryJestDomTransform, vitestConfigTransform],
+  transforms: [
+    testingLibraryJestDomTransform,
+    vitestConfigTransform,
+    tsconfigTransform,
+  ],
 });
