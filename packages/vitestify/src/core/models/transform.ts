@@ -1,8 +1,8 @@
-import type { Workspace } from '../domain/workspace';
+import type { WritableWorkspace } from '../domain/workspace';
 
 export interface Transform {
   name: string;
-  apply(workspace: Workspace): Promise<void>;
+  apply(workspace: WritableWorkspace): Promise<void>;
 }
 
 export function defineTransform(args: Transform): Transform {

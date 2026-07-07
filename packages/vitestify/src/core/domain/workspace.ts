@@ -4,6 +4,9 @@ import { WorkspaceEnrichment, WorkspaceInfo } from '../models/workspace-info';
 import type { Command } from '../ports/command-runner';
 import type { ReadonlyTree, Tree } from './tree';
 
+/**
+ * This is the workspace aggregate root.
+ */
 export class Workspace {
   readonly commands: CommandQueue;
   readonly tree: WorkspaceTree;
@@ -24,6 +27,7 @@ export class Workspace {
   }) {
     this.commands = commands;
     this._info = info;
+
     this.tree = this._tree = tree;
   }
 
@@ -33,6 +37,14 @@ export class Workspace {
 
   get info(): WorkspaceInfo {
     return this._info;
+  }
+
+  asReadonly(): ReadonlyWorkspace {
+    return this;
+  }
+
+  asWritable(): WritableWorkspace {
+    return this;
   }
 
   getFiles(): FileInfoWithProjects[] {
@@ -73,10 +85,6 @@ export class Workspace {
     });
   }
 
-  asReadonly(): ReadonlyWorkspace {
-    return this;
-  }
-
   delete(path: RelativePath): void {
     this._tree.delete(path);
     this._fileTags.delete(path);
@@ -100,7 +108,6 @@ export class Workspace {
     }
   }
 }
-
 export interface ReadonlyWorkspace {
   readonly info: WorkspaceInfo;
   readonly tree: ReadonlyTree;
@@ -109,7 +116,18 @@ export interface ReadonlyWorkspace {
   getProjectFiles(nameOrPath: string): FileInfo[];
 }
 
-export type WorkspaceTree = ReadonlyTree &
+export interface WritableWorkspace extends ReadonlyWorkspace {
+  readonly commands: CommandQueue;
+  readonly tree: WritableTree;
+}
+
+/**
+ * This is the workspace tree that does not allow changes that should go through
+ * the Workspace aggregate root.
+ */
+export type WorkspaceTree = WritableTree & Pick<Tree, 'commit'>;
+
+export type WritableTree = ReadonlyTree &
   Pick<Tree, 'commit' | 'maybeReadFile' | 'maybeReadJsonFile' | 'write'>;
 
 export interface Project {
