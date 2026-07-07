@@ -19,7 +19,7 @@ export default definePack({
   transforms: [
     configTestPathPatternsTransform,
     configTestMatchTransform,
-    jestRenameTestFilesTransform,
     jestTestTransform,
+    jestRenameTestFilesTransform,
   ],
 });
