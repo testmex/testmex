@@ -18,8 +18,8 @@ export class Vitestify {
    * such as vite-tsconfig-paths which must be installed before @nx/vitest.
    */
   private readonly _packs: Pack[] = [
-    corePack,
     jestPack,
+    corePack,
     angularCliPack,
     nxPack,
   ];
