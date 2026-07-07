@@ -2,46 +2,7 @@ import type { ReadonlyTree, Tree } from './tree';
 import type { Command } from '../ports/command-runner';
 import type { Finding } from '../models/finding';
 import { relativePath, type RelativePath } from '../models/relative-path';
-import {
-  WorkspaceEnrichment,
-  WorkspaceInfo,
-} from '../models/workspace-info';
-
-export interface Project {
-  name?: string;
-  path: RelativePath;
-}
-
-export interface FileInfo {
-  path: RelativePath;
-  tags: FileTag[];
-}
-
-export interface FileInfoWithProjects extends FileInfo {
-  projects: Project[];
-}
-
-export type FileTag = string & {
-  readonly [__fileTagBrand]: true;
-};
-
-export function fileTag(tag: string): FileTag {
-  return tag as FileTag;
-}
-
-declare const __fileTagBrand: unique symbol;
-
-export class CommandQueue {
-  private readonly _commands: Command[] = [];
-
-  add(command: Command): void {
-    this._commands.push(command);
-  }
-
-  all(): readonly Command[] {
-    return this._commands;
-  }
-}
+import { WorkspaceEnrichment, WorkspaceInfo } from '../models/workspace-info';
 
 export class ReadonlyWorkspace {
   readonly info: WorkspaceInfo;
@@ -98,7 +59,7 @@ export class Workspace extends ReadonlyWorkspace {
   override readonly tree: Tree;
 
   constructor({
-    info,
+    info = new WorkspaceInfo(),
     tree,
     commands = new CommandQueue(),
   }: {
@@ -108,7 +69,7 @@ export class Workspace extends ReadonlyWorkspace {
   }) {
     super({ info, tree });
     this.commands = commands;
-    this.info = info ?? new WorkspaceInfo();
+    this.info = info;
     this.tree = tree;
   }
 
@@ -159,6 +120,42 @@ export class Workspace extends ReadonlyWorkspace {
     if (!tags.includes(tag)) {
       this._fileTags.set(path, [...tags, tag]);
     }
+  }
+}
+
+export interface Project {
+  name?: string;
+  path: RelativePath;
+}
+
+export interface FileInfo {
+  path: RelativePath;
+  tags: FileTag[];
+}
+
+export interface FileInfoWithProjects extends FileInfo {
+  projects: Project[];
+}
+
+export type FileTag = string & {
+  readonly [__fileTagBrand]: true;
+};
+
+export function fileTag(tag: string): FileTag {
+  return tag as FileTag;
+}
+
+declare const __fileTagBrand: unique symbol;
+
+export class CommandQueue {
+  private readonly _commands: Command[] = [];
+
+  add(command: Command): void {
+    this._commands.push(command);
+  }
+
+  all(): readonly Command[] {
+    return this._commands;
   }
 }
 
