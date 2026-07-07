@@ -3,13 +3,33 @@ import type { Command } from '../ports/command-runner';
 import type { Finding } from '../models/finding';
 import { relativePath, type RelativePath } from '../models/relative-path';
 import {
-  FileInfo,
-  FileTag,
-  FileWithProjects,
-  Project,
   WorkspaceEnrichment,
   WorkspaceInfo,
 } from '../models/workspace-info';
+
+export interface Project {
+  name?: string;
+  path: RelativePath;
+}
+
+export interface FileInfo {
+  path: RelativePath;
+  tags: FileTag[];
+}
+
+export interface FileInfoWithProjects extends FileInfo {
+  projects: Project[];
+}
+
+export type FileTag = string & {
+  readonly [__fileTagBrand]: true;
+};
+
+export function fileTag(tag: string): FileTag {
+  return tag as FileTag;
+}
+
+declare const __fileTagBrand: unique symbol;
 
 export class CommandQueue {
   private readonly _commands: Command[] = [];
@@ -50,7 +70,7 @@ export class ReadonlyWorkspace {
     return this._findings;
   }
 
-  getFiles(): FileWithProjects[] {
+  getFiles(): FileInfoWithProjects[] {
     return [...this._fileTags.entries()].flatMap(([path, tags]) => {
       const file = { path, tags };
       const projects = _findProjectsForFile(file, this.info.projects);

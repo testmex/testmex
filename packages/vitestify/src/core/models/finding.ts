@@ -1,4 +1,4 @@
-import type { Project } from './workspace-info';
+import type { Project } from '../domain/workspace';
 import type { RelativePath } from './relative-path';
 
 export type FindingType = string & { readonly [__findingTypeBrand]: true };

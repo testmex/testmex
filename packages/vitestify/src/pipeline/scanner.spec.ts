@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { relativePath } from '../core/models/relative-path';
-import { type Project } from '../core/models/workspace-info';
+import { type Project } from '../core/domain/workspace';
 import { CommandRunnerFake } from '../core/ports/command-runner.fake';
 import { FileSystemFake } from '../core/ports/file-system.fake';
 import angularCliPack from '../packs/angular-cli';

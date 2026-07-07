@@ -1,6 +1,6 @@
 import type { Finding } from '../models/finding';
 import { defineHeuristic, type Heuristic } from '../models/heuristic';
-import type { FileInfo, Project } from '../models/workspace-info';
+import type { FileInfo, Project } from './workspace';
 
 export interface FileContentInspectionArgs {
   file: FileInfo;

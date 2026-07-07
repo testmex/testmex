@@ -1,5 +1,5 @@
 import { findingType } from '../../core/models/finding';
-import { fileTag } from '../../core/models/workspace-info';
+import { fileTag } from '../../core/domain/workspace';
 
 export const findingTypes = {
   angular: findingType('angular'),

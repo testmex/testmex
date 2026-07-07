@@ -1,13 +1,13 @@
 import { FileSystemFake } from '../../core/ports/file-system.fake';
 import { Tree } from '../domain/tree';
-import { Workspace } from '../domain/workspace';
-import { relativePath, type RelativePath } from './relative-path';
 import {
+  Workspace,
   FileTag,
   fileTag,
-  WorkspaceInfo,
   type FileInfo,
-} from './workspace-info';
+} from '../domain/workspace';
+import { relativePath, type RelativePath } from './relative-path';
+import { WorkspaceInfo } from './workspace-info';
 
 export function createTestingWorkspace(mother: WorkspaceMother): Workspace {
   const fileSystem = new FileSystemFake();

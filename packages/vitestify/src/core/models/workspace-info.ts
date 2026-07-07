@@ -1,28 +1,4 @@
-import type { RelativePath } from './relative-path';
-
-export interface Project {
-  name?: string;
-  path: RelativePath;
-}
-
-export interface FileInfo {
-  path: RelativePath;
-  tags: FileTag[];
-}
-
-export interface FileWithProjects extends FileInfo {
-  projects: Project[];
-}
-
-export type FileTag = string & {
-  readonly [__fileTagBrand]: true;
-};
-
-export function fileTag(tag: string): FileTag {
-  return tag as FileTag;
-}
-
-declare const __fileTagBrand: unique symbol;
+import type { FileInfo, Project } from '../domain/workspace';
 
 export const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn'] as const;
 

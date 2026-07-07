@@ -1,6 +1,6 @@
 import type { FindingType } from '../models/finding';
 import { defineTransform, type Transform } from '../models/transform';
-import type { FileTag } from '../models/workspace-info';
+import type { FileTag } from './workspace';
 
 interface DefineFileTransformBase {
   name: string;

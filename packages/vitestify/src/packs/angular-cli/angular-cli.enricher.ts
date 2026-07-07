@@ -1,5 +1,5 @@
 import { relativePath } from '../../core/models/relative-path';
-import { type Project } from '../../core/models/workspace-info';
+import { type Project } from '../../core/domain/workspace';
 import { Enricher } from '../../core/models/enricher';
 import type { ReadonlyWorkspace } from '../../core/domain/workspace';
 

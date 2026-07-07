@@ -3,7 +3,8 @@ import { Tree } from './tree';
 import { Workspace } from './workspace';
 import { relativePath, type RelativePath } from '../models/relative-path';
 import { FileSystemFake } from '../ports/file-system.fake';
-import { fileTag, WorkspaceInfo, type FileTag } from '../models/workspace-info';
+import { fileTag, type FileTag } from '../domain/workspace';
+import { WorkspaceInfo } from '../models/workspace-info';
 import { findingType } from '../models/finding';
 
 describe(Workspace.name, () => {
