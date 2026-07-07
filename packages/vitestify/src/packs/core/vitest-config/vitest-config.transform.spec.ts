@@ -409,6 +409,74 @@ setupTestBed();
 `);
   });
 
+  it('configures jsdom when testing-library usage is detected', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.testFile({
+            appName: 'my-app',
+            content: `import { screen } from '@testing-library/dom';`,
+            fileName: 'app.spec.ts',
+          }).build(),
+        ),
+    );
+
+    await transform(workspace);
+
+    const config = await workspace.tree.maybeReadFile(
+      relativePath('apps/my-app/vitest.config.mts'),
+    );
+
+    expect(config?.replace(/include: \[.+\]/, 'include: [...]')).toContain(`\
+  test: {
+    environment: 'jsdom',
+    include: [...],
+  },
+`);
+  });
+
+  it('configures jsdom when TestBed usage is detected', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.testFile({
+            appName: 'my-app',
+            content: 'TestBed.configureTestingModule({});',
+            fileName: 'app.component.spec.ts',
+          }).build(),
+        ),
+    );
+
+    await transform(workspace);
+
+    const config = await workspace.tree.maybeReadFile(
+      relativePath('apps/my-app/vitest.config.mts'),
+    );
+
+    expect(config?.replace(/include: \[.+\]/, 'include: [...]')).toContain(`\
+  test: {
+    environment: 'jsdom',
+    include: [...],
+  },
+`);
+  });
+
   it('maps jest moduleNameMapper entries to vitest resolve.alias', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(
