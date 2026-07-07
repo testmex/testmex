@@ -10,7 +10,7 @@ import { jestSymbolHeuristic } from '../jest-symbol.heuristic';
 import { jestRenameTestFilesTransform } from './jest-rename-test-files.transform';
 
 describe(jestRenameTestFilesTransform.name, () => {
-  it.todo('renames jest tests ending in .spec.ts to .jest.cts', async () => {
+  it('renames jest tests ending in .spec.ts to .jest.cts', async () => {
     const fileName = 'src/app.spec.ts';
     const tree = await runJestRenameTestFile({
       content: 'jest.spyOn(service, "method");',
@@ -29,22 +29,26 @@ describe(jestRenameTestFilesTransform.name, () => {
       .toBeNull();
   });
 
-  it.todo('renames jest tests ending in .spec.tsx to .jest.tsx', async () => {
+  it('renames jest tests ending in .spec.tsx to .jest.tsx', async () => {
     const fileName = 'src/app.spec.tsx';
     const tree = await runJestRenameTestFile({
       content: 'jest.spyOn(service, "method");',
       fileName,
     });
 
-    expect(
-      await tree.maybeReadFile(relativePath(`apps/my-app/src/app.jest.tsx`)),
-    ).toBe('jest.spyOn(service, "method");');
-    expect(
-      await tree.maybeReadFile(relativePath('apps/my-app/src/app.spec.tsx')),
-    ).toBeNull();
+    expect
+      .soft(
+        await tree.maybeReadFile(relativePath(`apps/my-app/src/app.jest.tsx`)),
+      )
+      .toBe('jest.spyOn(service, "method");');
+    expect
+      .soft(
+        await tree.maybeReadFile(relativePath('apps/my-app/src/app.spec.tsx')),
+      )
+      .toBeNull();
   });
 
-  it.todo('skips files that are not jest tests', async () => {
+  it('skips files that are not jest tests', async () => {
     const fileName = 'src/app.spec.ts';
     const tree = await runJestRenameTestFile({
       content: 'it("works", () => {});',
