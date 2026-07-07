@@ -13,7 +13,7 @@ export class TestEnricher implements Enricher {
           .filter((file) => file.endsWith('.snap'))
           .map((path) => ({ path, tags: [fileTags.snapshot] })),
         ...files
-          .filter(isTestFile)
+          .filter((file) => isTestFile(file))
           .map((path) => ({ path, tags: [fileTags.test] })),
       ],
     };
