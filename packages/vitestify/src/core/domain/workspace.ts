@@ -108,17 +108,16 @@ export class Workspace {
     }
   }
 }
-export interface ReadonlyWorkspace {
-  readonly info: WorkspaceInfo;
+export interface ReadonlyWorkspace
+  extends Pick<
+    Workspace,
+    'info' | 'findings' | 'getFiles' | 'getProjectFiles'
+  > {
   readonly tree: ReadonlyTree;
-  readonly findings: readonly Finding[];
-  getFiles(): FileInfoWithProjects[];
-  getProjectFiles(nameOrPath: string): FileInfo[];
 }
 
-export interface WritableWorkspace extends ReadonlyWorkspace {
-  readonly commands: CommandQueue;
-  readonly tree: WritableTree;
+export interface WritableWorkspace extends Workspace {
+  readonly tree: WorkspaceTree;
 }
 
 /**
