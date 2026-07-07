@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { transformTestFile as runTransformTestFile } from '../../testing';
-import { vitestImportsHeuristic } from './vitest-imports.heuristic';
+import { vitestImportsNeededHeuristic } from './vitest-imports-needed.heuristic';
 import { vitestImportsTransform } from './vitest-imports.transform';
 
 describe(vitestImportsTransform.name, () => {
@@ -177,7 +177,7 @@ describe.each(cases)('case %s', (input) => { /* … */ });
 
 function transformTestFile(content: string) {
   return runTransformTestFile(content, {
-    heuristics: [vitestImportsHeuristic],
+    heuristics: [vitestImportsNeededHeuristic],
     transforms: [vitestImportsTransform],
   });
 }

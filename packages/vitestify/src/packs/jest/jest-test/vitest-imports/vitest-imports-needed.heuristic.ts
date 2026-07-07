@@ -3,7 +3,7 @@ import { fileTags as coreFileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
 import { jestGlobals } from './jest-globals';
 
-export const vitestImportsHeuristic = defineFileContentHeuristic({
+export const vitestImportsNeededHeuristic = defineFileContentHeuristic({
   predicate: (file) =>
     file.tags.includes(coreFileTags.test) ||
     file.tags.includes(coreFileTags.code),

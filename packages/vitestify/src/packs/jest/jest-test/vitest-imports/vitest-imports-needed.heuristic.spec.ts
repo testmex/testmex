@@ -7,9 +7,9 @@ import {
 import { Analyzer } from '../../../../pipeline/analyzer';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
-import { vitestImportsHeuristic } from './vitest-imports.heuristic';
+import { vitestImportsNeededHeuristic } from './vitest-imports-needed.heuristic';
 
-describe('vitestImportsHeuristic', () => {
+describe('vitestImportsNeededHeuristic', () => {
   it('reports findings in code files', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(
@@ -22,7 +22,7 @@ describe('vitestImportsHeuristic', () => {
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [vitestImportsHeuristic] });
+    const analyzer = new Analyzer({ heuristics: [vitestImportsNeededHeuristic] });
     const findings = await analyzer.analyze(workspace);
 
     expect(findings).toMatchObject([
