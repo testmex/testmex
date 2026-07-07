@@ -3,6 +3,12 @@ import {
   relativePath,
   type RelativePath,
 } from '../../../core/models/relative-path';
+import {
+  JEST_CTS_EXTENSION,
+  JEST_TSX_EXTENSION,
+  SPEC_TS_EXTENSION,
+  SPEC_TSX_EXTENSION,
+} from '../constants';
 import { findingTypes } from '../identifiers';
 
 export const renameSpecToJestTransform = defineTransform({
@@ -25,12 +31,16 @@ export const renameSpecToJestTransform = defineTransform({
 });
 
 function renameSpecToJestFile(path: RelativePath): RelativePath | null {
-  if (path.endsWith('.spec.tsx')) {
-    return relativePath(path.slice(0, -'.spec.tsx'.length) + '.jest.tsx');
+  if (path.endsWith(SPEC_TSX_EXTENSION)) {
+    return relativePath(
+      path.slice(0, -SPEC_TSX_EXTENSION.length) + JEST_TSX_EXTENSION,
+    );
   }
 
-  if (path.endsWith('.spec.ts')) {
-    return relativePath(path.slice(0, -'.spec.ts'.length) + '.jest.cts');
+  if (path.endsWith(SPEC_TS_EXTENSION)) {
+    return relativePath(
+      path.slice(0, -SPEC_TS_EXTENSION.length) + JEST_CTS_EXTENSION,
+    );
   }
 
   return null;
