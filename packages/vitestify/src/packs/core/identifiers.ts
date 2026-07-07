@@ -12,6 +12,7 @@ export const findingTypes = {
 export const fileTags = {
   code: fileTag('code'),
   jestConfig: fileTag('jest-config'),
+  jestSetup: fileTag('jest-setup'),
   snapshot: fileTag('snapshot'),
   test: fileTag('test'),
 } as const;
