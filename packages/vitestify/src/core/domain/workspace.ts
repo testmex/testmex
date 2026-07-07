@@ -4,31 +4,35 @@ import { WorkspaceEnrichment, WorkspaceInfo } from '../models/workspace-info';
 import type { Command } from '../ports/command-runner';
 import type { ReadonlyTree, Tree } from './tree';
 
-export class ReadonlyWorkspace {
-  readonly info: WorkspaceInfo;
-  readonly tree: ReadonlyTree;
-  protected readonly _fileTags = new Map<RelativePath, FileTag[]>();
-  protected readonly _findings: Finding[] = [];
+export class Workspace {
+  readonly commands: CommandQueue;
+  readonly tree: WorkspaceTree;
+
+  private readonly _fileTags = new Map<RelativePath, FileTag[]>();
+  private readonly _findings: Finding[] = [];
+  private _info: WorkspaceInfo;
+  private readonly _tree: Tree;
 
   constructor({
     info = new WorkspaceInfo(),
     tree,
-    fileTags = new Map(),
-    findings = [],
+    commands = new CommandQueue(),
   }: {
     info?: WorkspaceInfo;
-    tree: ReadonlyTree;
-    fileTags?: Map<RelativePath, FileTag[]>;
-    findings?: Finding[];
+    tree: Tree;
+    commands?: CommandQueue;
   }) {
-    this.info = info;
-    this.tree = tree;
-    this._fileTags = fileTags;
-    this._findings = findings;
+    this.commands = commands;
+    this._info = info;
+    this.tree = this._tree = tree;
   }
 
   get findings(): readonly Finding[] {
     return this._findings;
+  }
+
+  get info(): WorkspaceInfo {
+    return this._info;
   }
 
   getFiles(): FileInfoWithProjects[] {
@@ -51,29 +55,6 @@ export class ReadonlyWorkspace {
       )
       .map(({ path, tags }) => ({ path, tags }));
   }
-}
-
-export class Workspace extends ReadonlyWorkspace {
-  readonly commands: CommandQueue;
-  override info: WorkspaceInfo;
-  private readonly _tree: Tree;
-  override readonly tree: WorkspaceTree;
-
-  constructor({
-    info = new WorkspaceInfo(),
-    tree,
-    commands = new CommandQueue(),
-  }: {
-    info?: WorkspaceInfo;
-    tree: Tree;
-    commands?: CommandQueue;
-  }) {
-    super({ info, tree });
-    this.commands = commands;
-    this.info = info;
-    this._tree = tree;
-    this.tree = tree;
-  }
 
   addFindings(findings: Finding[]): void {
     this._findings.push(...findings);
@@ -86,19 +67,14 @@ export class Workspace extends ReadonlyWorkspace {
       }
     }
 
-    this.info = this.info.merge({
+    this._info = this._info.merge({
       projects: enrichment.projects,
       packageManager: enrichment.packageManager,
     });
   }
 
   asReadonly(): ReadonlyWorkspace {
-    return new ReadonlyWorkspace({
-      info: this.info,
-      tree: this.tree,
-      fileTags: this._fileTags,
-      findings: this._findings,
-    });
+    return this;
   }
 
   delete(path: RelativePath): void {
@@ -125,8 +101,16 @@ export class Workspace extends ReadonlyWorkspace {
   }
 }
 
+export interface ReadonlyWorkspace {
+  readonly info: WorkspaceInfo;
+  readonly tree: ReadonlyTree;
+  readonly findings: readonly Finding[];
+  getFiles(): FileInfoWithProjects[];
+  getProjectFiles(nameOrPath: string): FileInfo[];
+}
+
 export type WorkspaceTree = ReadonlyTree &
-  Pick<Tree, 'maybeReadFile' | 'maybeReadJsonFile' | 'write' | 'commit'>;
+  Pick<Tree, 'commit' | 'maybeReadFile' | 'maybeReadJsonFile' | 'write'>;
 
 export interface Project {
   name?: string;

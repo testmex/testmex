@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../../core/domain/tree';
-import { ReadonlyWorkspace } from '../../core/domain/workspace';
+import { Workspace } from '../../core/domain/workspace';
 import {
   relativePath,
   type RelativePath,
@@ -108,7 +108,7 @@ async function enrich(files: Record<RelativePath, string>) {
   const enricher = new PackageManagerEnricher();
 
   return enricher.enrich(
-    new ReadonlyWorkspace({
+    new Workspace({
       info: new WorkspaceInfo(),
       tree: new Tree({ fileSystem }),
     }),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../../core/domain/tree';
-import { ReadonlyWorkspace } from '../../core/domain/workspace';
+import { Workspace } from '../../core/domain/workspace';
 import {
   WorkspaceFileMother,
   WorkspaceMother,
@@ -97,7 +97,7 @@ async function enrich(mother: WorkspaceMother) {
   const enricher = new TestEnricher();
 
   return enricher.enrich(
-    new ReadonlyWorkspace({
+    new Workspace({
       info: mother.buildWorkspaceInfo(),
       tree,
     }),
