@@ -2,6 +2,7 @@ import { defineFileTransform } from '../../../../core/domain/define-file-transfo
 import { SgEditor } from '../../../../infra/ast/sg-editor';
 import { ensureVitestTypeSymbol } from '../../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../../identifiers';
+import { isTransformable } from '../../utils';
 
 const jestTypeReplacements = {
   MockedFunction: 'MockedFunction',
@@ -11,6 +12,7 @@ const jestTypeReplacements = {
 
 export const jestTypesTransform = defineFileTransform({
   name: 'jest-types',
+  fileTags: (tags) => isTransformable(tags),
   findingType: findingTypes.jestSymbol,
   apply: (content) => {
     const editor = new SgEditor(content);

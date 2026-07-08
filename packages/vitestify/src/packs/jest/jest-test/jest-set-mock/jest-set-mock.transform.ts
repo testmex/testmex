@@ -1,10 +1,12 @@
 import { defineFileTransform } from '../../../../core/domain/define-file-transform';
 import { SgEditor } from '../../../../infra/ast/sg-editor';
-import { findingTypes } from '../../identifiers';
 import { ensureVitestSymbol } from '../../../../infra/ast/vitest-ast-utils';
+import { findingTypes } from '../../identifiers';
+import { isTransformable } from '../../utils';
 
 export const jestSetMockTransform = defineFileTransform({
   name: 'jest-set-mock',
+  fileTags: (tags) => isTransformable(tags),
   findingType: findingTypes.jestSymbol,
   apply: (content) => {
     const editor = new SgEditor(content);

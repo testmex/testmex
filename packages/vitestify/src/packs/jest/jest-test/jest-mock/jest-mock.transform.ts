@@ -8,9 +8,11 @@ import {
 import { SgEditor } from '../../../../infra/ast/sg-editor';
 import { ensureVitestSymbol } from '../../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../../identifiers';
+import { isTransformable } from '../../utils';
 
 export const jestMockTransform = defineFileTransform({
   name: 'jest-mock',
+  fileTags: (tags) => isTransformable(tags),
   findingType: findingTypes.jestSymbol,
   apply: (content) => {
     const editor = new SgEditor(content);

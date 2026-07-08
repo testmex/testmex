@@ -1,9 +1,11 @@
 import { defineFileTransform } from '../../../../core/domain/define-file-transform';
 import { SgEditor } from '../../../../infra/ast/sg-editor';
 import { findingTypes } from '../../identifiers';
+import { isTransformable } from '../../utils';
 
 export const jestGlobalsImportTransform = defineFileTransform({
   name: 'jest-globals-import',
+  fileTags: (tags) => isTransformable(tags),
   findingType: findingTypes.jestSymbol,
   apply: (content) => {
     const editor = new SgEditor(content);

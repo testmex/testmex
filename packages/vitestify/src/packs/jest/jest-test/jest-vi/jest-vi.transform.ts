@@ -2,6 +2,7 @@ import { defineFileTransform } from '../../../../core/domain/define-file-transfo
 import { SgEditor } from '../../../../infra/ast/sg-editor';
 import { ensureVitestSymbol } from '../../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../../identifiers';
+import { isTransformable } from '../../utils';
 
 const apiNamesRecord: Record<string, string> = {
   deepUnmock: 'unmock',
@@ -9,6 +10,7 @@ const apiNamesRecord: Record<string, string> = {
 
 export const jestViTransform = defineFileTransform({
   name: 'jest-vi',
+  fileTags: (tags) => isTransformable(tags),
   findingType: findingTypes.jestSymbol,
   apply: (content) => {
     const editor = new SgEditor(content);

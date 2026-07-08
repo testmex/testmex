@@ -2,10 +2,12 @@ import { defineFileTransform } from '../../../../core/domain/define-file-transfo
 import { SgEditor } from '../../../../infra/ast/sg-editor';
 import { ensureVitestSymbol } from '../../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../../identifiers';
+import { isTransformable } from '../../utils';
 import { jestGlobals } from './jest-globals';
 
 export const vitestImportsTransform = defineFileTransform({
   name: 'vitest-imports',
+  fileTags: (tags) => isTransformable(tags),
   findingType: findingTypes.vitestImportsNeeded,
   apply: (content) => {
     const editor = new SgEditor(content);

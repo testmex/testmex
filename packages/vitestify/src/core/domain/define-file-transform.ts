@@ -8,7 +8,10 @@ interface DefineFileTransformBase {
 }
 
 export type DefineFileTransformArgs = DefineFileTransformBase &
-  ({ findingType: FindingType } | { fileTags?: FileTag[] });
+  (
+    | { findingType: FindingType }
+    | { fileTags?: FileTag[] | ((tags: FileTag[]) => boolean) }
+  );
 
 export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
@@ -18,13 +21,18 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
 
       const fileTags = 'fileTags' in args ? args.fileTags : undefined;
 
+      const matchesFileTags = (tags: FileTag[]) =>
+        fileTags == null
+          ? true
+          : Array.isArray(fileTags)
+            ? fileTags.every((tag) => tags.includes(tag))
+            : fileTags(tags);
+
       const taggedPaths =
         fileTags !== undefined
           ? workspace
               .getFiles()
-              .filter((file) =>
-                fileTags.every((tag) => file.tags.includes(tag)),
-              )
+              .filter((file) => matchesFileTags(file.tags))
               .map((file) => file.path)
           : undefined;
 
@@ -37,7 +45,15 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
               )
           : undefined;
 
-      for (const path of taggedPaths ?? findingPaths ?? []) {
+      const paths =
+        taggedPaths !== undefined && findingPaths !== undefined
+          ? findingPaths.filter((path) => {
+              const file = workspace.getFiles().find(({ path: filePath }) => filePath === path);
+
+              return file != null && matchesFileTags(file.tags);
+            })
+          : (taggedPaths ?? findingPaths ?? []);
+      for (const path of paths) {
         const content = await tree.maybeReadFile(path);
 
         if (content != null) {
