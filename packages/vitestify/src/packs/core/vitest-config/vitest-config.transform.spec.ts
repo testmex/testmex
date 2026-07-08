@@ -631,6 +631,7 @@ afterEach(() => {
           path: relativePath('jest.config.ts'),
           content: `\
 export default async (): Promise<Config> => ({
+  somethingElse: 42,
   projects: await getJestProjectsAsync(),
 });
 `,

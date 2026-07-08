@@ -140,8 +140,12 @@ async function _definesJestProjects(
   }
 
   const editor = new SgEditor(jestConfigContent);
-
-  return editor.root.find('projects: $$$_') != null;
+  const config = editor.root.find('export default $CONFIG')?.getMatch('CONFIG');
+  return (
+    config
+      ?.findAll({ rule: { kind: 'pair' } })
+      .find((node) => node.child(0)?.text() === 'projects') != null
+  );
 }
 
 async function _hasVitestConfig(
