@@ -4,6 +4,7 @@ import { CodeEnricher } from './code.enricher';
 import { domHeuristic } from './dom.heuristic';
 import { PackageManagerEnricher } from './package-manager.enricher';
 import { reactHeuristic } from './react.heuristic';
+import { setupFilesTransform } from './setup-files/setup-files.transform';
 import { TestEnricher } from './test.enricher';
 import { testingLibraryHeuristic } from './testing-library-heuristic';
 import { testingLibraryJestDomTransform } from './testing-library-jest-dom/testing-library-jest-dom.transform';
@@ -24,10 +25,9 @@ export default definePack({
     testingLibraryHeuristic,
   ],
   transforms: [
+    setupFilesTransform,
     testingLibraryJestDomTransform,
-    // 🚧 Work in progress
-    // setupFilesTransform,
-    vitestConfigTransform,
     tsconfigTransform,
+    vitestConfigTransform,
   ],
 });
