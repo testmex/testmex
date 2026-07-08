@@ -6,6 +6,7 @@ import { PackageManagerEnricher } from './package-manager.enricher';
 import { reactHeuristic } from './react.heuristic';
 import { setupFilesTransform } from './setup-files/setup-files.transform';
 import { TestEnricher } from './test.enricher';
+import { VitestConfigEnricher } from './vitest-config.enricher';
 import { testingLibraryHeuristic } from './testing-library-heuristic';
 import { testingLibraryJestDomTransform } from './testing-library-jest-dom/testing-library-jest-dom.transform';
 import { tsconfigTransform } from './tsconfig/tsconfig.transform';
@@ -15,8 +16,9 @@ export default definePack({
   name: 'core',
   enricherFactories: [
     () => new CodeEnricher(),
-    () => new TestEnricher(),
     () => new PackageManagerEnricher(),
+    () => new TestEnricher(),
+    () => new VitestConfigEnricher(),
   ],
   heuristics: [
     angularHeuristic,

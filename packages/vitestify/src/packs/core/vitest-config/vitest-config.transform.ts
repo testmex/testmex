@@ -1,5 +1,5 @@
 import { dirname, join } from 'node:path/posix';
-import type { WorkspaceTree } from '../../../core/domain/workspace';
+import type { WritableWorkspace, WorkspaceTree } from '../../../core/domain/workspace';
 import type { Finding } from '../../../core/models/finding';
 import {
   relativePath,
@@ -79,7 +79,7 @@ export const vitestConfigTransform = defineTransform({
 
       await _maybeAddTestingLibraryReactSetup(context);
 
-      await _writeVitestConfig(context);
+      await _writeVitestConfig(context, workspace);
     }
 
     if (devDependencies.size > 0) {
@@ -322,6 +322,7 @@ async function _addAngularVitestSetup(
 
 async function _writeVitestConfig(
   context: VitestConfigTransformContext,
+  workspace: WritableWorkspace,
 ): Promise<void> {
   const angularImport = context.usesAngular
     ? "import angular from '@analogjs/vite-plugin-angular';\n"
@@ -389,5 +390,9 @@ ${setupFilesBlock}\
   await context.tree.write(
     relativePath(join(context.jestConfigDirectory, VITEST_CONFIG_FILE_NAME)),
     content,
+  );
+  workspace.tag(
+    relativePath(join(context.jestConfigDirectory, VITEST_CONFIG_FILE_NAME)),
+    fileTags.vitestConfig,
   );
 }

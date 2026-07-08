@@ -15,4 +15,5 @@ export const fileTags = {
   jestSetup: fileTag('jest-setup'),
   snapshot: fileTag('snapshot'),
   test: fileTag('test'),
+  vitestConfig: fileTag('vitest-config'),
 } as const;

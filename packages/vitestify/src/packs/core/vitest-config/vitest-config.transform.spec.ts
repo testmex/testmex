@@ -601,6 +601,28 @@ afterEach(() => {
       ),
     ).toBeNull();
   });
+
+  it('tags generated vitest config as vitest-config', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app').withFile(
+        WorkspaceFileMother.file({
+          appName: 'my-app',
+          content: 'export default {}',
+          fileName: 'jest.config.ts',
+          tags: [fileTags.jestConfig],
+        }).build(),
+      ),
+    );
+
+    await transform(workspace);
+
+    expect(workspace.getFiles()).toContainEqual(
+      expect.objectContaining({
+        path: 'apps/my-app/vitest.config.mts',
+        tags: ['vitest-config'],
+      }),
+    );
+  });
 });
 
 async function transform(workspace: ReturnType<typeof createTestingWorkspace>) {
