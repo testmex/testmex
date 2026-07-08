@@ -34,6 +34,7 @@ async function _applySetupFilesTransform(
     }
 
     workspace.tree.write(vitestPath, content);
+    workspace.tag(vitestPath, fileTags.code);
   }
 }
 

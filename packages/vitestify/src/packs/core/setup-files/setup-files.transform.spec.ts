@@ -30,11 +30,16 @@ describe('setup-files', () => {
       transforms: [setupFilesTransform],
     });
 
-    expect(
-      await workspace.tree.maybeReadFile(
-        relativePath(`apps/${appName}/vitest-test.setup.ts`),
-      ),
-    ).toBe(`import '@testing-library/jest-dom';`);
+    expect(workspace.getFiles()).toContainEqual({
+      path: 'apps/my-app/vitest-test.setup.ts',
+      projects: [
+        {
+          name: 'my-app',
+          path: 'apps/my-app',
+        },
+      ],
+      tags: ['code'],
+    });
   });
 
   it('does not overwrite existing vitest- prefixed clone', async () => {
@@ -53,7 +58,7 @@ describe('setup-files', () => {
         .withFile(
           WorkspaceFileMother.file({
             appName,
-            content: `import '@testing-library/jest-dom/vitest';`,
+            content: `console.log('initial config')`,
             fileName: 'vitest-test.setup.ts',
           }).build(),
         ),
@@ -68,6 +73,6 @@ describe('setup-files', () => {
       await workspace.tree.maybeReadFile(
         relativePath(`apps/my-app/vitest-test.setup.ts`),
       ),
-    ).toBe(`import '@testing-library/jest-dom/vitest';`);
+    ).toBe(`console.log('initial config')`);
   });
 });
