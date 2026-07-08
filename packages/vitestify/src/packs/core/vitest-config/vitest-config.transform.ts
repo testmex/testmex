@@ -1,4 +1,5 @@
 import { dirname, join } from 'node:path/posix';
+import type { WorkspaceTree } from '../../../core/domain/workspace';
 import type { Finding } from '../../../core/models/finding';
 import {
   relativePath,
@@ -7,7 +8,7 @@ import {
 import { defineTransform } from '../../../core/models/transform';
 import { SgEditor } from '../../../infra/ast/sg-editor';
 import { fileTags, findingTypes } from '../identifiers';
-import type { WorkspaceTree } from '../../../core/domain/workspace';
+import { vitestSetupFilePath } from '../utils';
 
 const ANGULAR_SETUP_CONTENT = `\
 import '@angular/compiler';
@@ -170,6 +171,20 @@ async function _analyzeJestConfig(
 interface JestModuleNameMapping {
   find: string;
   replacement: string;
+}
+
+function _formatSetupFilePathForVitestConfig(setupFilePath: string): string {
+  const normalizedPath = setupFilePath.replace(/^<rootDir>\/?/, './');
+
+  if (
+    normalizedPath.startsWith('@') ||
+    normalizedPath === `./${ANGULAR_SETUP_FILE_NAME}` ||
+    normalizedPath === `./${TESTING_LIBRARY_SETUP_FILE_NAME}`
+  ) {
+    return normalizedPath;
+  }
+
+  return `./${vitestSetupFilePath(relativePath(normalizedPath))}`;
 }
 
 function _resolveAliasBlock({
@@ -337,7 +352,7 @@ ${reactPlugin}\
         .map((path) =>
           path.startsWith('@')
             ? `'${path}'`
-            : `join(import.meta.dirname, ${JSON.stringify(path.replace(/^<rootDir>\/?/, './'))})`,
+            : `join(import.meta.dirname, ${JSON.stringify(_formatSetupFilePathForVitestConfig(path))})`,
         )
         .join(',\n      ')},
     ],

@@ -104,7 +104,7 @@ export default defineConfig({
   test: {
     include: ['**/*.{test,spec}.{ts,tsx}'],
     setupFiles: [
-      join(import.meta.dirname, "./jest.setup.ts"),
+      join(import.meta.dirname, "./vitest-jest.setup.ts"),
     ],
   },
 });
@@ -136,8 +136,8 @@ module.exports = {
       ),
     ).toContain(`\
     setupFiles: [
-      join(import.meta.dirname, "./global.setup.ts"),
-      join(import.meta.dirname, "./jest.setup.ts"),
+      join(import.meta.dirname, "./vitest-global.setup.ts"),
+      join(import.meta.dirname, "./vitest-jest.setup.ts"),
     ],`);
   });
 

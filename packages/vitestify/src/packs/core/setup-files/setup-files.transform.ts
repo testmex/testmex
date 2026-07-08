@@ -1,11 +1,7 @@
-import { basename, dirname, join } from 'node:path/posix';
-import {
-  relativePath,
-  type RelativePath,
-} from '../../../core/models/relative-path';
 import { defineTransform } from '../../../core/models/transform';
 import type { WritableWorkspace } from '../../../core/domain/workspace';
 import { fileTags } from '../identifiers';
+import { vitestSetupFilePath as toVitestSetupFilePath } from '../utils';
 
 export const setupFilesTransform = defineTransform({
   name: 'setup-files',
@@ -20,7 +16,7 @@ async function _applySetupFilesTransform(
       continue;
     }
 
-    const vitestPath = vitestSetupFilePath(file.path);
+    const vitestPath = toVitestSetupFilePath(file.path);
     const existingClone = await workspace.tree.maybeReadFile(vitestPath);
 
     if (existingClone != null) {
@@ -36,14 +32,6 @@ async function _applySetupFilesTransform(
     workspace.tree.write(vitestPath, content);
     workspace.tag(vitestPath, fileTags.code);
   }
-}
-
-export function vitestSetupFilePath(
-  jestSetupFilePath: RelativePath,
-): RelativePath {
-  return relativePath(
-    join(dirname(jestSetupFilePath), `vitest-${basename(jestSetupFilePath)}`),
-  );
 }
 
 export function isJestSetupFile(tags: readonly string[]): boolean {

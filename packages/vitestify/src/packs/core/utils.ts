@@ -1,5 +1,8 @@
-import { basename } from 'node:path/posix';
-import type { RelativePath } from '../../core/models/relative-path';
+import { basename, dirname, join } from 'node:path/posix';
+import {
+  relativePath,
+  type RelativePath,
+} from '../../core/models/relative-path';
 
 const EXCLUDED_CODE_FILE_NAMES = [
   'jest.config.ts',
@@ -32,4 +35,12 @@ function isExcludedCodeFile(path: RelativePath): boolean {
   const name = basename(path);
 
   return EXCLUDED_CODE_FILE_NAMES.includes(name);
+}
+
+export function vitestSetupFilePath(
+  jestSetupFilePath: RelativePath,
+): RelativePath {
+  return relativePath(
+    join(dirname(jestSetupFilePath), `vitest-${basename(jestSetupFilePath)}`),
+  );
 }
