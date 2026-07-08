@@ -1,5 +1,7 @@
+import type { AngularJson } from './angular-json';
+
 class AngularJsonMother {
-  constructor(private readonly _config: AngularJsonConfig = { projects: {} }) {}
+  constructor(private readonly _config: AngularJson = { projects: {} }) {}
 
   withProject({ name, root }: { name: string; root: string }) {
     return new AngularJsonMother({
@@ -18,10 +20,6 @@ class AngularJsonMother {
   buildString() {
     return JSON.stringify(this._config, null, 2);
   }
-}
-
-interface AngularJsonConfig {
-  projects: Record<string, { root: string }>;
 }
 
 export const angularJsonMother = new AngularJsonMother();

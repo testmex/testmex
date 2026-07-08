@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../../../core/domain/tree';
 import { Workspace } from '../../../core/domain/workspace';
-import {
-  relativePath,
-  type RelativePath,
-} from '../../../core/models/relative-path';
+import { type RelativePath } from '../../../core/models/relative-path';
 import { WorkspaceMother } from '../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../core/ports/file-system.fake';
 import { runTransform } from '../../../testing/run-transform';
+import { ANGULAR_JSON_PATH, type AngularJson } from '../angular-json';
 import { angularBuilderJestTransform } from './angular-builder-jest.transform';
 
 describe('angularBuilderJestTransform', () => {
@@ -57,9 +55,7 @@ describe('angularBuilderJestTransform', () => {
         },
       });
 
-      expect(
-        (angularJson as AngularJson).projects?.['my-app']?.architect?.test,
-      ).toMatchObject({
+      expect(angularJson?.projects?.['my-app']?.architect?.test).toMatchObject({
         builder: '@analogjs/vitest-angular:test',
       });
     },
@@ -92,9 +88,9 @@ describe('angularBuilderJestTransform', () => {
 });
 
 async function runAngularBuilderJestTransform(
-  angularJson?: Record<string, unknown>,
+  angularJson?: AngularJson,
 ): Promise<{
-  angularJson: Record<string, unknown> | null;
+  angularJson: AngularJson | null;
   commands: readonly (readonly string[])[];
 }> {
   const appName = 'my-app';
@@ -102,7 +98,7 @@ async function runAngularBuilderJestTransform(
   const files: Record<RelativePath, string> = { ...mother.buildFiles() };
 
   if (angularJson !== undefined) {
-    files[relativePath('angular.json')] = JSON.stringify(angularJson, null, 2);
+    files[ANGULAR_JSON_PATH] = JSON.stringify(angularJson, null, 2);
   }
 
   const fileSystem = new FileSystemFake();
@@ -115,18 +111,7 @@ async function runAngularBuilderJestTransform(
   await runTransform({ workspace, transforms: [angularBuilderJestTransform] });
 
   return {
-    angularJson: await workspace.tree.maybeReadJsonFile(
-      relativePath('angular.json'),
-    ),
+    angularJson: await workspace.tree.maybeReadJsonFile(ANGULAR_JSON_PATH),
     commands: workspace.commands.all(),
   };
-}
-
-interface AngularJson {
-  projects?: Record<
-    string,
-    {
-      architect?: Record<string, { builder: string; options?: unknown }>;
-    }
-  >;
 }

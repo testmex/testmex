@@ -1,8 +1,6 @@
 import { angularJsonMother } from './angular-json.mother';
-import {
-  relativePath,
-  type RelativePath,
-} from '../../core/models/relative-path';
+import { ANGULAR_JSON_PATH } from './angular-json';
+import { type RelativePath } from '../../core/models/relative-path';
 
 class AngularCliWorkspaceInfraMother {
   constructor(private readonly _state: State = {}) {}
@@ -29,7 +27,7 @@ class AngularCliWorkspaceInfraMother {
     const root = `apps/${name}`;
 
     const files: Record<RelativePath, string> = {
-      [relativePath('angular.json')]: angularJsonMother
+      [ANGULAR_JSON_PATH]: angularJsonMother
         .withProject({ name, root })
         .buildString(),
     };

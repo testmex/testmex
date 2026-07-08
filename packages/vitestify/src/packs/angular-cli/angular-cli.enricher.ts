@@ -1,13 +1,12 @@
-import { relativePath } from '../../core/models/relative-path';
+import type { ReadonlyWorkspace } from '../../core/domain/workspace';
 import { type Project } from '../../core/domain/workspace';
 import { Enricher } from '../../core/models/enricher';
-import type { ReadonlyWorkspace } from '../../core/domain/workspace';
+import { relativePath } from '../../core/models/relative-path';
+import { ANGULAR_JSON_PATH, type AngularJson } from './angular-json';
 
 export class AngularCliEnricher implements Enricher {
   async enrich(workspace: ReadonlyWorkspace) {
-    const angularJson = await workspace.tree.maybeReadFile(
-      relativePath('angular.json'),
-    );
+    const angularJson = await workspace.tree.maybeReadFile(ANGULAR_JSON_PATH);
 
     if (angularJson === null) {
       return {};
@@ -15,17 +14,11 @@ export class AngularCliEnricher implements Enricher {
 
     const config: AngularJson = JSON.parse(angularJson);
 
-    const projects: Project[] = Object.entries(config.projects ?? {}).map(
-      ([name, meta]) => ({
-        name,
-        path: relativePath(meta.root),
-      }),
+    const projects: Project[] = Object.entries(config.projects ?? {}).flatMap(
+      ([name, meta]) =>
+        meta.root != null ? [{ name, path: relativePath(meta.root) }] : [],
     );
 
     return { projects };
   }
-}
-
-interface AngularJson {
-  projects?: Record<string, { root: string }>;
 }

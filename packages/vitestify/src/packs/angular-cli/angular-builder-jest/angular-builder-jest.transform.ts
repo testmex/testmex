@@ -1,7 +1,6 @@
-import { relativePath } from '../../../core/models/relative-path';
 import { defineTransform } from '../../../core/models/transform';
+import { ANGULAR_JSON_PATH, type AngularJson } from '../angular-json';
 
-const ANGULAR_JSON_PATH = relativePath('angular.json');
 const JEST_BUILDER = '@angular-builders/jest:run';
 const VITEST_ANGULAR_EXECUTOR_PACKAGE = '@analogjs/vitest-angular';
 const VITEST_BUILDER = '@analogjs/vitest-angular:test';
@@ -58,16 +57,3 @@ export const angularBuilderJestTransform = defineTransform({
     }
   },
 });
-
-interface AngularJson {
-  projects?: Record<string, AngularJsonProject>;
-}
-
-interface AngularJsonProject {
-  architect?: Record<string, AngularJsonTarget>;
-}
-
-interface AngularJsonTarget {
-  builder: string;
-  options?: Record<string, unknown>;
-}
