@@ -116,6 +116,71 @@ describe(Tree.name, () => {
       .toBe('console.log("good bye");');
   });
 
+  it('`maybeReadJsonFile()` parses valid JSON from disk', async () => {
+    const { fileSystem, tree } = setUp();
+    const packageJsonPath = relativePath('package.json');
+
+    fileSystem.configure({
+      [packageJsonPath]: '{"name":"my-app","version":"1.0.0"}',
+    });
+
+    expect(await tree.maybeReadJsonFile(packageJsonPath)).toEqual({
+      name: 'my-app',
+      version: '1.0.0',
+    });
+  });
+
+  it('`maybeReadJsonFile()` parses JSONC with comments and trailing commas', async () => {
+    const { fileSystem, tree } = setUp();
+    const tsconfigPath = relativePath('tsconfig.json');
+
+    fileSystem.configure({
+      [tsconfigPath]: `{
+        // compiler options
+        "compilerOptions": {
+          "strict": true,
+        },
+      }`,
+    });
+
+    expect(await tree.maybeReadJsonFile(tsconfigPath)).toEqual({
+      compilerOptions: {
+        strict: true,
+      },
+    });
+  });
+
+  it('`maybeReadJsonFile()` returns null for invalid JSON', async () => {
+    const { fileSystem, tree } = setUp();
+    const packageJsonPath = relativePath('package.json');
+
+    fileSystem.configure({
+      [packageJsonPath]: '{ invalid json }',
+    });
+
+    expect(await tree.maybeReadJsonFile(packageJsonPath)).toBeNull();
+  });
+
+  it('`maybeReadJsonFile()` returns null for missing files', async () => {
+    const { tree } = setUp();
+
+    expect(
+      await tree.maybeReadJsonFile(relativePath('missing.json')),
+    ).toBeNull();
+  });
+
+  it('`maybeReadJsonFile()` returns null for deleted files', async () => {
+    const { fileSystem, tree } = setUp();
+    const packageJsonPath = relativePath('package.json');
+
+    fileSystem.configure({
+      [packageJsonPath]: '{"name":"my-app"}',
+    });
+    tree.delete(packageJsonPath);
+
+    expect(await tree.maybeReadJsonFile(packageJsonPath)).toBeNull();
+  });
+
   it('`commit()` flushes all staged changes to FileSystem', async () => {
     const { fileSystem, tree } = setUp();
     const mainPath = relativePath('apps/my-app/main.ts');

@@ -98,6 +98,9 @@ importers:
       globby:
         specifier: 16.2.0
         version: 16.2.0
+      jsonc-parser:
+        specifier: 3.2.0
+        version: 3.2.0
     devDependencies:
       '@types/debug':
         specifier: 4.1.13

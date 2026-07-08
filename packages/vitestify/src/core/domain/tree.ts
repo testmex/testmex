@@ -1,6 +1,10 @@
+import d from 'debug';
+import { parse, type ParseError } from 'jsonc-parser';
 import type { RelativePath } from '../models/relative-path';
 import type { FileSystem } from '../ports/file-system';
 import { FileSystemCached } from './file-system-cached';
+
+const debug = d('vitestify:tree');
 
 export class Tree {
   private readonly _fileSystemCached: FileSystemCached;
@@ -30,7 +34,15 @@ export class Tree {
       return null;
     }
 
-    return JSON.parse(content) as T;
+    const errors: ParseError[] = [];
+    const parsed = parse(content, errors, { allowTrailingComma: true });
+
+    if (errors.length > 0) {
+      debug('failed to parse JSONC at %s: %O', path, errors);
+      return null;
+    }
+
+    return parsed as T;
   }
 
   async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
