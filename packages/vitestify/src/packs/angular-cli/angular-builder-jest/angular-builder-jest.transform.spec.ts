@@ -11,7 +11,7 @@ import { runTransform } from '../../../testing/run-transform';
 import { angularBuilderJestTransform } from './angular-builder-jest.transform';
 
 describe('angularBuilderJestTransform', () => {
-  it.todo(
+  it(
     'renames test target to jest when using @angular-builders/jest:run',
     async () => {
       const { angularJson } = await runAngularBuilderJestTransform({
@@ -41,7 +41,7 @@ describe('angularBuilderJestTransform', () => {
     },
   );
 
-  it.todo(
+  it(
     'creates a new test target that uses @analogjs/vitest-angular:test',
     async () => {
       const { angularJson } = await runAngularBuilderJestTransform({
@@ -65,7 +65,7 @@ describe('angularBuilderJestTransform', () => {
     },
   );
 
-  it.todo(
+  it(
     'installs @analogjs/vitest-angular when a jest builder target is migrated',
     async () => {
       const { commands } = await runAngularBuilderJestTransform({
