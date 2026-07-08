@@ -13,6 +13,40 @@ class AngularJsonMother {
     });
   }
 
+  withTarget({
+    projectName,
+    targetName,
+    builder,
+  }: {
+    projectName: string;
+    targetName: string;
+    builder: string;
+  }) {
+    const project = this._config.projects?.[projectName];
+
+    if (project == null) {
+      throw new Error(
+        `AngularJsonMother: project "${projectName}" is not configured`,
+      );
+    }
+
+    return new AngularJsonMother({
+      ...this._config,
+      projects: {
+        ...this._config.projects,
+        [projectName]: {
+          ...project,
+          architect: {
+            ...project.architect,
+            [targetName]: {
+              builder,
+            },
+          },
+        },
+      },
+    });
+  }
+
   build() {
     return this._config;
   }
