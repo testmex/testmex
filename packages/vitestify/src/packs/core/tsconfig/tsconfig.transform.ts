@@ -1,14 +1,9 @@
 import { dirname, join } from 'node:path/posix';
-import {
-  relativePath,
-  type RelativePath,
-} from '../../../core/models/relative-path';
+import { relativePath } from '../../../core/models/relative-path';
 import { defineTransform } from '../../../core/models/transform';
-import type { WorkspaceTree } from '../../../core/domain/workspace';
 import { fileTags } from '../identifiers';
 
 const TSCONFIG_SPEC_FILE_NAME = 'tsconfig.spec.json';
-const VITEST_CONFIG_FILE_NAMES = ['vitest.config.mts', 'vitest.config.ts'];
 
 export const tsconfigTransform = defineTransform({
   name: 'tsconfig',
@@ -21,10 +16,6 @@ export const tsconfigTransform = defineTransform({
       }
 
       const projectDirectory = relativePath(dirname(file.path));
-
-      if (!(await _hasVitestConfig({ directory: projectDirectory, tree }))) {
-        continue;
-      }
 
       const tsconfigSpecPath = relativePath(
         join(projectDirectory, TSCONFIG_SPEC_FILE_NAME),
@@ -54,23 +45,4 @@ interface TsconfigSpec {
   compilerOptions?: {
     module?: string;
   };
-}
-
-async function _hasVitestConfig({
-  directory,
-  tree,
-}: {
-  directory: RelativePath;
-  tree: WorkspaceTree;
-}): Promise<boolean> {
-  for (const fileName of VITEST_CONFIG_FILE_NAMES) {
-    if (
-      (await tree.maybeReadFile(relativePath(join(directory, fileName)))) !==
-      null
-    ) {
-      return true;
-    }
-  }
-
-  return false;
 }
