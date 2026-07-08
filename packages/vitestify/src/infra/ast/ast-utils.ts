@@ -67,13 +67,20 @@ export function noIntermediateOfKind(
 
   return false;
 }
-
-export function objectPairsFromNode(
+/**
+ * Converts an object node to a record of key-value pairs.
+ *
+ * @example
+ * ```ts
+ * const node = editor.root.find('export default defineConfig({ $CONFIG })')?.getMatch('CONFIG');
+ * const record = objectNodeToRecord(node);
+ * // → { test: <node>, watch: <node> }
+ * ```
+ */
+export function objectNodeToRecord(
   node: SgNode | null | undefined,
 ): Record<string, SgNode> | undefined {
-  const pairs = node
-    ?.children()
-    ?.filter((c) => c.kind() === 'pair');
+  const pairs = node?.children()?.filter((c) => c.kind() === 'pair');
 
   if (pairs == null) {
     return undefined;
@@ -83,9 +90,10 @@ export function objectPairsFromNode(
 
   for (const pair of pairs) {
     const key = pair.child(0)?.text();
+    const value = pair.child(2);
 
-    if (key != null) {
-      config[key] = pair;
+    if (key != null && value != null) {
+      config[key] = value;
     }
   }
 

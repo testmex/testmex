@@ -1,5 +1,5 @@
 import type { SgNode } from '@ast-grep/napi';
-import { objectPairsFromNode as objectNodeToRecord } from '../../infra/ast/ast-utils';
+import { objectNodeToRecord as objectNodeToRecord } from '../../infra/ast/ast-utils';
 import type { SgRootNode } from '../../infra/ast/sg-editor';
 
 export function findJestConfig(
