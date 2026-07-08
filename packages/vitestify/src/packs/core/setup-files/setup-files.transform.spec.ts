@@ -42,6 +42,40 @@ describe('setup-files', () => {
     });
   });
 
+  it('removes jest-preset-angular imports and their usages', async () => {
+    const appName = 'my-app';
+    const setupContent = `import { setupZonelessTestEnv } from 'jest-preset-angular/setup-env/zoneless';
+import '@testing-library/jest-dom';
+
+setupZonelessTestEnv({
+  errorOnUnknownElements: true,
+  errorOnUnknownProperties: true
+});
+`;
+
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp(appName).withFile(
+        WorkspaceFileMother.file({
+          appName,
+          content: setupContent,
+          fileName: 'test.setup.ts',
+          tags: [fileTags.jestSetup],
+        }).build(),
+      ),
+    );
+
+    await runTransform({
+      workspace,
+      transforms: [setupFilesTransform],
+    });
+
+    const content = await workspace.tree.maybeReadFile(
+      relativePath(`apps/my-app/vitest-test.setup.ts`),
+    );
+
+    expect(content?.trim()).toBe(`import '@testing-library/jest-dom';`);
+  });
+
   it('does not overwrite existing vitest- prefixed clone', async () => {
     const appName = 'my-app';
 
