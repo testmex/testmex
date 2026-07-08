@@ -80,10 +80,10 @@ export const vitestConfigTransform = defineTransform({
       await _maybeAddTestingLibraryReactSetup(context);
 
       await _writeVitestConfig(context);
+    }
 
-      if (devDependencies.size > 0) {
-        commands.add([info.packageManager, 'add', '-D', ...devDependencies]);
-      }
+    if (devDependencies.size > 0) {
+      commands.add([info.packageManager, 'add', '-D', ...devDependencies]);
     }
   },
 });
