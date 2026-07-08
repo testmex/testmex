@@ -45,7 +45,10 @@ Use `UPPER_SNAKE_CASE` for module-level constant bindings (arrays, config object
 
 ```typescript
 // ✅
-const EXCLUDED_CODE_FILE_NAMES = ['jest.config.ts', 'vitest.config.ts'] as const;
+const EXCLUDED_CODE_FILE_NAMES = [
+  'jest.config.ts',
+  'vitest.config.ts',
+] as const;
 
 // ❌
 const excludedCodeFileNames = ['jest.config.ts', 'vitest.config.ts'] as const;
@@ -70,7 +73,42 @@ it('returns true for src/app.test.ts', () => {
 });
 
 // ❌
-it.each(['src/app.spec.ts', 'src/app.test.ts'])('returns true for %s', (path) => {
-  expect(isTestFile(relativePath(path))).toBe(true);
-});
+it.each(['src/app.spec.ts', 'src/app.test.ts'])(
+  'returns true for %s',
+  (path) => {
+    expect(isTestFile(relativePath(path))).toBe(true);
+  },
+);
 ```
+
+## Assertions
+
+Prefer inlined expected values over variables — the assertion should read as a self-contained statement of what the test checks.
+
+```typescript
+// ✅
+expect(await tree.maybeReadFile(mainPath)).toBe('console.log("hello");');
+expect(tree.changes()).toEqual([{ type: 'delete', path: 'the/main/path.ts' }]);
+
+// ❌
+const expectedContent = 'console.log("hello");';
+const expectedChanges = [{ type: 'delete', path: mainPath }];
+expect(await tree.maybeReadFile(mainPath)).toBe(expectedContent);
+expect(tree.changes()).toEqual(expectedChanges);
+```
+
+When a test has more than one `expect`, use `expect.soft` so every assertion runs and failures are reported together.
+
+```typescript
+// ✅
+expect.soft(await tree.maybeReadFile(mainPath)).toBeNull();
+expect
+  .soft(tree.changes())
+  .toEqual([{ type: 'delete', path: 'the/main/path.ts' }]);
+
+// ❌
+expect(await tree.maybeReadFile(mainPath)).toBeNull();
+expect(tree.changes()).toEqual([{ type: 'delete', path: mainPath }]);
+```
+
+A single `expect` in a test may use plain `expect`.
