@@ -1,3 +1,4 @@
+import type { Tree } from '../../core/domain/tree';
 import {
   relativePath,
   type RelativePath,
@@ -24,9 +25,16 @@ export interface AngularJsonTarget {
   options?: Record<string, unknown>;
 }
 
-export function getAngularJestBuilderProjectRoots(
-  angularJson: AngularJson,
-): RelativePath[] {
+export async function getAngularJestBuilderProjectRoots(
+  tree: Pick<Tree, 'maybeReadFile'>,
+): Promise<RelativePath[]> {
+  const angularJsonContent = await tree.maybeReadFile(ANGULAR_JSON_PATH);
+  if (angularJsonContent == null) {
+    return [];
+  }
+
+  const angularJson = JSON.parse(angularJsonContent) as AngularJson;
+
   return Object.entries(angularJson.projects ?? {}).flatMap(([, project]) => {
     if (
       project.architect?.test?.builder !== ANGULAR_BUILDERS_JEST_BUILDER ||

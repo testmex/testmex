@@ -1,7 +1,7 @@
 import { dirname, join } from 'node:path/posix';
 import type {
-  WritableWorkspace,
   WorkspaceTree,
+  WritableWorkspace,
 } from '../../../../core/domain/workspace';
 import type { Finding } from '../../../../core/models/finding';
 import {
@@ -10,6 +10,7 @@ import {
 } from '../../../../core/models/relative-path';
 import { defineTransform } from '../../../../core/models/transform';
 import { SgEditor } from '../../../../infra/ast/sg-editor';
+import { getAngularJestBuilderProjectRoots } from '../../angular-json';
 import { fileTags, findingTypes } from '../../identifiers';
 import { vitestSetupFilePath } from '../../utils';
 
@@ -42,19 +43,15 @@ export const vitestConfigTransform = defineTransform({
     const { commands, findings, info, tree } = workspace;
     const devDependencies = new Set<string>(['vite-tsconfig-paths', 'vitest']);
 
-    for (const file of workspace.getFiles()) {
-      if (!file.tags.includes(fileTags.jestConfig)) {
-        continue;
-      }
-
-      const jestConfigPath = file.path;
+    for (const project of await _collectProjectsToTransform(workspace)) {
       const context: VitestConfigTransformContext = {
         findings,
-        jestConfigDirectory: relativePath(dirname(jestConfigPath)),
-        jestConfigPath,
+        jestConfigPath: project.jestConfigPath,
         moduleNameMappings: [],
+        projectPath: project.path,
         setupFiles: [],
         tree,
+        usesAngular: project.usesAngular,
       };
 
       /* Project already has a vitest config. Skipping... */
@@ -63,31 +60,18 @@ export const vitestConfigTransform = defineTransform({
       }
 
       /* Workspace jest config that aggregates projects. Skipping... */
-      if (await _definesJestProjects(context)) {
+      if (
+        project.jestConfigPath != null &&
+        (await _definesJestProjects(context))
+      ) {
         continue;
       }
 
-      _analyzeAngularUsage(context);
-      _analyzeReactUsage(context);
-      _analyzeDomUsage(context);
-      _analyzeTestingLibraryReactUsage(context);
-
-      await _analyzeJestConfig(context);
-
-      _maybeAppendJestDomVitestSetup(context);
-
-      if (context.usesAngular) {
-        await _addAngularVitestSetup(context);
-        devDependencies.add('@analogjs/vite-plugin-angular');
-        devDependencies.add('@analogjs/vitest-angular');
-      }
-      if (context.usesReact) {
-        devDependencies.add('@vitejs/plugin-react');
-      }
-
-      await _maybeAddTestingLibraryReactSetup(context);
-
-      await _writeVitestConfig(context, workspace);
+      await _generateVitestConfig({
+        context,
+        devDependencies,
+        workspace,
+      });
     }
 
     if (devDependencies.size > 0) {
@@ -98,8 +82,8 @@ export const vitestConfigTransform = defineTransform({
 
 interface VitestConfigTransformContext {
   findings: readonly Finding[];
-  jestConfigDirectory: RelativePath;
-  jestConfigPath: RelativePath;
+  projectPath: RelativePath;
+  jestConfigPath: RelativePath | null;
   moduleNameMappings: JestModuleNameMapping[];
   setupFiles: string[];
   tree: WorkspaceTree;
@@ -107,6 +91,81 @@ interface VitestConfigTransformContext {
   usesJsdom?: boolean;
   usesReact?: boolean;
   usesTestingLibraryReact?: boolean;
+}
+
+async function _collectProjectsToTransform(
+  workspace: WritableWorkspace,
+): Promise<
+  Array<{
+    jestConfigPath: RelativePath | null;
+    path: RelativePath;
+    usesAngular?: boolean;
+  }>
+> {
+  const jestConfigProjects = workspace
+    .getFiles()
+    .filter((file) => file.tags.includes(fileTags.jestConfig))
+    .map((file) => ({
+      jestConfigPath: file.path,
+      path: relativePath(dirname(file.path)),
+    }));
+
+  const jestConfigProjectPaths = new Set(
+    jestConfigProjects.map((project) => project.path),
+  );
+
+  const angularProjects = (
+    await getAngularJestBuilderProjectRoots(workspace.tree)
+  )
+    .filter((path) => !jestConfigProjectPaths.has(path))
+    .map((path) => ({
+      jestConfigPath: null,
+      path,
+      usesAngular: true,
+    }));
+
+  return [
+    ...new Map(
+      [...jestConfigProjects, ...angularProjects].map((project) => [
+        project.path,
+        project,
+      ]),
+    ).values(),
+  ];
+}
+
+async function _generateVitestConfig({
+  context,
+  devDependencies,
+  workspace,
+}: {
+  context: VitestConfigTransformContext;
+  devDependencies: Set<string>;
+  workspace: WritableWorkspace;
+}): Promise<void> {
+  if (context.usesAngular == null) {
+    _analyzeAngularUsage(context);
+  }
+  _analyzeReactUsage(context);
+  _analyzeDomUsage(context);
+  _analyzeTestingLibraryReactUsage(context);
+
+  await _analyzeJestConfig(context);
+
+  _maybeAppendJestDomVitestSetup(context);
+
+  if (context.usesAngular) {
+    await _addAngularVitestSetup(context);
+    devDependencies.add('@analogjs/vite-plugin-angular');
+    devDependencies.add('@analogjs/vitest-angular');
+  }
+  if (context.usesReact) {
+    devDependencies.add('@vitejs/plugin-react');
+  }
+
+  await _maybeAddTestingLibraryReactSetup(context);
+
+  await _writeVitestConfig(context, workspace);
 }
 
 /**
@@ -132,6 +191,10 @@ interface VitestConfigTransformContext {
 async function _definesJestProjects(
   context: VitestConfigTransformContext,
 ): Promise<boolean> {
+  if (context.jestConfigPath == null) {
+    return false;
+  }
+
   const jestConfigContent = await context.tree.maybeReadFile(
     context.jestConfigPath,
   );
@@ -154,7 +217,7 @@ async function _hasVitestConfig(
   for (const fileName of VITEST_CONFIG_ALTERNATIVE_FILE_NAMES) {
     if (
       (await context.tree.maybeReadFile(
-        relativePath(join(context.jestConfigDirectory, fileName)),
+        relativePath(join(context.projectPath, fileName)),
       )) !== null
     ) {
       return true;
@@ -167,6 +230,10 @@ async function _hasVitestConfig(
 async function _analyzeJestConfig(
   context: VitestConfigTransformContext,
 ): Promise<void> {
+  if (context.jestConfigPath == null) {
+    return;
+  }
+
   const jestConfigContent = await context.tree.maybeReadFile(
     context.jestConfigPath,
   );
@@ -280,9 +347,7 @@ function _analyzeDomUsage(context: VitestConfigTransformContext): void {
   context.usesJsdom = context.findings.some(
     (finding) =>
       finding.type === findingTypes.dom &&
-      finding.projects.some(
-        (project) => project.path === context.jestConfigDirectory,
-      ),
+      finding.projects.some((project) => project.path === context.projectPath),
   );
 }
 
@@ -292,9 +357,7 @@ function _maybeAppendJestDomVitestSetup(
   const usesTestingLibraryJestDom = context.findings.some(
     (finding) =>
       finding.type === findingTypes.testingLibraryJestDom &&
-      finding.projects.some(
-        (project) => project.path === context.jestConfigDirectory,
-      ),
+      finding.projects.some((project) => project.path === context.projectPath),
   );
   if (usesTestingLibraryJestDom) {
     context.setupFiles = [
@@ -308,9 +371,7 @@ function _analyzeAngularUsage(context: VitestConfigTransformContext) {
   context.usesAngular = context.findings.some(
     (finding) =>
       finding.type === findingTypes.angular &&
-      finding.projects.some(
-        (project) => project.path === context.jestConfigDirectory,
-      ),
+      finding.projects.some((project) => project.path === context.projectPath),
   );
 }
 
@@ -318,9 +379,7 @@ function _analyzeReactUsage(context: VitestConfigTransformContext) {
   context.usesReact = context.findings.some(
     (finding) =>
       finding.type === findingTypes.react &&
-      finding.projects.some(
-        (project) => project.path === context.jestConfigDirectory,
-      ),
+      finding.projects.some((project) => project.path === context.projectPath),
   );
 }
 
@@ -330,9 +389,7 @@ function _analyzeTestingLibraryReactUsage(
   context.usesTestingLibraryReact = context.findings.some(
     (finding) =>
       finding.type === findingTypes.testingLibraryReact &&
-      finding.projects.some(
-        (project) => project.path === context.jestConfigDirectory,
-      ),
+      finding.projects.some((project) => project.path === context.projectPath),
   );
 }
 
@@ -344,9 +401,7 @@ async function _maybeAddTestingLibraryReactSetup(
   }
 
   await context.tree.write(
-    relativePath(
-      join(context.jestConfigDirectory, TESTING_LIBRARY_SETUP_FILE_NAME),
-    ),
+    relativePath(join(context.projectPath, TESTING_LIBRARY_SETUP_FILE_NAME)),
     TESTING_LIBRARY_SETUP_CONTENT,
   );
 
@@ -360,7 +415,7 @@ async function _addAngularVitestSetup(
   context: VitestConfigTransformContext,
 ): Promise<void> {
   await context.tree.write(
-    relativePath(join(context.jestConfigDirectory, ANGULAR_SETUP_FILE_NAME)),
+    relativePath(join(context.projectPath, ANGULAR_SETUP_FILE_NAME)),
     ANGULAR_SETUP_CONTENT,
   );
 
@@ -433,13 +488,10 @@ ${setupFilesBlock}\
   },
 });
 `;
+  const configPath = relativePath(
+    join(context.projectPath, VITEST_CONFIG_FILE_NAME),
+  ); // Ensure that the config path is always relative to the project path
 
-  await context.tree.write(
-    relativePath(join(context.jestConfigDirectory, VITEST_CONFIG_FILE_NAME)),
-    content,
-  );
-  workspace.tag(
-    relativePath(join(context.jestConfigDirectory, VITEST_CONFIG_FILE_NAME)),
-    fileTags.vitestConfig,
-  );
+  await context.tree.write(configPath, content);
+  workspace.tag(configPath, fileTags.vitestConfig);
 }

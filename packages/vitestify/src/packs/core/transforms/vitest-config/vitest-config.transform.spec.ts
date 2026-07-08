@@ -665,7 +665,7 @@ export default async (): Promise<Config> => ({
       .not.toBeNull();
   });
 
-  it.todo(
+  it(
     'skips angular.json project when vitest config already exists',
     async () => {
       const workspace = createTestingWorkspace(
@@ -701,7 +701,7 @@ export default async (): Promise<Config> => ({
     },
   );
 
-  it.todo(
+  it(
     'generates angular vitest config for angular.json project using @angular-builders/jest:run',
     async () => {
       const workspace = createTestingWorkspace(
@@ -744,7 +744,7 @@ setupTestBed();
     },
   );
 
-  it.todo(
+  it(
     'ignores angular.json projects without @angular-builders/jest:run test target',
     async () => {
       const workspace = createTestingWorkspace(
