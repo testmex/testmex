@@ -10,7 +10,7 @@ import { fileTags } from '../identifiers';
 import { setupFilesTransform } from './setup-files.transform';
 
 describe('setup-files', () => {
-  it.todo('clones jest setup file with vitest- prefix', async () => {
+  it('clones jest setup file with vitest- prefix', async () => {
     const appName = 'my-app';
     const setupContent = `import '@testing-library/jest-dom';`;
 
@@ -19,7 +19,7 @@ describe('setup-files', () => {
         WorkspaceFileMother.file({
           appName,
           content: setupContent,
-          fileName: relativePath(`apps/${appName}/test.setup.ts`),
+          fileName: 'test.setup.ts',
           tags: [fileTags.jestSetup],
         }).build(),
       ),
@@ -37,26 +37,24 @@ describe('setup-files', () => {
     ).toBe(`import '@testing-library/jest-dom';`);
   });
 
-  it.todo('does not overwrite existing vitest- prefixed clone', async () => {
+  it('does not overwrite existing vitest- prefixed clone', async () => {
     const appName = 'my-app';
-    const setupContent = `import '@testing-library/jest-dom';`;
-    const existingCloneContent = `import '@testing-library/jest-dom/vitest';`;
 
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp(appName)
         .withFile(
           WorkspaceFileMother.file({
             appName,
-            content: setupContent,
-            fileName: relativePath(`apps/${appName}/test.setup.ts`),
+            content: `import '@testing-library/jest-dom';`,
+            fileName: 'test.setup.ts',
             tags: [fileTags.jestSetup],
           }).build(),
         )
         .withFile(
           WorkspaceFileMother.file({
             appName,
-            content: existingCloneContent,
-            fileName: relativePath(`apps/${appName}/vitest-test.setup.ts`),
+            content: `import '@testing-library/jest-dom/vitest';`,
+            fileName: 'vitest-test.setup.ts',
           }).build(),
         ),
     );

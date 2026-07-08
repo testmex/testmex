@@ -1,4 +1,6 @@
+import { basename, dirname, join } from 'node:path/posix';
 import {
+  relativePath,
   type RelativePath,
 } from '../../../core/models/relative-path';
 import { defineTransform } from '../../../core/models/transform';
@@ -10,27 +12,39 @@ export const setupFilesTransform = defineTransform({
   apply: _applySetupFilesTransform,
 });
 
-/**
- * @deprecated 🚧 work in progress
- */
 async function _applySetupFilesTransform(
-  _workspace: WritableWorkspace,
+  workspace: WritableWorkspace,
 ): Promise<void> {
-  throw new Error('🚧 work in progress');
+  for (const file of workspace.getFiles()) {
+    if (!isJestSetupFile(file.tags)) {
+      continue;
+    }
+
+    const vitestPath = vitestSetupFilePath(file.path);
+    const existingClone = await workspace.tree.maybeReadFile(vitestPath);
+
+    if (existingClone != null) {
+      continue;
+    }
+
+    const content = await workspace.tree.maybeReadFile(file.path);
+
+    if (content == null) {
+      continue;
+    }
+
+    workspace.tree.write(vitestPath, content);
+  }
 }
 
-/**
- * @deprecated 🚧 work in progress
- */
 export function vitestSetupFilePath(
   jestSetupFilePath: RelativePath,
 ): RelativePath {
-  throw new Error('🚧 work in progress');
+  return relativePath(
+    join(dirname(jestSetupFilePath), `vitest-${basename(jestSetupFilePath)}`),
+  );
 }
 
-/**
- * @deprecated 🚧 work in progress
- */
 export function isJestSetupFile(tags: readonly string[]): boolean {
   return tags.includes(fileTags.jestSetup);
 }
