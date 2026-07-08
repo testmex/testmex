@@ -1,5 +1,5 @@
 import { angularJsonMother } from './angular-json.mother';
-import { ANGULAR_JSON_PATH } from './angular-json';
+import { ANGULAR_JSON_PATH } from '../core/angular-json';
 import { type RelativePath } from '../../core/models/relative-path';
 
 class AngularCliWorkspaceInfraMother {

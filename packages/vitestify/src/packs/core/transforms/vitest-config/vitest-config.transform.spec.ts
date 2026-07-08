@@ -663,6 +663,35 @@ export default async (): Promise<Config> => ({
       )
       .not.toBeNull();
   });
+
+  it.todo(
+    'skips angular.json project when vitest config already exists',
+    () => {
+      // create workspace with angular.json project using @angular-builders/jest:run
+      // project already has vitest.config.ts
+      // run transform
+      // assert existing vitest.config.ts is unchanged
+    },
+  );
+
+  it.todo(
+    'generates angular vitest config for angular.json project using @angular-builders/jest:run',
+    () => {
+      // create workspace with angular.json project using @angular-builders/jest:run
+      // run transform
+      // assert angular.setup.ts is written
+      // assert vitest.config.mts includes @analogjs/vite-plugin-angular
+    },
+  );
+
+  it.todo(
+    'ignores angular.json projects without @angular-builders/jest:run test target',
+    () => {
+      // create workspace with angular.json project using @angular/build:unit-test builder
+      // run transform
+      // assert vitest.config.mts is not generated at project root
+    },
+  );
 });
 
 async function transform(workspace: ReturnType<typeof createTestingWorkspace>) {

@@ -1,7 +1,9 @@
 import { defineTransform } from '../../../../core/models/transform';
-import { ANGULAR_JSON_PATH, type AngularJson } from '../../angular-json';
-
-const JEST_BUILDER = '@angular-builders/jest:run';
+import {
+  ANGULAR_BUILDERS_JEST_BUILDER,
+  ANGULAR_JSON_PATH,
+  type AngularJson,
+} from '../../../core/angular-json';
 const VITEST_ANGULAR_EXECUTOR_PACKAGE = '@analogjs/vitest-angular';
 const VITEST_BUILDER = '@analogjs/vitest-angular:test';
 
@@ -24,7 +26,7 @@ export const angularBuilderJestTransform = defineTransform({
     )) {
       const testTarget = project.architect?.test;
 
-      if (testTarget?.builder !== JEST_BUILDER) {
+      if (testTarget?.builder !== ANGULAR_BUILDERS_JEST_BUILDER) {
         continue;
       }
 

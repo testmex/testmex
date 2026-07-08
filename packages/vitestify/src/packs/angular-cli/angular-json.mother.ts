@@ -1,4 +1,4 @@
-import type { AngularJson } from './angular-json';
+import type { AngularJson } from '../core/angular-json';
 
 class AngularJsonMother {
   constructor(private readonly _config: AngularJson = { projects: {} }) {}

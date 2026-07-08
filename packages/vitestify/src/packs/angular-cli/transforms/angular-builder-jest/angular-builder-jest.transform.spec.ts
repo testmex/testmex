@@ -5,7 +5,7 @@ import { type RelativePath } from '../../../../core/models/relative-path';
 import { WorkspaceMother } from '../../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
 import { runTransform } from '../../../../testing/run-transform';
-import { ANGULAR_JSON_PATH, type AngularJson } from '../../angular-json';
+import { ANGULAR_JSON_PATH, type AngularJson } from '../../../core/angular-json';
 import { angularBuilderJestTransform } from './angular-builder-jest.transform';
 
 describe('angularBuilderJestTransform', () => {
