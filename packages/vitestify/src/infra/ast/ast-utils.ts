@@ -68,6 +68,30 @@ export function noIntermediateOfKind(
   return false;
 }
 
+export function objectPairsFromNode(
+  node: SgNode | null | undefined,
+): Record<string, SgNode> | undefined {
+  const pairs = node
+    ?.children()
+    ?.filter((c) => c.kind() === 'pair');
+
+  if (pairs == null) {
+    return undefined;
+  }
+
+  const config: Record<string, SgNode> = {};
+
+  for (const pair of pairs) {
+    const key = pair.child(0)?.text();
+
+    if (key != null) {
+      config[key] = pair;
+    }
+  }
+
+  return config;
+}
+
 export function findEnclosingCallable(node: SgNode): SgNode | null {
   let current: SgNode | null = node.parent();
   while (current != null && !enclosingCallableKinds.includes(current.kind())) {
