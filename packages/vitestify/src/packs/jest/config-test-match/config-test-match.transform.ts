@@ -3,7 +3,7 @@ import { SgEditor } from '../../../infra/ast/sg-editor';
 import { fileTags } from '../../core/identifiers';
 import { findJestConfig } from '../jest-ast-utils';
 
-const JEST_CONFIG_TEST_MATCH_PAIR = `testMatch: ["**/.*\\\\.jest\\\\.(cts|tsx)"]`;
+const JEST_CONFIG_TEST_MATCH_VALUE = `["**/.*\\\\.jest\\\\.(cts|tsx)"]`;
 
 export const configTestMatchTransform = defineFileTransform({
   name: 'config-test-match',
@@ -13,18 +13,18 @@ export const configTestMatchTransform = defineFileTransform({
 
     const config = findJestConfig(editor.root);
 
-    const testMatchPair = config?.testMatch;
+    const testMatchValue = config?.testMatch;
 
-    if (testMatchPair) {
-      editor.replaceNode(testMatchPair, JEST_CONFIG_TEST_MATCH_PAIR);
+    if (testMatchValue) {
+      editor.replaceNode(testMatchValue, JEST_CONFIG_TEST_MATCH_VALUE);
     } else {
-      const lastPair = Object.values(config ?? {}).at(-1);
+      const lastValue = Object.values(config ?? {}).at(-1);
 
-      if (lastPair) {
+      if (lastValue) {
         editor.replaceNode(
-          lastPair,
-          `${lastPair.text()},
-  ${JEST_CONFIG_TEST_MATCH_PAIR}`,
+          lastValue,
+          `${lastValue.text()},
+  testMatch: ${JEST_CONFIG_TEST_MATCH_VALUE}`,
         );
       }
     }

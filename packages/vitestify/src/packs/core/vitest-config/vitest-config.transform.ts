@@ -1,5 +1,8 @@
 import { dirname, join } from 'node:path/posix';
-import type { WritableWorkspace, WorkspaceTree } from '../../../core/domain/workspace';
+import type {
+  WritableWorkspace,
+  WorkspaceTree,
+} from '../../../core/domain/workspace';
 import type { Finding } from '../../../core/models/finding';
 import {
   relativePath,
@@ -59,6 +62,11 @@ export const vitestConfigTransform = defineTransform({
         continue;
       }
 
+      /* Workspace jest config that aggregates projects. Skipping... */
+      if (await _definesJestProjects(context)) {
+        continue;
+      }
+
       _analyzeAngularUsage(context);
       _analyzeReactUsage(context);
       _analyzeDomUsage(context);
@@ -99,6 +107,41 @@ interface VitestConfigTransformContext {
   usesJsdom?: boolean;
   usesReact?: boolean;
   usesTestingLibraryReact?: boolean;
+}
+
+/**
+ * Returns whether a jest config file is a workspace-level aggregator that lists
+ * child projects instead of defining test settings for a single project.
+ *
+ * Nx and similar setups keep a root `jest.config.ts` that only exports
+ * `projects`. Those files should not get a generated `vitest.config.mts`.
+ *
+ * @example
+ * ```ts
+ * // jest.config.ts — workspace aggregator, returns true
+ * export default async (): Promise<Config> => ({
+ *   projects: await getJestProjectsAsync(),
+ * });
+ *
+ * // apps/my-app/jest.config.ts — project config, returns false
+ * export default {
+ *   setupFilesAfterEnv: ['./jest.setup.ts'],
+ * };
+ * ```
+ */
+async function _definesJestProjects(
+  context: VitestConfigTransformContext,
+): Promise<boolean> {
+  const jestConfigContent = await context.tree.maybeReadFile(
+    context.jestConfigPath,
+  );
+  if (jestConfigContent == null) {
+    return false;
+  }
+
+  const editor = new SgEditor(jestConfigContent);
+
+  return editor.root.find('projects: $$$_') != null;
 }
 
 async function _hasVitestConfig(

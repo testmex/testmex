@@ -624,47 +624,44 @@ afterEach(() => {
     );
   });
 
-  it.todo(
-    'ignores workspace jest config files that define projects',
-    async () => {
-      const workspace = createTestingWorkspace(
-        WorkspaceMother.withApp('my-app')
-          .withFile({
-            path: relativePath('jest.config.ts'),
-            content: `\
+  it('ignores workspace jest config files that define projects', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile({
+          path: relativePath('jest.config.ts'),
+          content: `\
 export default async (): Promise<Config> => ({
   projects: await getJestProjectsAsync(),
 });
 `,
+          tags: [fileTags.jestConfig],
+        })
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default {}',
+            fileName: 'jest.config.ts',
             tags: [fileTags.jestConfig],
-          })
-          .withFile(
-            WorkspaceFileMother.file({
-              appName: 'my-app',
-              content: 'export default {}',
-              fileName: 'jest.config.ts',
-              tags: [fileTags.jestConfig],
-            }).build(),
-          ),
-      );
+          }).build(),
+        ),
+    );
 
-      await transform(workspace);
+    await transform(workspace);
 
-      expect
-        .soft(
-          await workspace.tree.maybeReadFile(relativePath('vitest.config.mts')),
-        )
-        .toBeNull();
+    expect
+      .soft(
+        await workspace.tree.maybeReadFile(relativePath('vitest.config.mts')),
+      )
+      .toBeNull();
 
-      expect
-        .soft(
-          await workspace.tree.maybeReadFile(
-            relativePath('apps/my-app/vitest.config.mts'),
-          ),
-        )
-        .not.toBeNull();
-    },
-  );
+    expect
+      .soft(
+        await workspace.tree.maybeReadFile(
+          relativePath('apps/my-app/vitest.config.mts'),
+        ),
+      )
+      .not.toBeNull();
+  });
 });
 
 async function transform(workspace: ReturnType<typeof createTestingWorkspace>) {
