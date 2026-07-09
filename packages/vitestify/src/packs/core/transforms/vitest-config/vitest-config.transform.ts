@@ -149,8 +149,6 @@ async function _generateVitestConfig({
   }
   _analyzeReactUsage(context);
   _analyzeDomUsage(context);
-  console.log('path', context.projectPath);
-  console.log('jsdom', context.usesJsdom);
   _analyzeTestingLibraryReactUsage(context);
 
   await _analyzeJestConfig(context);
@@ -347,8 +345,6 @@ function _formatModuleNameMapperReplacement({
 }
 
 function _analyzeDomUsage(context: VitestConfigTransformContext): void {
-  console.log('projectPath', context.projectPath);
-  console.log('findings', context.findings);
   context.usesJsdom = context.findings.some(
     (finding) =>
       finding.type === findingTypes.dom &&
