@@ -1,3 +1,4 @@
+import { relative } from 'node:path/posix';
 import type { Finding } from '../models/finding';
 import { relativePath, type RelativePath } from '../models/relative-path';
 import { WorkspaceEnrichment, WorkspaceInfo } from '../models/workspace-info';
@@ -166,10 +167,13 @@ export class CommandQueue {
 }
 
 function _findProjectsForFile(file: FileInfo, projects: Project[]): Project[] {
-  const matches = projects.filter(
-    (project) =>
-      file.path === project.path || file.path.startsWith(`${project.path}/`),
-  );
+  const matches = projects.filter((project) => {
+    const pathRelativeToProject = relative(project.path, file.path);
+
+    return (
+      pathRelativeToProject === '' || !pathRelativeToProject.startsWith('..')
+    );
+  });
 
   return _deduplicateProjects(matches);
 }

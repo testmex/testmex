@@ -123,6 +123,22 @@ describe(Workspace.name, () => {
     ]);
   });
 
+  it('returns a file with its matching root project', () => {
+    const workspace = workspaceWithFiles(
+      [{ path: relativePath('src/app.ts') }],
+      {
+        projects: [{ name: 'my-app', path: relativePath('.') }],
+      },
+    );
+
+    expect(workspace.getFiles()).toMatchObject([
+      {
+        path: 'src/app.ts',
+        projects: [{ name: 'my-app', path: '.' }],
+      },
+    ]);
+  });
+
   it('finds project files by project name', () => {
     const workspace = workspaceWithFiles(
       [{ path: relativePath('apps/my-app/src/app.spec.ts') }],
@@ -149,6 +165,34 @@ describe(Workspace.name, () => {
     expect(workspace.getProjectFiles('libs/backend')).toMatchObject([
       {
         path: 'libs/backend/jest.config.ts',
+      },
+    ]);
+  });
+
+  it('finds project files by project name when project is at root', () => {
+    const workspace = workspaceWithFiles(
+      [{ path: relativePath('src/app.spec.ts') }],
+      {
+        projects: [{ name: 'my-app', path: relativePath('.') }],
+      },
+    );
+
+    expect(workspace.getProjectFiles('my-app')).toMatchObject([
+      {
+        path: 'src/app.spec.ts',
+      },
+    ]);
+  });
+
+  it('finds project files by project path when project is at root', () => {
+    const workspace = workspaceWithFiles(
+      [{ path: relativePath('src/app.spec.ts') }],
+      { projects: [{ path: relativePath('.') }] },
+    );
+
+    expect(workspace.getProjectFiles('.')).toMatchObject([
+      {
+        path: 'src/app.spec.ts',
       },
     ]);
   });
