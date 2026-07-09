@@ -736,6 +736,49 @@ setupTestBed();
       .toContain(`import angular from '@analogjs/vite-plugin-angular';`);
   });
 
+  it('merges angular.json project with existing jest config for the same path', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile({
+          path: relativePath('angular.json'),
+          content: angularJsonMother
+            .withProject({ name: 'my-app', root: 'apps/my-app' })
+            .withTarget({
+              projectName: 'my-app',
+              targetName: 'test',
+              builder: '@angular-builders/jest:run',
+            })
+            .buildString(),
+          tags: [],
+        })
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: `\
+export default {
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+};
+`,
+            fileName: 'jest.config.ts',
+            tags: [fileTags.jestConfig],
+          }).build(),
+        ),
+    );
+
+    await transform(workspace);
+
+    const config = await workspace.tree.maybeReadFile(
+      relativePath('apps/my-app/vitest.config.mts'),
+    );
+
+    expect
+      .soft(config)
+      .toContain(`join(import.meta.dirname, "./angular.setup.ts")`);
+    expect
+      .soft(config)
+      .toContain(`join(import.meta.dirname, "./vitest-jest.setup.ts")`);
+  });
+
   it('ignores angular.json projects without @angular-builders/jest:run test target', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile({

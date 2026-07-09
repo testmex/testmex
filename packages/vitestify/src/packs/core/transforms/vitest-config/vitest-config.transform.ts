@@ -102,36 +102,37 @@ async function _collectProjectsToTransform(
     usesAngular?: boolean;
   }>
 > {
-  const jestConfigProjects = workspace
-    .getFiles()
-    .filter((file) => file.tags.includes(fileTags.jestConfig))
-    .map((file) => ({
-      jestConfigPath: file.path,
-      path: relativePath(dirname(file.path)),
-    }));
-
-  const jestConfigProjectPaths = new Set(
-    jestConfigProjects.map((project) => project.path),
+  const angularProjects = new Map(
+    (await getAngularJestBuilderProjectRoots(workspace.tree)).map((path) => [
+      path,
+      {
+        usesAngular: true,
+      },
+    ]),
+  );
+  const jestConfigProjects = new Map(
+    workspace
+      .getFiles()
+      .filter((file) => file.tags.includes(fileTags.jestConfig))
+      .map((file) => [
+        relativePath(dirname(file.path)),
+        {
+          jestConfigPath: file.path,
+        },
+      ]),
   );
 
-  const angularProjects = (
-    await getAngularJestBuilderProjectRoots(workspace.tree)
-  )
-    .filter((path) => !jestConfigProjectPaths.has(path))
-    .map((path) => ({
-      jestConfigPath: null,
-      path,
-      usesAngular: true,
-    }));
+  const projectPaths = new Set([
+    ...angularProjects.keys(),
+    ...jestConfigProjects.keys(),
+  ]);
 
-  return [
-    ...new Map(
-      [...jestConfigProjects, ...angularProjects].map((project) => [
-        project.path,
-        project,
-      ]),
-    ).values(),
-  ];
+  return Array.from(projectPaths).map((path) => ({
+    path,
+    jestConfigPath: null,
+    ...jestConfigProjects.get(path),
+    ...angularProjects.get(path),
+  }));
 }
 
 async function _generateVitestConfig({
@@ -148,6 +149,8 @@ async function _generateVitestConfig({
   }
   _analyzeReactUsage(context);
   _analyzeDomUsage(context);
+  console.log('path', context.projectPath);
+  console.log('jsdom', context.usesJsdom);
   _analyzeTestingLibraryReactUsage(context);
 
   await _analyzeJestConfig(context);
@@ -344,6 +347,8 @@ function _formatModuleNameMapperReplacement({
 }
 
 function _analyzeDomUsage(context: VitestConfigTransformContext): void {
+  console.log('projectPath', context.projectPath);
+  console.log('findings', context.findings);
   context.usesJsdom = context.findings.some(
     (finding) =>
       finding.type === findingTypes.dom &&
