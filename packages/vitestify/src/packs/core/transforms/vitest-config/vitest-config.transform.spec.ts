@@ -665,47 +665,10 @@ export default async (): Promise<Config> => ({
       .not.toBeNull();
   });
 
-  it(
-    'skips angular.json project when vitest config already exists',
-    async () => {
-      const workspace = createTestingWorkspace(
-        WorkspaceMother.withApp('my-app')
-          .withFile({
-            path: relativePath('angular.json'),
-            content: angularJsonMother
-              .withProject({ name: 'my-app', root: 'apps/my-app' })
-              .withTarget({
-                projectName: 'my-app',
-                targetName: 'test',
-                builder: '@angular-builders/jest:run',
-              })
-              .buildString(),
-            tags: [],
-          })
-          .withFile(
-            WorkspaceFileMother.file({
-              appName: 'my-app',
-              content: 'export default { test: { name: "custom" } };',
-              fileName: 'vitest.config.ts',
-            }).build(),
-          ),
-      );
-
-      await transform(workspace);
-
-      expect(
-        await workspace.tree.maybeReadFile(
-          relativePath('apps/my-app/vitest.config.ts'),
-        ),
-      ).toBe('export default { test: { name: "custom" } };');
-    },
-  );
-
-  it(
-    'generates angular vitest config for angular.json project using @angular-builders/jest:run',
-    async () => {
-      const workspace = createTestingWorkspace(
-        WorkspaceMother.withApp('my-app').withFile({
+  it('skips angular.json project when vitest config already exists', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app')
+        .withFile({
           path: relativePath('angular.json'),
           content: angularJsonMother
             .withProject({ name: 'my-app', root: 'apps/my-app' })
@@ -716,61 +679,87 @@ export default async (): Promise<Config> => ({
             })
             .buildString(),
           tags: [],
-        }),
-      );
+        })
+        .withFile(
+          WorkspaceFileMother.file({
+            appName: 'my-app',
+            content: 'export default { test: { name: "custom" } };',
+            fileName: 'vitest.config.ts',
+          }).build(),
+        ),
+    );
 
-      await transform(workspace);
+    await transform(workspace);
 
-      expect
-        .soft(
-          await workspace.tree.maybeReadFile(
-            relativePath('apps/my-app/angular.setup.ts'),
-          ),
-        )
-        .toBe(`\
+    expect(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/vitest.config.ts'),
+      ),
+    ).toBe('export default { test: { name: "custom" } };');
+  });
+
+  it('generates angular vitest config for angular.json project using @angular-builders/jest:run', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app').withFile({
+        path: relativePath('angular.json'),
+        content: angularJsonMother
+          .withProject({ name: 'my-app', root: 'apps/my-app' })
+          .withTarget({
+            projectName: 'my-app',
+            targetName: 'test',
+            builder: '@angular-builders/jest:run',
+          })
+          .buildString(),
+        tags: [],
+      }),
+    );
+
+    await transform(workspace);
+
+    expect.soft(
+      await workspace.tree.maybeReadFile(
+        relativePath('apps/my-app/angular.setup.ts'),
+      ),
+    ).toBe(`\
 import '@angular/compiler';
 import { setupTestBed } from '@analogjs/vitest-angular/setup-testbed';
 
 setupTestBed();
 `);
 
-      const config = await workspace.tree.maybeReadFile(
+    const config = await workspace.tree.maybeReadFile(
+      relativePath('apps/my-app/vitest.config.mts'),
+    );
+
+    expect
+      .soft(config)
+      .toContain(`import angular from '@analogjs/vite-plugin-angular';`);
+  });
+
+  it('ignores angular.json projects without @angular-builders/jest:run test target', async () => {
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp('my-app').withFile({
+        path: relativePath('angular.json'),
+        content: angularJsonMother
+          .withProject({ name: 'my-app', root: 'apps/my-app' })
+          .withTarget({
+            projectName: 'my-app',
+            targetName: 'test',
+            builder: '@angular/build:unit-test',
+          })
+          .buildString(),
+        tags: [],
+      }),
+    );
+
+    await transform(workspace);
+
+    expect(
+      await workspace.tree.maybeReadFile(
         relativePath('apps/my-app/vitest.config.mts'),
-      );
-
-      expect
-        .soft(config)
-        .toContain(`import angular from '@analogjs/vite-plugin-angular';`);
-    },
-  );
-
-  it(
-    'ignores angular.json projects without @angular-builders/jest:run test target',
-    async () => {
-      const workspace = createTestingWorkspace(
-        WorkspaceMother.withApp('my-app').withFile({
-          path: relativePath('angular.json'),
-          content: angularJsonMother
-            .withProject({ name: 'my-app', root: 'apps/my-app' })
-            .withTarget({
-              projectName: 'my-app',
-              targetName: 'test',
-              builder: '@angular/build:unit-test',
-            })
-            .buildString(),
-          tags: [],
-        }),
-      );
-
-      await transform(workspace);
-
-      expect(
-        await workspace.tree.maybeReadFile(
-          relativePath('apps/my-app/vitest.config.mts'),
-        ),
-      ).toBeNull();
-    },
-  );
+      ),
+    ).toBeNull();
+  });
 });
 
 async function transform(workspace: ReturnType<typeof createTestingWorkspace>) {
