@@ -1,4 +1,9 @@
-import { mkdir, readFile, rm, writeFile as writeFileFs } from 'node:fs/promises';
+import {
+  mkdir,
+  readFile,
+  rm,
+  writeFile as writeFileFs,
+} from 'node:fs/promises';
 import { dirname, join, sep } from 'node:path';
 import { posix } from 'node:path/posix';
 import { globby } from 'globby';
@@ -35,6 +40,7 @@ export class FileSystemImpl implements FileSystem {
 
     const files = await globby(pattern, {
       cwd: this._workspaceRoot,
+      gitignore: true,
       onlyFiles: true,
     });
 
