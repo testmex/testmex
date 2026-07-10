@@ -4,7 +4,7 @@ import type { WorkspaceEnrichment } from './workspace-info';
 
 export interface EnricherOptions {
   workspace: ReadonlyWorkspace;
-  onProgress?(detail: string): void;
+  onProgress(detail: string): void;
 }
 
 export interface Enricher {

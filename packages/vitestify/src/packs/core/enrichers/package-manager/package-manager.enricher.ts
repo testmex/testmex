@@ -1,4 +1,7 @@
-import { Enricher, type EnricherOptions } from '../../../../core/models/enricher';
+import {
+  Enricher,
+  type EnricherOptions,
+} from '../../../../core/models/enricher';
 import type { ReadonlyWorkspace } from '../../../../core/domain/workspace';
 import { relativePath } from '../../../../core/models/relative-path';
 import {
@@ -9,7 +12,7 @@ import {
 export class PackageManagerEnricher implements Enricher {
   readonly name = 'package-manager';
 
-  async enrich({ workspace }: EnricherOptions) {
+  async enrich({ workspace, onProgress }: EnricherOptions) {
     const packageManager =
       (await _detectFromPackageJson(workspace)) ??
       (await _detectFromLockFiles(workspace));
@@ -17,6 +20,9 @@ export class PackageManagerEnricher implements Enricher {
     if (packageManager === undefined) {
       return {};
     }
+
+    const goodChoice = packageManager === 'pnpm' ? ' (good choice 😉)' : '';
+    onProgress?.(`${packageManager} detected${goodChoice}`);
 
     return { packageManager };
   }

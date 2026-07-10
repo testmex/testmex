@@ -126,8 +126,8 @@ describe(Scanner.name, () => {
       'Scanned  [2/7] nx · loading nx graph',
       'Scanned  [3/7] jest',
       'Scanned  [4/7] code · 4 files',
-      'Scanned  [5/7] package-manager',
-      'Scanned  [6/7] test',
+      'Scanned  [5/7] package-manager · pnpm detected (good choice 😉)',
+      'Scanned  [6/7] test · 4 files',
       'Scanned  [7/7] vitest-config',
     ]);
   });
