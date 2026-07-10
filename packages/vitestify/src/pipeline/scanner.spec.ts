@@ -84,10 +84,30 @@ describe(Scanner.name, () => {
   });
 
   it.todo('scanner reports enricher name and file count from enricher callbacks', async () => {
-    // Set up `Scanner` with `ProgressReporterFake`.
-    // Configure workspace with 5 files.
-    // Run `scanWorkspace()`.
-    // Assert messages contain enricher name (e.g. `'code'`) and incrementing file counts (`'1'`, `'2'`, … `'5'`).
+    const progressReporter = new ProgressReporterFake();
+    const { configureWorkspace, scanner } = setUp({ progressReporter });
+
+    configureWorkspace(
+      nxWorkspaceMother
+        .withApp('my-app')
+        .withAppFile('my-app', 'src/one.spec.ts', 'it("one", () => {})')
+        .withAppFile('my-app', 'src/two.spec.ts', 'it("two", () => {})')
+        .withAppFile('my-app', 'src/three.spec.ts', 'it("three", () => {})')
+        .withAppFile('my-app', 'src/four.spec.ts', 'it("four", () => {})')
+        .withAppFile('my-app', 'src/five.spec.ts', 'it("five", () => {})'),
+    );
+
+    await scanner.scanWorkspace();
+
+    const codeMessages = progressReporter
+      .messages()
+      .filter((message) => message.includes('code'));
+
+    expect(codeMessages.some((message) => message.includes('1'))).toBe(true);
+    expect(codeMessages.some((message) => message.includes('2'))).toBe(true);
+    expect(codeMessages.some((message) => message.includes('3'))).toBe(true);
+    expect(codeMessages.some((message) => message.includes('4'))).toBe(true);
+    expect(codeMessages.some((message) => message.includes('5'))).toBe(true);
   });
 
   it.todo('scanner calls done once per enricher', async () => {
