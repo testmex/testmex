@@ -1,23 +1,17 @@
 import { Subject, throttleTime } from 'rxjs';
 import type { ProgressReporter, ProgressSpinner } from './progress-reporter';
 
-// TIDYUP: inline
-// TIDYUP: rename `intervalMs` to `duration`
-export interface ThrottledProgressReporterOptions {
-  intervalMs?: number;
-}
-
 /**
  * @deprecated 🚧 work in progress
  */
 export class ThrottledProgressReporter implements ProgressReporter {
-  private readonly _intervalMs: number;
+  private readonly _duration: number;
 
   constructor(
     private readonly _inner: ProgressReporter,
-    options: ThrottledProgressReporterOptions = {},
+    options: { duration?: number } = {},
   ) {
-    this._intervalMs = options.intervalMs ?? 100;
+    this._duration = options.duration ?? 100;
   }
 
   createSpinner(): ProgressSpinner {
@@ -26,7 +20,7 @@ export class ThrottledProgressReporter implements ProgressReporter {
 
     const subscription = updates$
       .pipe(
-        throttleTime(this._intervalMs, undefined, {
+        throttleTime(this._duration, undefined, {
           leading: true,
           trailing: true,
         }),
