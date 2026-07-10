@@ -31,6 +31,7 @@ export class ClackProgressReporter implements ProgressReporter {
   }
 }
 
+// TIDYUP: factor out in `progress-reporter.ts` and use it in NullProgressReporter
 const NO_OP_SPINNER: ProgressSpinner = {
   message: () => undefined,
   done: () => undefined,
