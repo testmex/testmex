@@ -14,10 +14,7 @@ const VITEST_CONFIG_FILE_NAMES = [
 export class VitestConfigEnricher implements Enricher {
   readonly name = 'vitest-config';
 
-  async enrich({ workspace, onProgress }: EnricherOptions) {
-    if (onProgress !== undefined) {
-      throw new Error('🚧 work in progress');
-    }
+  async enrich({ workspace }: EnricherOptions) {
     const files = [];
     for await (const path of workspace.tree.scanDirectory()) {
       files.push(path);

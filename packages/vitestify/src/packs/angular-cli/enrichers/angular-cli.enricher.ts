@@ -6,10 +6,7 @@ import { ANGULAR_JSON_PATH, type AngularJson } from '../../core/angular-json';
 export class AngularCliEnricher implements Enricher {
   readonly name = 'angular-cli';
 
-  async enrich({ workspace, onProgress }: EnricherOptions) {
-    if (onProgress !== undefined) {
-      throw new Error('🚧 work in progress');
-    }
+  async enrich({ workspace }: EnricherOptions) {
     const angularJson = await workspace.tree.maybeReadFile(ANGULAR_JSON_PATH);
 
     if (angularJson === null) {

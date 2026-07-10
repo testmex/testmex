@@ -6,12 +6,10 @@ export class CodeEnricher implements Enricher {
   readonly name = 'code';
 
   async enrich({ workspace, onProgress }: EnricherOptions) {
-    if (onProgress !== undefined) {
-      throw new Error('🚧 work in progress');
-    }
     const files = [];
     for await (const path of workspace.tree.scanDirectory()) {
       files.push(path);
+      onProgress?.(`${files.length} files`);
     }
 
     return {

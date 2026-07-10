@@ -203,19 +203,19 @@ flowchart LR
 ## Tasks
 
 - [ ] Add `defineEnricher({ name, enrich })` helper; add `name` to `Enricher` interface.
-- [ ] Add `EnricherOptions` with `workspace` and optional `onProgress(detail: string)`.
-- [ ] Update `Enricher.enrich()` signature to accept `EnricherOptions`.
-- [ ] Give each enricher a `name` (e.g. `'code'`, `'test'`, `'jest'`, `'nx'`).
-- [ ] Inject `ProgressReporter` into `Vitestify` constructor (default: `NullProgressReporter`).
-- [ ] Pass reporter to `Scanner`.
-- [ ] Scanner: one spinner per enricher; create before `enrich()`, `done()` after.
-- [ ] Scanner: pass `{ onProgress }` callback that prefixes enricher name onto detail.
+- [x] Add `EnricherOptions` with `workspace` and optional `onProgress(detail: string)`.
+- [x] Update `Enricher.enrich()` signature to accept `EnricherOptions`.
+- [x] Give each enricher a `name` (e.g. `'code'`, `'test'`, `'jest'`, `'nx'`).
+- [x] Inject `ProgressReporter` into `Vitestify` constructor (default: `NullProgressReporter`).
+- [x] Pass reporter to `Scanner`.
+- [x] Scanner: one spinner per enricher; create before `enrich()`, `done()` after.
+- [x] Scanner: pass `{ onProgress }` callback that prefixes enricher name onto detail.
 - [ ] File-scanning enrichers call `onProgress` with incrementing file counts.
 - [ ] Non-scanning enrichers call `onProgress` with contextual status where useful (e.g. Nx: `'running nx graph'`).
 
 ## Testing Strategy
 
-### 🚧 Scanner reports enricher name and file count from enricher callbacks
+### ✅ Scanner reports enricher name and file count from enricher callbacks
 
 - Set up `Scanner` with `ProgressReporterFake`.
 - Configure workspace with 5 files.

@@ -9,10 +9,7 @@ import {
 export class PackageManagerEnricher implements Enricher {
   readonly name = 'package-manager';
 
-  async enrich({ workspace, onProgress }: EnricherOptions) {
-    if (onProgress !== undefined) {
-      throw new Error('🚧 work in progress');
-    }
+  async enrich({ workspace }: EnricherOptions) {
     const packageManager =
       (await _detectFromPackageJson(workspace)) ??
       (await _detectFromLockFiles(workspace));

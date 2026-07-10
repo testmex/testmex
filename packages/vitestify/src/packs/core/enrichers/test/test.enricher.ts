@@ -5,10 +5,7 @@ import { isTestFile } from '../../utils';
 export class TestEnricher implements Enricher {
   readonly name = 'test';
 
-  async enrich({ workspace, onProgress }: EnricherOptions) {
-    if (onProgress !== undefined) {
-      throw new Error('🚧 work in progress');
-    }
+  async enrich({ workspace }: EnricherOptions) {
     const files = [];
     for await (const path of workspace.tree.scanDirectory()) {
       files.push(path);

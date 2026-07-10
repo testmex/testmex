@@ -83,7 +83,7 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('scanner reports enricher name and file count from enricher callbacks', async () => {
+  it('scanner reports enricher name and file count from enricher callbacks', async () => {
     const progressReporter = new ProgressReporterFake();
     const { configureWorkspace, scanner } = setUp({ progressReporter });
 

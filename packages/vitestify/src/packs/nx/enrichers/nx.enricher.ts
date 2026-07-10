@@ -12,10 +12,7 @@ export class NxEnricher implements Enricher {
     this._commandRunner = commandRunner;
   }
 
-  async enrich({ workspace, onProgress }: EnricherOptions) {
-    if (onProgress !== undefined) {
-      throw new Error('🚧 work in progress');
-    }
+  async enrich({ workspace }: EnricherOptions) {
     if (!(await hasNx(workspace.tree))) {
       return {};
     }

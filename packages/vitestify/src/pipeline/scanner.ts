@@ -1,9 +1,7 @@
 import debug from 'debug';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
-import { EnricherFactory, type Enricher } from '../core/models/enricher';
-import type { ReadonlyWorkspace } from '../core/domain/workspace';
-import type { WorkspaceEnrichment } from '../core/models/workspace-info';
+import { EnricherFactory } from '../core/models/enricher';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
@@ -28,16 +26,6 @@ export class Scanner {
     this._progressReporter = args.progressReporter;
   }
 
-  /**
-   * @deprecated 🚧 work in progress
-   */
-  private async _enrichWithProgress(
-    _enricher: Enricher,
-    _workspace: ReadonlyWorkspace,
-  ): Promise<WorkspaceEnrichment> {
-    throw new Error('🚧 work in progress');
-  }
-
   async scanWorkspace(): Promise<Workspace> {
     log('scanning workspace');
     const tree = new Tree({ fileSystem: this._fileSystem });
@@ -48,9 +36,16 @@ export class Scanner {
     let count = 0;
     const workspace = new Workspace({ tree });
     for (const enricher of enrichers) {
+      const spinner = this._progressReporter.createSpinner();
+      spinner.message(`Scanning: ${enricher.name}`);
+
       const result = await enricher.enrich({
         workspace: workspace.asReadonly(),
+        onProgress: (detail) =>
+          spinner.message(`Scanning: ${enricher.name}… ${detail}`),
       });
+
+      spinner.done(`Scanned: ${enricher.name}`);
 
       workspace.applyEnrichment(result);
 

@@ -14,10 +14,7 @@ const JEST_SETUP_FILE_KEYS = ['setupFiles', 'setupFilesAfterEnv'];
 export class JestEnricher implements Enricher {
   readonly name = 'jest';
 
-  async enrich({ workspace, onProgress }: EnricherOptions) {
-    if (onProgress !== undefined) {
-      throw new Error('🚧 work in progress');
-    }
+  async enrich({ workspace }: EnricherOptions) {
     const jestConfigPaths = await this._discoverJestConfigPaths(workspace);
     const jestTestPaths = await this._discoverJestTestPaths(workspace);
     const jestSetupFileInfos = await this._discoverJestSetupFileInfos(
