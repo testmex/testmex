@@ -90,11 +90,7 @@ describe(Scanner.name, () => {
     configureWorkspace(
       nxWorkspaceMother
         .withApp('my-app')
-        .withAppFile('my-app', 'src/one.spec.ts', 'it("one", () => {})')
-        .withAppFile('my-app', 'src/two.spec.ts', 'it("two", () => {})')
-        .withAppFile('my-app', 'src/three.spec.ts', 'it("three", () => {})')
-        .withAppFile('my-app', 'src/four.spec.ts', 'it("four", () => {})')
-        .withAppFile('my-app', 'src/five.spec.ts', 'it("five", () => {})'),
+        .withAppFile('my-app', 'src/app.spec.ts', 'it("works", () => {})'),
     );
 
     await scanner.scanWorkspace();
@@ -102,61 +98,51 @@ describe(Scanner.name, () => {
     const codeMessages = progressReporter
       .messages()
       .filter((message) => message.includes('code'));
-
-    expect(codeMessages.some((message) => message.includes('1'))).toBe(true);
-    expect(codeMessages.some((message) => message.includes('2'))).toBe(true);
-    expect(codeMessages.some((message) => message.includes('3'))).toBe(true);
-    expect(codeMessages.some((message) => message.includes('4'))).toBe(true);
-    expect(codeMessages.some((message) => message.includes('5'))).toBe(true);
-  });
-
-  it.todo('scanner calls done once per enricher', async () => {
-    // Set up `Scanner` with `ProgressReporterFake`.
-    // Run `scanWorkspace()` on a workspace with known enricher count.
-    // Assert `done` was called once per enricher (not only those that scan files).
+    expect(codeMessages).toEqual([
+      'Scanning: code',
+      'Scanning: code… 1 files',
+      'Scanning: code… 2 files',
+      'Scanning: code… 3 files',
+      'Scanning: code… 4 files',
+      'Scanning: code… 5 files',
+      'Scanned: code',
+    ]);
   });
 
   it.todo('non-scanning enricher reports contextual status', async () => {
     // Set up `Scanner` with `ProgressReporterFake` and a workspace that triggers `NxEnricher`.
     // Run `scanWorkspace()`.
-    // Assert messages contain `'nx'` and `'running nx graph'`.
   });
 
-  it(
-    'detects folder with jest.config.ts as project when no nx project exists at that path',
-    async () => {
-      const { configureWorkspace, scanner } = setUp();
+  it('detects folder with jest.config.ts as project when no nx project exists at that path', async () => {
+    const { configureWorkspace, scanner } = setUp();
 
-      configureWorkspace(
-        nxWorkspaceMother
-          .withLib('backend-recipes-core', 'libs/backend/recipes/core')
-          .withWorkspaceFile(
-            'libs/backend/jest.config.ts',
-            'export default {}',
-          ),
-      );
+    configureWorkspace(
+      nxWorkspaceMother
+        .withLib('backend-recipes-core', 'libs/backend/recipes/core')
+        .withWorkspaceFile('libs/backend/jest.config.ts', 'export default {}'),
+    );
 
-      const workspace = await scanner.scanWorkspace();
+    const workspace = await scanner.scanWorkspace();
 
-      expect.soft(workspace.info.projects).toEqual(
-        expect.arrayContaining([
-          {
-            name: 'backend-recipes-core',
-            path: relativePath('libs/backend/recipes/core'),
-          } satisfies Partial<Project>,
-          {
-            path: relativePath('libs/backend'),
-          } satisfies Partial<Project>,
-        ]),
-      );
-      expect.soft(workspace.getProjectFiles('libs/backend')).toMatchObject([
+    expect.soft(workspace.info.projects).toEqual(
+      expect.arrayContaining([
         {
-          path: relativePath('libs/backend/jest.config.ts'),
-          tags: ['jest-config'],
-        },
-      ]);
-    },
-  );
+          name: 'backend-recipes-core',
+          path: relativePath('libs/backend/recipes/core'),
+        } satisfies Partial<Project>,
+        {
+          path: relativePath('libs/backend'),
+        } satisfies Partial<Project>,
+      ]),
+    );
+    expect.soft(workspace.getProjectFiles('libs/backend')).toMatchObject([
+      {
+        path: relativePath('libs/backend/jest.config.ts'),
+        tags: ['jest-config'],
+      },
+    ]);
+  });
 });
 
 function setUp({
