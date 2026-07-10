@@ -2,7 +2,7 @@
 
 - Give vitestify CLI users live feedback during long runs.
 - Today the CLI is silent unless `DEBUG=vitestify:*` is set.
-- Report progress across the full pipeline: scan → analyze → transform → finalize.
+- Report progress during scan, transform, and finalize (analyze runs without progress output).
 - Use `@clack/prompts` for TTY output (spinners and progress bars).
 - Show progress automatically when stdout is a TTY.
 - Keep domain/pipeline code decoupled from clack via a `ProgressReporter` port.
@@ -11,7 +11,8 @@
 
 - Structured logging or log levels — keep `debug()` for diagnostics only.
 - CI-specific progress output (GitHub Actions annotations, etc.).
-- Per-file detail during analyze/transform — only phase-level and count-based feedback.
+- Per-heuristic progress during analyze — heuristics are fast; analyze stays silent.
+- Per-file detail during transform — only phase-level and count-based feedback.
 - Refactoring enrichers to share a single scan pass (separate concern).
 - Progress when stdout is not a TTY (piped/redirected output stays silent).
 
@@ -24,8 +25,6 @@
 - [ ] Enrichers that finish quickly may not call `onProgress` — spinner stays at the enricher name.
 - [ ] Rapid scan updates are throttled by `ThrottledProgressReporter` (at most once every 100ms) — not in `Scanner` or enrichers.
 - [ ] When each enricher completes, clack shows a green stop message (e.g. "Scanned: code").
-- [ ] During analyze, a spinner shows the current heuristic name (e.g. "Analyzing: angular heuristic").
-- [ ] When analyze completes, clack shows a green stop message with findings count.
 - [ ] During transform, a spinner shows the current transform name.
 - [ ] When transform completes, clack shows a green stop message.
 - [ ] During finalize, a spinner shows the current command being run.
@@ -40,8 +39,8 @@
 - `ThrottledProgressReporter` decorates any `ProgressReporter` and throttles `message()` calls.
 - CLI wires `ThrottledProgressReporter(ClackProgressReporter)` — pipeline stages stay unaware of throttling.
 - Replace `FileSystem.scanDirectory()` return type with `AsyncIterable<RelativePath>` backed by `globbyStream`.
-- Inject `ProgressReporter` into `Vitestify` and each pipeline stage.
-- One spinner per work item (enricher, heuristic, transform, command) — not one global spinner.
+- Inject `ProgressReporter` into `Vitestify` and pipeline stages that report progress (`Scanner`, `Transformer`, `Finalizer`).
+- One spinner per work item (enricher, transform, command) — not one global spinner.
 
 ## Scan progress: Scanner owns lifecycle, enrichers own detail
 
@@ -114,7 +113,7 @@ Enrichers declare `readonly name` on the class (e.g. `readonly name = 'code'` on
 flowchart TD
   cli["cli.ts"] --> vitestify["Vitestify<br>[progressReporter: ProgressReporter]"]
   vitestify --> scanner["Scanner"]
-  vitestify --> analyzer["Analyzer"]
+  vitestify --> analyzer["Analyzer<br>(no progress)"]
   vitestify --> transformer["Transformer"]
   vitestify --> finalizer["Finalizer"]
 
@@ -123,7 +122,6 @@ flowchart TD
   clackReporter --> clackSpinner["@clack/prompts spinner"]
 
   scanner --> reporterPort(("ProgressReporter"))
-  analyzer --> reporterPort
   transformer --> reporterPort
   finalizer --> reporterPort
 
@@ -235,26 +233,16 @@ flowchart LR
 - Run `scanWorkspace()`.
 - Assert messages contain `'nx'` and `'loading nx graph'`.
 
-# 🚧 PR#4 — Analyzer, Transformer, Finalizer progress + CLI wiring
+# 🚧 PR#4 — Transformer, Finalizer progress + CLI wiring
 
 ## Tasks
 
-- [ ] Add `name` to `Heuristic` interface.
-- [ ] Add `name` to `defineFileContentHeuristic` args (like `defineFileTransform`).
-- [ ] Pass reporter to `Analyzer`, `Transformer`, `Finalizer`.
-- [ ] Analyzer: one spinner per heuristic; `message` with heuristic name during `inspect()`; `done` after each heuristic completes.
+- [ ] Pass reporter to `Transformer`, `Finalizer`.
 - [ ] Transformer: one spinner per transform; `message` with transform name during `apply()`; `done` after each transform completes.
 - [ ] Finalizer: one spinner per command; `message` with command string during `run()`; `done` after each command completes.
 - [ ] CLI wires `new ThrottledProgressReporter(new ClackProgressReporter())` into `Vitestify`.
 
 ## Testing Strategy
-
-### 🚧 Analyzer reports heuristic name during inspect
-
-- Set up `Analyzer` with `ProgressReporterFake` and 2 heuristics with `name` `'heuristic-a'` and `'heuristic-b'`.
-- Run `analyze()`.
-- Assert messages contain `heuristic-a` and `heuristic-b`.
-- Assert `done` called twice via `Analyzed: {name}` messages.
 
 ### 🚧 Transformer reports transform name during apply
 
@@ -283,3 +271,4 @@ flowchart LR
 - **Tree-level progress on** `scanDirectory()` — rejected; multiple enrichers scan independently (Jest scans three times), so tree-level counting would double/triple-count files and miss non-scan work.
 - **Inject** `ProgressReporter` **into enrichers** — rejected; enrichers are pack/domain code and should stay decoupled from clack. A narrow `onProgress` callback keeps lifecycle (`createSpinner` / `done`) in the Scanner.
 - **Structured progress events** (`{ kind: 'count' }` vs `{ kind: 'status' }`) — deferred; free-form `onProgress(detail: string)` is sufficient for v1. Scanner prefixes enricher name; enricher supplies detail.
+- **Per-heuristic analyze progress** — rejected; heuristics run quickly over in-memory workspace state. Progress during analyze would add noise without meaningful feedback. Scan, transform, and finalize remain the slow, user-visible phases.
