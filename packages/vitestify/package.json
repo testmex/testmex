@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "bin": {
+    "vitestify": "./dist/cli.js"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -15,5 +18,13 @@
       "default": "./dist/index.js"
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "@ast-grep/napi": "0.43.0",
+    "debug": "4.4.3",
+    "globby": "16.2.0",
+    "jsonc-parser": "3.2.0"
+  },
+  "devDependencies": {
+    "@types/debug": "4.1.13"
+  }
 }

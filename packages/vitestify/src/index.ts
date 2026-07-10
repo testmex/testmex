@@ -1,1 +1,1 @@
-export * from './lib/vitestify.js';
+export { Vitestify } from './pipeline/vitestify';

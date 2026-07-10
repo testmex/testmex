@@ -1,0 +1,428 @@
+# Goals
+
+- Provide a single command that migrates an Angular project (CLI or Nx) from Jest to Vitest.
+- Make the architecture framework-agnostic so it can support other frameworks (e.g. React, Vue) in the future.
+- Make it easy to add new heuristics and transforms without touching core orchestration logic.
+- For migrations that are too complex to automate reliably, generate agent instructions that an AI coding assistant can follow to complete the migration.
+
+# Non-Goals
+
+- **Runtime test helpers** — this tool only migrates config and files; it does not ship utilities used at test runtime.
+- **Full Jest API compatibility layer** — we transform common patterns but do not polyfill Jest APIs that have no Vitest equivalent.
+- **Non-Angular frameworks in v1** — the architecture supports them, but v1 only ships Angular heuristics.
+- **Migrating from other test runners** (Karma, Jasmine) — Jest-to-Vitest only for now.
+- **Automatic fix of all edge cases** — the tool handles common patterns; exotic setups may need manual follow-up (covered by agent instructions where possible).
+
+# Desired Behavior
+
+- User runs `npx @testmex/vitestify` from the workspace root.
+- The command scans the workspace, detecting Angular CLI / Nx projects, Jest config files, and test files.
+- The tool applies transforms: updates config files, rewrites Jest-specific imports/APIs in test files, updates `package.json` dependencies, etc.
+- Progress is logged to stdout as each step completes.
+- For migrations too complex to automate, agent instruction files are written alongside the migration output.
+
+# Design
+
+1. **CLI** — entry point. Bootstraps **Vitestify**.
+2. **Scanner** — discovers workspace structure: project type (Angular CLI vs Nx), Jest config files, test files, `package.json` entries.
+3. **Heuristics** — small, composable rules registered in a simple array.
+
+- Each **Heuristic** receives the full `Workspace` (`WorkspaceInfo` + `Tree`).
+- It can inspect individual files, cross-file relationships, or whole projects.
+- Examples: "file uses `jest.mock`".
+- They produce **Findings**. Easy to add new ones.
+
+1. **Transforms** — each transform reads and writes through the shared `Tree`.
+
+- It receives the `Workspace` and a list of findings.
+- Registered in a simple array.
+- The agent-instruction transform is just another transform that handles findings flagged as needing manual help.
+
+1. **Vitestify** — wires it all together: CLI → Scanner → heuristics → transforms, all sharing one `Tree`.
+
+## Mental Model
+
+**detect → act.**
+
+- The scanner maps the workspace (`WorkspaceInfo`).
+- Vitestify bundles that with a shared `Tree` into a `**Workspace`\*\*.
+- Heuristics inspect the `Workspace` and produce **findings** — observations about what needs changing.
+- Heuristics have full access to file content and cross-file context via the `Tree`.
+- **Transforms** act on findings by reading and writing through the same `Tree`.
+- The `Tree` is an in-memory overlay over the file system.
+- It reads lazily, caches edits, and flushes them on `commit()`.
+- Because all transforms edit the same `Tree`, several of them can touch the same file in sequence without clobbering each other.
+- A **change** is the `Tree`'s record of a staged create, update (optionally with a rename), or delete.
+- The agent-instruction transform is just another transform — it stages Markdown files for findings flagged as needing manual help.
+
+```mermaid
+flowchart LR
+    Scan["Scanner<br>WorkspaceInfo"]
+    Find["Heuristics<br>Finding[]"]
+    Change["Transforms<br>write to Tree"]
+    Commit["Tree.commit()"]
+
+    Scan --> Find --> Change --> Commit
+```
+
+## Diagram
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant CLI
+    participant Vitestify
+    participant Scanner
+    participant Heuristics
+    participant Transforms
+    participant Tree
+
+    User->>CLI: npx @testmex/vitestify
+    CLI->>Vitestify: run()
+    Vitestify->>Scanner: scanWorkspace()
+    Scanner-->>Vitestify: WorkspaceInfo (projects, files)
+    Vitestify->>Heuristics: inspect(workspace)
+    Heuristics-->>Vitestify: Finding[]
+    Vitestify->>Transforms: apply(workspace, findings)
+    Transforms->>Tree: maybeReadFile() / write()
+    Vitestify->>Tree: commit()
+```
+
+## Implementation Details
+
+- **Heuristic & Transform registration**: hardcoded arrays — no auto-discovery or plugin system. Heuristics and transforms are registered as simple arrays.
+- **Tree**:
+  - An in-memory overlay over the `FileSystem`.
+  - Reads are lazy and cached.
+  - Writes/deletes are staged in memory.
+  - `commit()` flushes staged changes to disk.
+  - It is the single channel through which heuristics and transforms touch file content.
+  - This is what makes multi-transform edits to the same file compose.
+- **Code transforms**: use **@ast-grep/napi** for AST-based rewrites of test files (e.g. `jest.mock` → `vi.mock`).
+- **Config parsing**:
+  - Support the Jest config in all its common forms — `jest.config.{ts,js,mjs,cjs}`, the Nx `jest.preset.js`, and an inline `jest` field in `package.json`.
+  - JS/TS configs are edited via AST.
+  - The `package.json` field is edited via structured JSON edit.
+  - Migrating from Karma/Jasmine configs remains out of scope.
+- **Test runner wiring**:
+  - Changing config files is not enough — the runner has to invoke Vitest.
+  - A heuristic detects how tests are currently run.
+  - A transform rewrites it.
+  - For **Nx**: the `@nx/jest:jest` target in `project.json` is rewritten to a Vitest target (`@nx/vite:test`, or `@analogjs/vitest-angular:test` for Angular-in-Nx) with a generated `vite.config.ts`.
+  - For **Angular CLI**: the `test` target's Jest builder in `angular.json` is rewritten to the Vitest builder.
+  - Cases too gnarly to rewrite safely emit a `needs-agent` finding for the agent-instruction transform.
+
+### Core
+
+```typescript
+type RelativePath = string & { readonly [__relativePathBrand]: true };
+```
+
+`RelativePath` is a branded string type. It represents a path relative to the workspace root.
+
+```typescript
+class Tree {
+  constructor(args: { fileSystem: FileSystem }) {}
+
+  maybeReadFile(path: RelativePath): Promise<string | null> {} // lazy, cached
+  write(
+    path: RelativePath,
+    content: string,
+    options?: { originalPath?: RelativePath },
+  ): void {} // staged in memory; optional originalPath renames on commit
+  delete(path: RelativePath): void {} // staged in memory
+  changes(): Change[] {} // staged, uncommitted edits
+  commit(): Promise<void> {} // flush staged changes to the FileSystem
+}
+```
+
+The `Tree` is the shared mutation surface for the whole run.
+
+- Heuristics read through it.
+- Transforms read and write through it.
+- Edits live in one in-memory cache until `commit()`.
+- Multiple transforms can edit the same file in sequence and each sees the previous transform's output.
+
+### Scanner
+
+```typescript
+class Scanner {
+  constructor(args: {
+    commandRunner: CommandRunner;
+    fileSystem: FileSystem;
+    enrichers: Enricher[];
+  }) {}
+
+  async scanWorkspace(): Promise<WorkspaceInfo> {}
+}
+
+interface Enricher {
+  enrich(workspaceInfo: WorkspaceInfo): Promise<WorkspaceInfo>;
+}
+
+interface WorkspaceInfo {
+  workspaceType: 'angular-cli' | 'nx' | null;
+  projects: Project[];
+}
+
+interface Project {
+  name: string;
+  path: RelativePath;
+  files: ProjectFile[];
+}
+
+interface ProjectFile {
+  path: RelativePath;
+  tags: FileTag[];
+}
+
+type FileTag =
+  | 'jest-config' // jest.config.{ts,js,mjs,cjs} or package.json jest field
+  | 'nx-project-json'
+  | 'angular-json'
+  | 'test'
+  | 'tsconfig';
+```
+
+`scanWorkspace` workflow:
+
+- First detects `workspaceType` (presence of `nx.json` → `nx`, else `angular.json` → `angular-cli`).
+- Then runs each registered `Enricher` in order.
+- Each `Enricher` (e.g. `AngularCliEnricher`, `NxEnricher`) checks whether it applies to the detected `workspaceType`.
+- If so, it augments the `WorkspaceInfo` with the projects and files it discovers.
+- Enrichers are passed into the `Scanner` constructor so the set is explicit and testable.
+
+Vitestify assembles a `Workspace` from the scanner output and the shared `Tree`:
+
+```typescript
+type Workspace = { info: WorkspaceInfo; tree: Tree };
+```
+
+### Heuristics & Findings
+
+```typescript
+interface Heuristic {
+  inspect(workspace: Workspace): Promise<Finding[]>;
+}
+
+interface Finding {
+  type: FindingType;
+  project: Project; // the heuristic supplies the project context
+  file?: ProjectFile; // when the finding relates to a specific file
+}
+
+type FindingType = string; // e.g. 'jest-mock-call', 'nx-jest-executor' — defined per heuristic
+```
+
+Each heuristic receives the full `Workspace`.
+
+- It can inspect individual files (via `workspace.tree.maybeReadFile`).
+- It can inspect whole projects (via `workspace.info.projects`).
+- It can inspect cross-file relationships — e.g. a per-project `jest.config.ts` that extends the Nx `jest.preset.js`, or imports that must be reconciled with `tsconfig` paths.
+- Heuristics return `Finding`s stamped with the relevant `project` (and optional `file`).
+- `FindingType` identifies the specific pattern detected.
+
+### Transforms & Changes
+
+```typescript
+interface Transform {
+  apply(workspace: Workspace, findings: Finding[]): Promise<void>;
+}
+
+type CreateChange = { type: 'create'; path: RelativePath; content: string };
+type DeleteChange = { type: 'delete'; path: RelativePath };
+type UpdateChange = {
+  type: 'update';
+  path: RelativePath;
+  content: string;
+  originalPath?: RelativePath; // when set, commit renames originalPath → path
+};
+
+type Change = CreateChange | UpdateChange | DeleteChange;
+```
+
+Each transform receives the `Workspace` and matching findings.
+
+- `apply` reads source through `workspace.tree` and writes edited content back to it.
+- It returns nothing — there is no per-transform `Change[]` to merge.
+- The `Tree` is the single accumulator of edits.
+- A `jest.mock` rewrite and an import rewrite can both edit the same test file in sequence, each seeing the prior edit.
+- `Change` is the `Tree`'s own derived record of what was staged:
+  - `create` for new paths.
+  - `delete` for removed paths.
+  - `update` for in-place edits or renames (`path` is always the final path; pass `originalPath` to `Tree.write` when a transform renames a file, e.g. `jest.config.ts` → `vitest.config.ts`).
+
+### Vitestify
+
+```typescript
+interface VitestifyResult {
+  changes: Change[];
+}
+
+class Vitestify {
+  async run(): Promise<VitestifyResult> {}
+}
+```
+
+The Vitestify workflow:
+
+- Creates one `Tree` (over the real `FileSystem`).
+- Assembles a `Workspace` from the scanner's `WorkspaceInfo` and that `Tree`.
+- Runs each registered heuristic and collects findings.
+- Applies each registered transform with the `Workspace` and findings.
+- After transforms run, `result.changes` is `tree.changes()`.
+- Calls `tree.commit()` to flush everything to disk (including renames).
+
+# Testing Strategy
+
+## Tree
+
+Test the `Tree` against a `FileSystemFake` — no temp directories, no real disk I/O.
+
+### [x] Staged write is visible to subsequent reads without committing:
+
+- Arrange: a `Tree` over a `FileSystemFake` with an existing file.
+- Act: `tree.write(path, newContent)` then `tree.maybeReadFile(path)`.
+- Assert: `maybeReadFile` returns `newContent`; `FileSystemFake` still has the original content.
+
+### [x] Staged create is readable before commit:
+
+- Arrange: a `Tree` over an empty `FileSystemFake`.
+- Act: `tree.write(newPath, content)`.
+- Assert: `tree.maybeReadFile(newPath)` returns `content`; `changes()` has one `create`.
+
+### [x] Staged delete hides file from reads:
+
+- Arrange: a `Tree` over a `FileSystemFake` with one file.
+- Act: `tree.delete(path)`.
+- Assert: `tree.maybeReadFile(path)` is null; `changes()` has one `delete`; `FileSystemFake` still has the file until commit.
+
+### [x] Sequential writes to the same file compose:
+
+- Arrange: a `Tree` with an existing file.
+- Act: `tree.write(path, 'first')` then `tree.write(path, 'second')`.
+- Assert: `tree.maybeReadFile(path)` returns `'second'`; `changes()` has one `update`.
+
+### [x] Rename via `originalPath` on write:
+
+- Arrange: a `Tree` with `old/path.ts` on disk.
+- Act: `tree.write('new/path.ts', content, { originalPath: 'old/path.ts' })`.
+- Assert: `changes()` has one `update` with `path: 'new/path.ts'` and `originalPath: 'old/path.ts'`; `tree.maybeReadFile('old/path.ts')` is null and `tree.maybeReadFile('new/path.ts')` returns `content`.
+
+### [x] `commit()` flushes all staged changes to FileSystem:
+
+- Arrange: a `Tree` with staged create, update, and delete.
+- Act: `tree.commit()`.
+- Assert: `FileSystemFake` reflects all three operations; `changes()` is empty afterward.
+
+## Scanner
+
+### [x] Detects Angular CLI project:
+
+- Arrange: create a temp workspace with `angular.json`.
+- Act: run scanner on the workspace path.
+- Assert: returns project type `angular-cli`
+
+### [x] Detects Nx project:
+
+- Arrange: create a temp workspace with `nx.json`, `project.json`.
+- Act: run scanner on the workspace path.
+- Assert: returns project type `nx` with the jest config path.
+
+### [x] Enriches Nx project with jest config
+
+- Arrange: create an nx workspace with a `jest.config.ts` file.
+- Act: run scanner on the workspace path.
+- Assert: project has a file tagged `jest-config`.
+
+### [x] Enriches Nx project with test files
+
+- Arrange: create an nx workspace with a test file : `....spec.ts`.
+- Act: run scanner on the workspace path.
+- Assert: project has a file tagged `test`.
+
+## Heuristics
+
+### [x] Heuristic detects `jest.mock` usage:
+
+- Arrange: a `Workspace` whose test file contains `jest.mock('./foo')`.
+- Act: run the heuristic.
+- Assert: returns a result of type `jest-mock-call` with tag `"jest"`.
+
+## Transforms
+
+### [x] Rewrites `jest.mock` to `vi.mock` via the Tree:
+
+- Arrange: a `Tree` whose test file contains `jest.mock('./foo')`; a matching finding.
+- Act: apply the transform with the `Workspace` and finding.
+- Assert: `tree.maybeReadFile(path)` now contains `vi.mock('./foo')`.
+
+## Vitestify
+
+### [x] Applies transforms and commits:
+
+- Arrange: set up a workspace with a jest config and a test file using `jest.mock`.
+- Act: run Vitestify.
+- Assert: after commit, the test file is rewritten on disk.
+
+# PR Plan
+
+```mermaid
+flowchart LR
+    PR0["PR 0<br>Core + Tree"]
+    PR1["PR 1<br>Scanner"]
+    PR2["PR 2<br>Heuristics"]
+    PR3["PR 3<br>Transforms"]
+    PR4["PR 4<br>Vitestify +<br>wide test"]
+
+    PR0 --> PR1
+    PR0 --> PR2
+    PR0 --> PR3
+    PR1 --> PR4
+    PR2 --> PR3
+    PR3 --> PR4
+```
+
+1. [x] **PR 0 — Core + Tree**:
+
+- `RelativePath`, `FileSystem`, and the `Tree` (lazy reads, in-memory staging, `changes()`, `commit()`).
+- Everything downstream depends on it.
+
+1. [x] **PR 1 — Scanner**:
+
+- Workspace detection (Angular CLI vs Nx).
+- `Enricher` interface + `AngularCliEnricher`/`NxEnricher`.
+- Jest config discovery (all forms), test file discovery.
+
+1. [x] **PR 2 — heuristics**:
+
+- `Workspace`/`Finding`/`Heuristic` types, tag system.
+- Ships with the `jest.mock` heuristic.
+
+1. [x] **PR 3 — Transforms**:
+
+- `Transform`/`Change` union (including rename-on-update).
+- Ships with v1 transforms (e.g. `jest.mock` → `vi.mock` via `@ast-grep/napi`).
+
+1. [x] **PR 4 — Vitestify + wide test**:
+
+- CLI entry point.
+- Wires Scanner, heuristics, and transforms over one `Tree`.
+
+1. [x] Nits
+
+- Move out stuff that have nothing to do in core
+- Split `fileTag` accross packs
+
+# Alternatives Considered
+
+- **Codemod**:
+  - Vitestify is more complex than a file transform.
+  - There will be many project-wide or workspace-wide rules and commands to run etc...
+
+- **Nx generator instead of standalone CLI**:
+  - Would tie the tool to `@nx/devkit`.
+  - `@nx/devkit` is often coupled to specific Nx versions.
+  - That makes it harder to support across different workspaces.
+  - A standalone CLI avoids this dependency.
+  - It works with both Angular CLI and Nx projects.
