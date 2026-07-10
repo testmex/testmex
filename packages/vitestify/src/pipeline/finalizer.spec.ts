@@ -50,10 +50,10 @@ describe(Finalizer, () => {
     await finalizer.finalize(workspace);
 
     expect(progressReporter.messages()).toEqual([
-      'Finalizing: npm install vitest',
-      'Finalized: npm install vitest',
-      'Finalizing: npx nx add @nx/vitest',
-      'Finalized: npx nx add @nx/vitest',
+      'Running command: npm install vitest',
+      'Command done: npm install vitest',
+      'Running command: npx nx add @nx/vitest',
+      'Command done: npx nx add @nx/vitest',
     ]);
   });
 });

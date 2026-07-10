@@ -27,8 +27,8 @@
 - [ ] When each enricher completes, clack shows a green stop message (e.g. "Scanned: code").
 - [ ] During transform, a spinner shows the current transform name.
 - [ ] When transform completes, clack shows a green stop message.
-- [ ] During finalize, a spinner shows the current command being run.
-- [ ] When finalize completes, clack shows a green stop message.
+- [ ] During finalize, a spinner shows the command being run (e.g. "Running command: npm install vitest").
+- [ ] When each command completes, clack shows a green stop message (e.g. "Command done: npm install vitest").
 - [ ] When stdout is not a TTY, no progress output is shown (existing silent behavior).
 - [ ] `DEBUG=vitestify:*` continues to work alongside progress output.
 
@@ -239,7 +239,7 @@ flowchart LR
 
 - [x] Pass reporter to `Transformer`, `Finalizer`.
 - [x] Transformer: one spinner per transform; `message` with transform name during `apply()`; `done` after each transform completes.
-- [ ] Finalizer: one spinner per command; `message` with command string during `run()`; `done` after each command completes.
+- [ ] Finalizer: one spinner per command; `message` with `Running command: {command}` during `run()`; `done` with `Command done: {command}` after each command completes.
 - [ ] CLI wires `new ThrottledProgressReporter(new ClackProgressReporter())` into `Vitestify`.
 
 ## Testing Strategy
@@ -255,8 +255,8 @@ flowchart LR
 
 - Set up `Finalizer` with `ProgressReporterFake` and workspace with 2 queued commands.
 - Run `finalize()`.
-- Assert messages contain command strings.
-- Assert `done` called twice via `Finalized: {command}` messages.
+- Assert messages contain `Running command: {command}` for each queued command.
+- Assert `done` called twice via `Command done: {command}` messages.
 
 # Alternatives Considered
 
