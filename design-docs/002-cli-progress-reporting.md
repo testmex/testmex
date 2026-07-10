@@ -233,14 +233,14 @@ flowchart LR
 - Run `scanWorkspace()`.
 - Assert messages contain `'nx'` and `'loading nx graph'`.
 
-# 🚧 PR#4 — Transformer, Finalizer progress + CLI wiring
+# ✅ PR#4 — Transformer, Finalizer progress + CLI wiring
 
 ## Tasks
 
 - [x] Pass reporter to `Transformer`, `Finalizer`.
 - [x] Transformer: one spinner per transform; `message` with transform name during `apply()`; `done` after each transform completes.
 - [x] Finalizer: one spinner per command; `message` with `Running command: {command}` during `run()`; `done` with `Command done: {command}` after each command completes.
-- [ ] CLI wires `new ThrottledProgressReporter(new ClackProgressReporter())` into `Vitestify`.
+- [x] CLI wires `new ThrottledProgressReporter(new ClackProgressReporter())` into `Vitestify`.
 
 ## Testing Strategy
 

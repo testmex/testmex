@@ -1,9 +1,9 @@
-import { Analyzer } from './analyzer';
+import { ThrottledProgressReporter } from 'src/core/ports/throttled-progress-reporter';
+import { ClackProgressReporter } from 'src/infra/clack-progress-reporter';
 import { CommandRunnerPooled } from '../core/domain/command-runner-pooled';
 import type { Pack } from '../core/models/pack';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
-import { NullProgressReporter } from '../core/ports/null-progress-reporter';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
 import { FileSystemImpl } from '../infra/file-system.impl';
 import angularCliPack from '../packs/angular-cli';
@@ -11,6 +11,7 @@ import corePack from '../packs/core';
 import jestPack from '../packs/jest';
 import nxPack from '../packs/nx';
 import { Scanner } from '../pipeline/scanner';
+import { Analyzer } from './analyzer';
 import { Finalizer } from './finalizer';
 import { Transformer } from './transformer';
 
@@ -33,7 +34,9 @@ export class Vitestify {
   constructor({
     commandRunner = new CommandRunnerPooled({ maxConcurrent: 10 }),
     fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
-    progressReporter = new NullProgressReporter(),
+    progressReporter = new ThrottledProgressReporter(
+      new ClackProgressReporter(),
+    ),
   }: {
     commandRunner?: CommandRunner;
     fileSystem?: FileSystem;

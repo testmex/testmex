@@ -1,9 +1,6 @@
 import { Subject, throttleTime } from 'rxjs';
 import type { ProgressReporter, ProgressSpinner } from './progress-reporter';
 
-/**
- * @deprecated 🚧 work in progress
- */
 export class ThrottledProgressReporter implements ProgressReporter {
   private readonly _duration: number;
 
