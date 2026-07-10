@@ -1,10 +1,10 @@
-import { ThrottledProgressReporter } from 'src/core/ports/throttled-progress-reporter';
-import { ClackProgressReporter } from 'src/infra/clack-progress-reporter';
 import { CommandRunnerPooled } from '../core/domain/command-runner-pooled';
+import { ThrottledProgressReporter } from '../core/domain/throttled-progress-reporter';
 import type { Pack } from '../core/models/pack';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
+import { ClackProgressReporter } from '../infra/clack-progress-reporter';
 import { FileSystemImpl } from '../infra/file-system.impl';
 import angularCliPack from '../packs/angular-cli';
 import corePack from '../packs/core';

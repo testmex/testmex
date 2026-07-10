@@ -1,5 +1,5 @@
 import { Subject, throttleTime } from 'rxjs';
-import type { ProgressReporter, ProgressSpinner } from './progress-reporter';
+import type { ProgressReporter, ProgressSpinner } from '../ports/progress-reporter';
 
 export class ThrottledProgressReporter implements ProgressReporter {
   private readonly _duration: number;

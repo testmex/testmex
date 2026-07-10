@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { useFakeTimers } from '../../testing/fake-timers';
-import { ProgressReporterFake } from './progress-reporter.fake';
+import { ProgressReporterFake } from '../ports/progress-reporter.fake';
 import { ThrottledProgressReporter } from './throttled-progress-reporter';
 
 describe(ThrottledProgressReporter, () => {
