@@ -258,11 +258,6 @@ flowchart LR
 - Assert messages contain command strings.
 - Assert `done` called twice via `Finalized: {command}` messages.
 
-### 🚧 CLI wires ThrottledProgressReporter around ClackProgressReporter
-
-- Inspect `cli.ts` wiring (or integration test with mocked TTY).
-- Assert `Vitestify` receives `ThrottledProgressReporter` wrapping `ClackProgressReporter`.
-
 # Alternatives Considered
 
 - **ora spinner** — already available transitively in the lockfile, but `@clack/prompts` is chosen for consistent CLI styling with future interactive prompts.
