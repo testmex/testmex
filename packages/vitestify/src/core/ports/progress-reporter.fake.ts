@@ -5,7 +5,7 @@ export class ProgressReporterFake implements ProgressReporter {
 
   createSpinner(): ProgressSpinner {
     return {
-      update: (message: string) => {
+      message: (message: string) => {
         this._message = message;
       },
       done: (message?: string) => {

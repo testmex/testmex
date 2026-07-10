@@ -34,7 +34,7 @@
 
 - Add a `ProgressReporter` port with a minimal spinner API.
 - `ClackProgressReporter` in infra wraps `@clack/prompts` spinner; no-ops when not a TTY.
-- `ThrottledProgressReporter` decorates any `ProgressReporter` and throttles `update()` calls.
+- `ThrottledProgressReporter` decorates any `ProgressReporter` and throttles `message()` calls.
 - CLI wires `ThrottledProgressReporter(ClackProgressReporter)` — pipeline stages stay unaware of throttling.
 - Replace `FileSystem.scanDirectory()` return type with `AsyncIterable<RelativePath>` backed by `globbyStream`.
 - Inject `ProgressReporter` into `Vitestify` and each pipeline stage.
@@ -62,9 +62,9 @@ flowchart TD
   transformer --> reporterPort
   finalizer --> reporterPort
 
-  reporterPort --> createSpinner["createSpinner():<br>{ update(message: string): void<br>done(message?: string): void }"]
+  reporterPort --> createSpinner["createSpinner():<br>{ message(message: string): void<br>done(message?: string): void }"]
 
-  scanner --> scanLoop["for await (path of scanDirectory())<br>update on every file"]
+  scanner --> scanLoop["for await (path of scanDirectory())<br>message on every file"]
   scanLoop --> createSpinner
 ```
 
@@ -86,34 +86,34 @@ flowchart LR
 
 ## Tasks
 
-- [x] Add `ProgressReporter` interface with `createSpinner()` returning `{ update, done }`.
-- [x] First `update(message)` call starts the clack spinner; subsequent calls update the message.
+- [x] Add `ProgressReporter` interface with `createSpinner()` returning `{ message, done }`.
+- [x] First `message()` call starts the clack spinner; subsequent calls update the message.
 - [x] `done(message?)` stops the spinner with an optional final message.
-- [x] Add `ProgressReporterFake` that records `update` and `done` calls for tests.
-- [x] Add `ThrottledProgressReporter` decorator that wraps a `ProgressReporter` and throttles `update()` to a configurable interval (default 100ms).
+- [x] Add `ProgressReporterFake` that records `message` and `done` calls for tests.
+- [x] Add `ThrottledProgressReporter` decorator that wraps a `ProgressReporter` and throttles `message()` to a configurable interval (default 100ms).
 - [x] `ThrottledProgressReporter` always flushes the latest pending message on `done()` — no stale count at phase end.
 - [x] Add `ClackProgressReporter` in infra; no-op all methods when `!process.stdout.isTTY`.
 - [x] Add `@clack/prompts` dependency to `@testmex/vitestify`.
 
 ## Testing Strategy
 
-### ✅ ThrottledProgressReporter keeps pending update until interval elapses
+### ✅ ThrottledProgressReporter keeps pending message until interval elapses
 
 - Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
-- Call `update('1/5')`, advance timers by 90ms, then call `update('2/5')`.
-- Assert inner fake's last update is still `'1/5'`.
+- Call `message('1/5')`, advance timers by 90ms, then call `message('2/5')`.
+- Assert inner fake's last message is still `'1/5'`.
 
-### ✅ ThrottledProgressReporter forwards pending update after interval elapses
+### ✅ ThrottledProgressReporter forwards pending message after interval elapses
 
 - Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
-- Call `update('1/5')`, advance timers by 90ms, call `update('2/5')`, then advance timers by 10ms.
-- Assert inner fake's last update is `'2/5'`.
+- Call `message('1/5')`, advance timers by 90ms, call `message('2/5')`, then advance timers by 10ms.
+- Assert inner fake's last message is `'2/5'`.
 
 ### ✅ ThrottledProgressReporter flushes on done
 
 - Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
-- Call `update('count: 99')` then immediately `done('count: 99')`.
-- Assert inner fake's last update is `'count: 99'` and done message is `'count: 99'`.
+- Call `message('count: 99')` then immediately `done('count: 99')`.
+- Assert inner fake's last message is `'count: 99'` and done message is `'count: 99'`.
 
 # 🚧 PR#2 — Migrate FileSystem.scanDirectory to AsyncIterable
 
@@ -135,17 +135,17 @@ flowchart LR
 
 - [ ] Inject `ProgressReporter` into `Vitestify` constructor (default: `NullProgressReporter`).
 - [ ] Pass reporter to `Scanner`.
-- [ ] Scanner: one spinner per enricher scan; call `update` on every discovered file (no throttle logic in Scanner).
+- [ ] Scanner: one spinner per enricher scan; call `message` on every discovered file (no throttle logic in Scanner).
 - [ ] Scanner: `done` with final file count when each enricher scan completes.
 
 ## Testing Strategy
 
-### 🚧 Scanner reports update per discovered file
+### 🚧 Scanner reports message per discovered file
 
 - Set up `Scanner` with `ProgressReporterFake`.
 - Configure workspace with 5 files.
 - Run `scanWorkspace()`.
-- Assert fake received at least 5 update calls containing incrementing file counts.
+- Assert fake received at least 5 `message` calls containing incrementing file counts.
 
 ### 🚧 Scanner calls done after each enricher scan
 
@@ -170,21 +170,21 @@ flowchart LR
 
 - Set up `Analyzer` with `ProgressReporterFake` and 2 heuristics named `heuristic-a`, `heuristic-b`.
 - Run `analyze()`.
-- Assert updates contain `heuristic-a` and `heuristic-b`.
+- Assert messages contain `heuristic-a` and `heuristic-b`.
 - Assert `done` called twice.
 
 ### 🚧 Transformer reports transform name during apply
 
 - Set up `Transformer` with `ProgressReporterFake` and 2 transforms.
 - Run `transform()`.
-- Assert updates contain each transform name.
+- Assert messages contain each transform name.
 - Assert `done` called twice.
 
 ### 🚧 Finalizer reports command string during run
 
 - Set up `Finalizer` with `ProgressReporterFake` and workspace with 2 queued commands.
 - Run `finalize()`.
-- Assert updates contain command strings.
+- Assert messages contain command strings.
 - Assert `done` called twice.
 
 ### 🚧 CLI wires ThrottledProgressReporter around ClackProgressReporter

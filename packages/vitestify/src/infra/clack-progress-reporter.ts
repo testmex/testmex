@@ -11,7 +11,7 @@ export class ClackProgressReporter implements ProgressReporter {
     let started = false;
 
     return {
-      update: (message: string) => {
+      message: (message: string) => {
         if (!started) {
           clackSpinner.start(message);
           started = true;
@@ -32,6 +32,6 @@ export class ClackProgressReporter implements ProgressReporter {
 }
 
 const NO_OP_SPINNER: ProgressSpinner = {
-  update: () => {},
+  message: () => {},
   done: () => {},
 };

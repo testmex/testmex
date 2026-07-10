@@ -1,5 +1,5 @@
 export interface ProgressSpinner {
-  update(message: string): void;
+  message(message: string): void;
   done(message?: string): void;
 }
 

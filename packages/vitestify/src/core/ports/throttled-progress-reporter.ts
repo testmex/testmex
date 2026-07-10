@@ -16,9 +16,9 @@ export class ThrottledProgressReporter implements ProgressReporter {
 
   createSpinner(): ProgressSpinner {
     const innerSpinner = this._inner.createSpinner();
-    const updates$ = new Subject<string>();
+    const messages$ = new Subject<string>();
 
-    const subscription = updates$
+    const subscription = messages$
       .pipe(
         throttleTime(this._duration, undefined, {
           leading: true,
@@ -26,12 +26,12 @@ export class ThrottledProgressReporter implements ProgressReporter {
         }),
       )
       .subscribe((message) => {
-        innerSpinner.update(message);
+        innerSpinner.message(message);
       });
 
     return {
-      update: (message: string) => {
-        updates$.next(message);
+      message: (message: string) => {
+        messages$.next(message);
       },
       done: (message?: string) => {
         subscription.unsubscribe();
