@@ -20,7 +20,7 @@
 - [ ] When the user runs `vitestify` on a TTY, a spinner appears immediately.
 - [ ] During scanning, one spinner per enricher shows the enricher name (e.g. "Scanning: code").
 - [ ] Enrichers that scan files update the spinner with a live count (e.g. "Scanning: code… 142 files").
-- [ ] Enrichers that do other work update with contextual detail (e.g. "Scanning: nx… running nx graph").
+- [ ] Enrichers that do other work update with contextual detail (e.g. "Scanning: nx… loading nx graph").
 - [ ] Enrichers that finish quickly may not call `onProgress` — spinner stays at the enricher name.
 - [ ] Rapid scan updates are throttled by `ThrottledProgressReporter` (at most once every 100ms) — not in `Scanner` or enrichers.
 - [ ] When each enricher completes, clack shows a green stop message (e.g. "Scanned: code").
@@ -101,7 +101,7 @@ async enrich({ workspace, onProgress }: EnricherOptions) {
 ```typescript
 // NxEnricher — reports command status
 async enrich({ workspace, onProgress }: EnricherOptions) {
-  onProgress?.('running nx graph');
+  onProgress?.('loading nx graph');
   const graph = await this._runNxGraphCommand();
 }
 ```
@@ -211,7 +211,7 @@ flowchart LR
 - [x] Scanner: one spinner per enricher; create before `enrich()`, `done()` after.
 - [x] Scanner: pass `{ onProgress }` callback that prefixes enricher name onto detail.
 - [ ] File-scanning enrichers call `onProgress` with incrementing file counts.
-- [ ] Non-scanning enrichers call `onProgress` with contextual status where useful (e.g. Nx: `'running nx graph'`).
+- [ ] Non-scanning enrichers call `onProgress` with contextual status where useful (e.g. Nx: `'loading nx graph'`).
 
 ## Testing Strategy
 
@@ -232,7 +232,7 @@ flowchart LR
 
 - Set up `Scanner` with `ProgressReporterFake` and a workspace that triggers `NxEnricher`.
 - Run `scanWorkspace()`.
-- Assert messages contain `'nx'` and `'running nx graph'`.
+- Assert messages contain `'nx'` and `'loading nx graph'`.
 
 # 🚧 PR#4 — Analyzer, Transformer, Finalizer progress + CLI wiring
 
