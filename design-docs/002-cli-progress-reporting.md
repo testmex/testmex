@@ -91,7 +91,7 @@ flowchart LR
 - [ ] `done(message?)` stops the spinner with an optional final message.
 - [x] Add `ProgressReporterFake` that records `update` and `done` calls for tests.
 - [x] Add `ThrottledProgressReporter` decorator that wraps a `ProgressReporter` and throttles `update()` to a configurable interval (default 100ms).
-- [ ] `ThrottledProgressReporter` always flushes the latest pending message on `done()` — no stale count at phase end.
+- [x] `ThrottledProgressReporter` always flushes the latest pending message on `done()` — no stale count at phase end.
 - [ ] Add `ClackProgressReporter` in infra; no-op all methods when `!process.stdout.isTTY`.
 - [ ] Add `@clack/prompts` dependency to `@testmex/vitestify`.
 
@@ -103,7 +103,7 @@ flowchart LR
 - Call `update` 10 times within 50ms.
 - Assert inner fake received fewer than 10 updates.
 
-### 🚧 ThrottledProgressReporter flushes on done
+### ✅ ThrottledProgressReporter flushes on done
 
 - Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
 - Call `update('count: 99')` then immediately `done('count: 99')`.

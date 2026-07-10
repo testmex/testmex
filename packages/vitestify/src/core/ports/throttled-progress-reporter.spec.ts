@@ -37,7 +37,7 @@ describe(ThrottledProgressReporter, () => {
     expect(inner.message()).toBe('2/5');
   });
 
-  it.todo('throttled progress reporter flushes on done', () => {
+  it('throttled progress reporter flushes on done', () => {
     const inner = new ProgressReporterFake();
     const reporter = new ThrottledProgressReporter(inner, { intervalMs: 100 });
 
