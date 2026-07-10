@@ -38,7 +38,7 @@ export class JestEnricher implements Enricher {
     const files: Array<{ type: FileTag; path: RelativePath }> = [];
     for await (const file of this._discoverJestFiles(workspace)) {
       files.push(file);
-      onProgress?.(`${files.length} files`);
+      onProgress?.(`found ${files.length} file(s)`);
     }
 
     const jestConfigPaths = files

@@ -1,4 +1,7 @@
-import { Enricher, type EnricherOptions } from '../../../../core/models/enricher';
+import {
+  Enricher,
+  type EnricherOptions,
+} from '../../../../core/models/enricher';
 import { fileTags } from '../../identifiers';
 import { isCodeFile } from '../../utils';
 
@@ -9,7 +12,7 @@ export class CodeEnricher implements Enricher {
     const files = [];
     for await (const path of workspace.tree.scanDirectory()) {
       files.push(path);
-      onProgress?.(`${files.length} files`);
+      onProgress?.(`found ${files.length} file(s)`);
     }
 
     return {

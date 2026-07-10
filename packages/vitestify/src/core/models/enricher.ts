@@ -22,10 +22,3 @@ export interface DefineEnricherArgs {
   name: string;
   enrich: (options: EnricherOptions) => Promise<WorkspaceEnrichment>;
 }
-
-/**
- * @deprecated 🚧 work in progress
- */
-export function defineEnricher(_args: DefineEnricherArgs): Enricher {
-  throw new Error('🚧 work in progress');
-}

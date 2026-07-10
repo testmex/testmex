@@ -1,5 +1,8 @@
 import { spinner } from '@clack/prompts';
-import type { ProgressReporter, ProgressSpinner } from '../core/ports/progress-reporter';
+import type {
+  ProgressReporter,
+  ProgressSpinner,
+} from '../core/ports/progress-reporter';
 
 export class ClackProgressReporter implements ProgressReporter {
   createSpinner(): ProgressSpinner {

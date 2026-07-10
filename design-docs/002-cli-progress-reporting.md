@@ -92,7 +92,7 @@ async enrich({ workspace, onProgress }: EnricherOptions) {
   const files = [];
   for await (const path of workspace.tree.scanDirectory()) {
     files.push(path);
-    onProgress?.(`${files.length} files`);
+    onProgress?.(`${files.length} file(s)`);
   }
 }
 ```

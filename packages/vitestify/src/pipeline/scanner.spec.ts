@@ -100,12 +100,12 @@ describe(Scanner.name, () => {
       .filter((message) => message.includes('code'));
     expect(codeMessages).toEqual([
       'Scanning [4/7] code',
-      'Scanning [4/7] code · 1 files',
-      'Scanning [4/7] code · 2 files',
-      'Scanning [4/7] code · 3 files',
-      'Scanning [4/7] code · 4 files',
-      'Scanning [4/7] code · 5 files',
-      'Scanned  [4/7] code · 5 files',
+      'Scanning [4/7] code · found 1 file(s)',
+      'Scanning [4/7] code · found 2 file(s)',
+      'Scanning [4/7] code · found 3 file(s)',
+      'Scanning [4/7] code · found 4 file(s)',
+      'Scanning [4/7] code · found 5 file(s)',
+      'Scanned  [4/7] code · found 5 file(s)',
     ]);
   });
 
@@ -125,7 +125,7 @@ describe(Scanner.name, () => {
       'Scanned  [1/7] angular-cli',
       'Scanned  [2/7] nx · 1 project(s) detected',
       'Scanned  [3/7] jest',
-      'Scanned  [4/7] code · 4 files',
+      'Scanned  [4/7] code · found 4 file(s)',
       'Scanned  [5/7] package-manager · pnpm detected (good choice 😉)',
       'Scanned  [6/7] test',
       'Scanned  [7/7] vitest-config',
