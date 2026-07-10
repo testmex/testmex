@@ -1,12 +1,7 @@
 import { describe, it } from 'vitest';
+import { ThrottledProgressReporter } from './throttled-progress-reporter';
 
-describe('ProgressReporter', () => {
-  it.todo('progress reporter fake records spinner lifecycle', () => {
-    // Create a `ProgressReporterFake`.
-    // Call `createSpinner()`, then `update('step 1')`, `update('step 2')`, `done('finished')`.
-    // Assert recorded updates are `['step 1', 'step 2']` and done message is `'finished'`.
-  });
-
+describe(ThrottledProgressReporter, () => {
   it.todo('throttled progress reporter drops rapid updates', () => {
     // Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
     // Call `update` 10 times within 50ms.

@@ -97,12 +97,6 @@ flowchart LR
 
 ## Testing Strategy
 
-### 🚧 ProgressReporterFake records spinner lifecycle
-
-- Create a `ProgressReporterFake`.
-- Call `createSpinner()`, then `update('step 1')`, `update('step 2')`, `done('finished')`.
-- Assert recorded updates are `['step 1', 'step 2']` and done message is `'finished'`.
-
 ### 🚧 ThrottledProgressReporter drops rapid updates
 
 - Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
