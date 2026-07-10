@@ -4,6 +4,7 @@ import { Workspace } from '../core/domain/workspace';
 import { WorkspaceInfo } from '../core/models/workspace-info';
 import type { Command, CommandRunner } from '../core/ports/command-runner';
 import { FileSystemFake } from '../core/ports/file-system.fake';
+import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
 import { Finalizer } from './finalizer';
 
 describe(Finalizer, () => {
@@ -32,10 +33,27 @@ describe(Finalizer, () => {
     ]);
   });
 
-  it.todo('finalizer reports command string during run', () => {
-    // Set up `Finalizer` with `ProgressReporterFake` and workspace with 2 queued commands.
-    // Run `finalize()`.
-    // Assert messages contain command strings.
-    // Assert `done` called twice via `Finalized: {command}` messages.
+  it.todo('finalizer reports command string during run', async () => {
+    const progressReporter = new ProgressReporterFake();
+    const commandRunner: CommandRunner = {
+      run: async () => '',
+    };
+    const finalizer = new Finalizer({ commandRunner, progressReporter });
+    const workspace = new Workspace({
+      info: new WorkspaceInfo(),
+      tree: new Tree({ fileSystem: new FileSystemFake() }),
+    });
+
+    workspace.commands.add(['npm', 'install', 'vitest']);
+    workspace.commands.add(['npx', 'nx', 'add', '@nx/vitest']);
+
+    await finalizer.finalize(workspace);
+
+    expect(progressReporter.messages()).toEqual([
+      'Finalizing: npm install vitest',
+      'Finalized: npm install vitest',
+      'Finalizing: npx nx add @nx/vitest',
+      'Finalized: npx nx add @nx/vitest',
+    ]);
   });
 });
