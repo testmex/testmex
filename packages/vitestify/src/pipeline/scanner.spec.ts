@@ -109,9 +109,16 @@ describe(Scanner.name, () => {
     ]);
   });
 
+  it.todo('scanner calls done once per enricher', async () => {
+    // Set up `Scanner` with `ProgressReporterFake`.
+    // Run `scanWorkspace()` on a workspace with known enricher count.
+    // Assert `done` was called once per enricher (not only those that scan files).
+  });
+
   it.todo('non-scanning enricher reports contextual status', async () => {
     // Set up `Scanner` with `ProgressReporterFake` and a workspace that triggers `NxEnricher`.
     // Run `scanWorkspace()`.
+    // Assert messages contain `'nx'` and `'running nx graph'`.
   });
 
   it('detects folder with jest.config.ts as project when no nx project exists at that path', async () => {
