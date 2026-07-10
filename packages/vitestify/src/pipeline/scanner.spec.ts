@@ -97,15 +97,11 @@ describe(Scanner.name, () => {
 
     const codeMessages = progressReporter
       .messages()
-      .filter((message) => message.includes('code'));
+      .filter((message) => message.includes('[6/7] test'));
     expect(codeMessages).toEqual([
-      'Scanning [4/7] code',
-      'Scanning [4/7] code · found 1 file(s)',
-      'Scanning [4/7] code · found 2 file(s)',
-      'Scanning [4/7] code · found 3 file(s)',
-      'Scanning [4/7] code · found 4 file(s)',
-      'Scanning [4/7] code · found 5 file(s)',
-      'Scanned  [4/7] code · found 5 file(s)',
+      'Scanning [6/7] test',
+      'Scanning [6/7] test · found 1 file(s)',
+      'Scanned  [6/7] test · found 1 file(s)',
     ]);
   });
 
@@ -125,7 +121,7 @@ describe(Scanner.name, () => {
       'Scanned  [1/7] angular-cli',
       'Scanned  [2/7] nx · 1 project(s) detected',
       'Scanned  [3/7] jest',
-      'Scanned  [4/7] code · found 4 file(s)',
+      'Scanned  [4/7] code',
       'Scanned  [5/7] package-manager · pnpm detected (good choice 😉)',
       'Scanned  [6/7] test',
       'Scanned  [7/7] vitest-config',

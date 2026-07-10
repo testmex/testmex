@@ -11,14 +11,16 @@ export class CodeEnricher implements Enricher {
   async enrich({ workspace, onProgress }: EnricherOptions) {
     const files = [];
     for await (const path of workspace.tree.scanDirectory()) {
+      if (!isCodeFile(path)) {
+        continue;
+      }
+
       files.push(path);
       onProgress?.(`found ${files.length} file(s)`);
     }
 
     return {
-      fileInfos: files
-        .filter(isCodeFile)
-        .map((path) => ({ path, tags: [fileTags.code] })),
+      fileInfos: files.map((path) => ({ path, tags: [fileTags.code] })),
     };
   }
 }
