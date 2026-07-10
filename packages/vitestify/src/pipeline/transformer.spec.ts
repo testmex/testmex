@@ -8,7 +8,7 @@ import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
 import { Transformer } from './transformer';
 
 describe(Transformer, () => {
-  it.todo('transformer reports transform name during apply', async () => {
+  it('transformer reports transform name during apply', async () => {
     const progressReporter = new ProgressReporterFake();
     const transformer = new Transformer({
       progressReporter,

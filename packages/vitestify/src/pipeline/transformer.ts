@@ -25,7 +25,10 @@ export class Transformer {
     log('running %d transforms', this._transforms.length);
     for (const [index, transform] of this._transforms.entries()) {
       log('transform %d/%d', index + 1, this._transforms.length);
+      const spinner = this._progressReporter.createSpinner();
+      spinner.message(`Transforming: ${transform.name}`);
       await transform.apply(workspace);
+      spinner.done(`Transformed: ${transform.name}`);
     }
 
     log('committing workspace tree');
