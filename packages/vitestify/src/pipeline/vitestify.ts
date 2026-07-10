@@ -42,7 +42,7 @@ export class Vitestify {
     this._analyzer = new Analyzer({
       heuristics: this._packs.flatMap((pack) => pack.heuristics),
     });
-    this._finalizer = new Finalizer({ commandRunner });
+    this._finalizer = new Finalizer({ commandRunner, progressReporter });
     this._scanner = new Scanner({
       commandRunner,
       enricherFactories: this._packs.flatMap((pack) => pack.enricherFactories),
@@ -51,6 +51,7 @@ export class Vitestify {
     });
     this._transformer = new Transformer({
       transforms: this._packs.flatMap((pack) => pack.transforms),
+      progressReporter,
     });
   }
 

@@ -31,4 +31,11 @@ describe(Finalizer, () => {
       ['npx', 'nx', 'add', '@nx/vitest'],
     ]);
   });
+
+  it.todo('finalizer reports command string during run', () => {
+    // Set up `Finalizer` with `ProgressReporterFake` and workspace with 2 queued commands.
+    // Run `finalize()`.
+    // Assert messages contain command strings.
+    // Assert `done` called twice via `Finalized: {command}` messages.
+  });
 });

@@ -1,14 +1,24 @@
 import debug from 'debug';
 import type { Workspace } from '../core/domain/workspace';
 import type { CommandRunner } from '../core/ports/command-runner';
+import { NullProgressReporter } from '../core/ports/null-progress-reporter';
+import type { ProgressReporter } from '../core/ports/progress-reporter';
 
 const log = debug('vitestify:finalizer');
 
 export class Finalizer {
   private readonly _commandRunner: CommandRunner;
+  private readonly _progressReporter: ProgressReporter;
 
-  constructor({ commandRunner }: { commandRunner: CommandRunner }) {
+  constructor({
+    commandRunner,
+    progressReporter = new NullProgressReporter(),
+  }: {
+    commandRunner: CommandRunner;
+    progressReporter?: ProgressReporter;
+  }) {
     this._commandRunner = commandRunner;
+    this._progressReporter = progressReporter;
   }
 
   async finalize(workspace: Workspace): Promise<void> {
