@@ -1,4 +1,4 @@
-import { Enricher } from '../../../../core/models/enricher';
+import { Enricher, type EnricherOptions } from '../../../../core/models/enricher';
 import type { ReadonlyWorkspace } from '../../../../core/domain/workspace';
 import { relativePath } from '../../../../core/models/relative-path';
 import {
@@ -7,7 +7,12 @@ import {
 } from '../../../../core/models/workspace-info';
 
 export class PackageManagerEnricher implements Enricher {
-  async enrich(workspace: ReadonlyWorkspace) {
+  readonly name = 'package-manager';
+
+  async enrich({ workspace, onProgress }: EnricherOptions) {
+    if (onProgress !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
     const packageManager =
       (await _detectFromPackageJson(workspace)) ??
       (await _detectFromLockFiles(workspace));

@@ -107,10 +107,10 @@ async function enrich(files: Record<RelativePath, string>) {
 
   const enricher = new PackageManagerEnricher();
 
-  return enricher.enrich(
-    new Workspace({
+  return enricher.enrich({
+    workspace: new Workspace({
       info: new WorkspaceInfo(),
       tree: new Tree({ fileSystem }),
     }),
-  );
+  });
 }

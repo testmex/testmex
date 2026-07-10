@@ -1,10 +1,14 @@
-import { Enricher } from '../../../../core/models/enricher';
-import type { ReadonlyWorkspace } from '../../../../core/domain/workspace';
+import { Enricher, type EnricherOptions } from '../../../../core/models/enricher';
 import { fileTags } from '../../identifiers';
 import { isCodeFile } from '../../utils';
 
 export class CodeEnricher implements Enricher {
-  async enrich(workspace: ReadonlyWorkspace) {
+  readonly name = 'code';
+
+  async enrich({ workspace, onProgress }: EnricherOptions) {
+    if (onProgress !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
     const files = [];
     for await (const path of workspace.tree.scanDirectory()) {
       files.push(path);

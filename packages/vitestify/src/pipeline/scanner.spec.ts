@@ -83,37 +83,23 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('scanner reports message per discovered file', async () => {
-    const progressReporter = new ProgressReporterFake();
-    const { configureWorkspace, scanner } = setUp({ progressReporter });
-
-    configureWorkspace(
-      nxWorkspaceMother
-        .withApp('my-app')
-        .withAppFile('my-app', 'src/one.spec.ts', 'it("one", () => {})')
-        .withAppFile('my-app', 'src/two.spec.ts', 'it("two", () => {})')
-        .withAppFile('my-app', 'src/three.spec.ts', 'it("three", () => {})')
-        .withAppFile('my-app', 'src/four.spec.ts', 'it("four", () => {})')
-        .withAppFile('my-app', 'src/five.spec.ts', 'it("five", () => {})'),
-    );
-
-    await scanner.scanWorkspace();
-
-    const messages = progressReporter.messages();
-
-    expect(messages).toEqual([
-      expect.stringContaining('1'),
-      expect.stringContaining('2'),
-      expect.stringContaining('3'),
-      expect.stringContaining('4'),
-      expect.stringContaining('5'),
-    ]);
+  it.todo('scanner reports enricher name and file count from enricher callbacks', async () => {
+    // Set up `Scanner` with `ProgressReporterFake`.
+    // Configure workspace with 5 files.
+    // Run `scanWorkspace()`.
+    // Assert messages contain enricher name (e.g. `'code'`) and incrementing file counts (`'1'`, `'2'`, … `'5'`).
   });
 
-  it.todo('scanner calls done after each enricher scan', () => {
+  it.todo('scanner calls done once per enricher', async () => {
     // Set up `Scanner` with `ProgressReporterFake`.
     // Run `scanWorkspace()` on a workspace with known enricher count.
-    // Assert `done` was called once per enricher that scans files.
+    // Assert `done` was called once per enricher (not only those that scan files).
+  });
+
+  it.todo('non-scanning enricher reports contextual status', async () => {
+    // Set up `Scanner` with `ProgressReporterFake` and a workspace that triggers `NxEnricher`.
+    // Run `scanWorkspace()`.
+    // Assert messages contain `'nx'` and `'running nx graph'`.
   });
 
   it(

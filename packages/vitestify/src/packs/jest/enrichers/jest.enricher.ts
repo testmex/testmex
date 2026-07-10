@@ -1,6 +1,6 @@
 import { basename, dirname, join } from 'node:path/posix';
 import type { FileInfo, ReadonlyWorkspace } from '../../../core/domain/workspace';
-import { Enricher } from '../../../core/models/enricher';
+import { Enricher, type EnricherOptions } from '../../../core/models/enricher';
 import {
   relativePath,
   type RelativePath,
@@ -12,7 +12,12 @@ import { JEST_CTS_EXTENSION, JEST_TSX_EXTENSION } from '../constants';
 const JEST_SETUP_FILE_KEYS = ['setupFiles', 'setupFilesAfterEnv'];
 
 export class JestEnricher implements Enricher {
-  async enrich(workspace: ReadonlyWorkspace) {
+  readonly name = 'jest';
+
+  async enrich({ workspace, onProgress }: EnricherOptions) {
+    if (onProgress !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
     const jestConfigPaths = await this._discoverJestConfigPaths(workspace);
     const jestTestPaths = await this._discoverJestTestPaths(workspace);
     const jestSetupFileInfos = await this._discoverJestSetupFileInfos(

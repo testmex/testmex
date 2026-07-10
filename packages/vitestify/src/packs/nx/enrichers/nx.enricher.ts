@@ -1,17 +1,21 @@
 import { hasNx } from '../../../core/domain/tree-helpers/has-nx';
-import { Enricher } from '../../../core/models/enricher';
-import type { ReadonlyWorkspace } from '../../../core/domain/workspace';
+import { Enricher, type EnricherOptions } from '../../../core/models/enricher';
 import { relativePath } from '../../../core/models/relative-path';
 import type { CommandRunner } from '../../../core/ports/command-runner';
 
 export class NxEnricher implements Enricher {
+  readonly name = 'nx';
+
   private readonly _commandRunner: CommandRunner;
 
   constructor({ commandRunner }: { commandRunner: CommandRunner }) {
     this._commandRunner = commandRunner;
   }
 
-  async enrich(workspace: ReadonlyWorkspace) {
+  async enrich({ workspace, onProgress }: EnricherOptions) {
+    if (onProgress !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
     if (!(await hasNx(workspace.tree))) {
       return {};
     }

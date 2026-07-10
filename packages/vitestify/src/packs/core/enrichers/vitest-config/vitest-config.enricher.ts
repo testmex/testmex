@@ -1,6 +1,5 @@
 import { basename } from 'node:path/posix';
-import { Enricher } from '../../../../core/models/enricher';
-import type { ReadonlyWorkspace } from '../../../../core/domain/workspace';
+import { Enricher, type EnricherOptions } from '../../../../core/models/enricher';
 import { fileTags } from '../../identifiers';
 
 const VITEST_CONFIG_FILE_NAMES = [
@@ -13,7 +12,12 @@ const VITEST_CONFIG_FILE_NAMES = [
 ] as const;
 
 export class VitestConfigEnricher implements Enricher {
-  async enrich(workspace: ReadonlyWorkspace) {
+  readonly name = 'vitest-config';
+
+  async enrich({ workspace, onProgress }: EnricherOptions) {
+    if (onProgress !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
     const files = [];
     for await (const path of workspace.tree.scanDirectory()) {
       files.push(path);

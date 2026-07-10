@@ -1,7 +1,9 @@
 import debug from 'debug';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
-import { EnricherFactory } from '../core/models/enricher';
+import { EnricherFactory, type Enricher } from '../core/models/enricher';
+import type { ReadonlyWorkspace } from '../core/domain/workspace';
+import type { WorkspaceEnrichment } from '../core/models/workspace-info';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
@@ -29,14 +31,10 @@ export class Scanner {
   /**
    * @deprecated 🚧 work in progress
    */
-  private _reportDiscoveredFile(): void {
-    throw new Error('🚧 work in progress');
-  }
-
-  /**
-   * @deprecated 🚧 work in progress
-   */
-  private _completeEnricherScan(): void {
+  private async _enrichWithProgress(
+    _enricher: Enricher,
+    _workspace: ReadonlyWorkspace,
+  ): Promise<WorkspaceEnrichment> {
     throw new Error('🚧 work in progress');
   }
 
@@ -50,7 +48,9 @@ export class Scanner {
     let count = 0;
     const workspace = new Workspace({ tree });
     for (const enricher of enrichers) {
-      const result = await enricher.enrich(workspace.asReadonly());
+      const result = await enricher.enrich({
+        workspace: workspace.asReadonly(),
+      });
 
       workspace.applyEnrichment(result);
 

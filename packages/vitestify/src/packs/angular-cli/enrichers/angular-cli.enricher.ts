@@ -1,11 +1,15 @@
-import type { ReadonlyWorkspace } from '../../../core/domain/workspace';
-import { type Project } from '../../../core/domain/workspace';
-import { Enricher } from '../../../core/models/enricher';
+import type { Project } from '../../../core/domain/workspace';
+import { Enricher, type EnricherOptions } from '../../../core/models/enricher';
 import { relativePath } from '../../../core/models/relative-path';
 import { ANGULAR_JSON_PATH, type AngularJson } from '../../core/angular-json';
 
 export class AngularCliEnricher implements Enricher {
-  async enrich(workspace: ReadonlyWorkspace) {
+  readonly name = 'angular-cli';
+
+  async enrich({ workspace, onProgress }: EnricherOptions) {
+    if (onProgress !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
     const angularJson = await workspace.tree.maybeReadFile(ANGULAR_JSON_PATH);
 
     if (angularJson === null) {

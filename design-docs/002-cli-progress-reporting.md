@@ -62,16 +62,14 @@ Only the enricher knows what it is doing. The Scanner cannot report file counts 
 **Enrichers** optionally push detail via a narrow `onProgress` callback — not `ProgressReporter` directly. This keeps pack/domain code decoupled from clack while letting each enricher report what makes sense for its work.
 
 ```typescript
-export interface EnricherContext {
+export interface EnricherOptions {
+  workspace: ReadonlyWorkspace;
   onProgress?(detail: string): void;
 }
 
 export interface Enricher {
   name: string;
-  enrich(
-    workspace: ReadonlyWorkspace,
-    context?: EnricherContext,
-  ): Promise<WorkspaceEnrichment>;
+  enrich(options: EnricherOptions): Promise<WorkspaceEnrichment>;
 }
 ```
 
@@ -80,7 +78,8 @@ export interface Enricher {
 const spinner = this._progressReporter.createSpinner();
 spinner.message(`Scanning: ${enricher.name}`);
 
-await enricher.enrich(workspace.asReadonly(), {
+await enricher.enrich({
+  workspace: workspace.asReadonly(),
   onProgress: (detail) =>
     spinner.message(`Scanning: ${enricher.name}… ${detail}`),
 });
@@ -90,16 +89,21 @@ spinner.done(`Scanned: ${enricher.name}`);
 
 ```typescript
 // CodeEnricher — reports file count while scanning
-for await (const path of workspace.tree.scanDirectory()) {
-  files.push(path);
-  context?.onProgress?.(`${files.length} files`);
+async enrich({ workspace, onProgress }: EnricherOptions) {
+  const files = [];
+  for await (const path of workspace.tree.scanDirectory()) {
+    files.push(path);
+    onProgress?.(`${files.length} files`);
+  }
 }
 ```
 
 ```typescript
 // NxEnricher — reports command status
-context?.onProgress?.('running nx graph');
-const graph = await this._runNxGraphCommand();
+async enrich({ workspace, onProgress }: EnricherOptions) {
+  onProgress?.('running nx graph');
+  const graph = await this._runNxGraphCommand();
+}
 ```
 
 Add `name` to `Enricher` (like `Transform.name`) via a `defineEnricher({ name, enrich })` helper.
@@ -127,7 +131,7 @@ flowchart TD
 
   scanner --> enrichLoop["for each enricher:<br>createSpinner → enrich(context) → done"]
   enrichLoop --> createSpinner
-  enrichLoop --> onProgress["onProgress(detail)<br>callback in EnricherContext"]
+  enrichLoop --> onProgress["onProgress(detail)<br>callback in EnricherOptions"]
   onProgress --> enrichers["Enrichers<br>(code, jest, nx, …)"]
   enrichers --> scanDir["scanDirectory()"]
   enrichers --> otherWork["read files / run commands"]
@@ -199,8 +203,8 @@ flowchart LR
 ## Tasks
 
 - [ ] Add `defineEnricher({ name, enrich })` helper; add `name` to `Enricher` interface.
-- [ ] Add `EnricherContext` with optional `onProgress(detail: string)` callback.
-- [ ] Update `Enricher.enrich()` signature to accept optional `EnricherContext`.
+- [ ] Add `EnricherOptions` with `workspace` and optional `onProgress(detail: string)`.
+- [ ] Update `Enricher.enrich()` signature to accept `EnricherOptions`.
 - [ ] Give each enricher a `name` (e.g. `'code'`, `'test'`, `'jest'`, `'nx'`).
 - [ ] Inject `ProgressReporter` into `Vitestify` constructor (default: `NullProgressReporter`).
 - [ ] Pass reporter to `Scanner`.
