@@ -12,11 +12,12 @@ export class NxEnricher implements Enricher {
     this._commandRunner = commandRunner;
   }
 
-  async enrich({ workspace }: EnricherOptions) {
+  async enrich({ workspace, onProgress }: EnricherOptions) {
     if (!(await hasNx(workspace.tree))) {
       return {};
     }
 
+    onProgress?.('loading nx graph');
     const graph = await this._runNxGraphCommand();
 
     return {

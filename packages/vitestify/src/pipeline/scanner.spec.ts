@@ -132,7 +132,7 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('non-scanning enricher reports contextual status', async () => {
+  it('non-scanning enricher reports contextual status', async () => {
     const progressReporter = new ProgressReporterFake();
     const { configureWorkspace, scanner } = setUp({ progressReporter });
 

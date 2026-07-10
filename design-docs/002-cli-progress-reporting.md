@@ -211,7 +211,7 @@ flowchart LR
 - [x] Scanner: one spinner per enricher; create before `enrich()`, `done()` after.
 - [x] Scanner: pass `{ onProgress }` callback that prefixes enricher name onto detail.
 - [ ] File-scanning enrichers call `onProgress` with incrementing file counts.
-- [ ] Non-scanning enrichers call `onProgress` with contextual status where useful (e.g. Nx: `'loading nx graph'`).
+- [x] Non-scanning enrichers call `onProgress` with contextual status where useful (e.g. Nx: `'loading nx graph'`).
 
 ## Testing Strategy
 
@@ -228,7 +228,7 @@ flowchart LR
 - Run `scanWorkspace()` on a workspace with known enricher count.
 - Assert `done` was called once per enricher (not only those that scan files).
 
-### 🚧 Non-scanning enricher reports contextual status
+### ✅ Non-scanning enricher reports contextual status
 
 - Set up `Scanner` with `ProgressReporterFake` and a workspace that triggers `NxEnricher`.
 - Run `scanWorkspace()`.
