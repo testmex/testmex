@@ -97,11 +97,17 @@ flowchart LR
 
 ## Testing Strategy
 
-### 🚧 ThrottledProgressReporter drops rapid updates
+### ✅ ThrottledProgressReporter keeps pending update until interval elapses
 
 - Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
-- Call `update` 10 times within 50ms.
-- Assert inner fake received fewer than 10 updates.
+- Call `update('1/5')`, advance timers by 90ms, then call `update('2/5')`.
+- Assert inner fake's last update is still `'1/5'`.
+
+### ✅ ThrottledProgressReporter forwards pending update after interval elapses
+
+- Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
+- Call `update('1/5')`, advance timers by 90ms, call `update('2/5')`, then advance timers by 10ms.
+- Assert inner fake's last update is `'2/5'`.
 
 ### ✅ ThrottledProgressReporter flushes on done
 
