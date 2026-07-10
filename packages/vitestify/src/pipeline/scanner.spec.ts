@@ -109,16 +109,46 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('scanner calls done once per enricher', async () => {
-    // Set up `Scanner` with `ProgressReporterFake`.
-    // Run `scanWorkspace()` on a workspace with known enricher count.
-    // Assert `done` was called once per enricher (not only those that scan files).
+  it('scanner calls done once per enricher', async () => {
+    const progressReporter = new ProgressReporterFake();
+    const { configureWorkspace, scanner } = setUp({ progressReporter });
+
+    configureWorkspace(nxWorkspaceMother.withApp('my-app'));
+
+    await scanner.scanWorkspace();
+
+    const doneMessages = progressReporter
+      .messages()
+      .filter((message) => message.startsWith('Scanned:'));
+
+    expect(doneMessages).toEqual([
+      'Scanned: angular-cli',
+      'Scanned: nx',
+      'Scanned: jest',
+      'Scanned: code',
+      'Scanned: package-manager',
+      'Scanned: test',
+      'Scanned: vitest-config',
+    ]);
   });
 
   it.todo('non-scanning enricher reports contextual status', async () => {
-    // Set up `Scanner` with `ProgressReporterFake` and a workspace that triggers `NxEnricher`.
-    // Run `scanWorkspace()`.
-    // Assert messages contain `'nx'` and `'running nx graph'`.
+    const progressReporter = new ProgressReporterFake();
+    const { configureWorkspace, scanner } = setUp({ progressReporter });
+
+    configureWorkspace(nxWorkspaceMother.withApp('my-app'));
+
+    await scanner.scanWorkspace();
+
+    const nxMessages = progressReporter
+      .messages()
+      .filter((message) => message.includes('nx'));
+
+    expect(nxMessages).toEqual([
+      'Scanning: nx',
+      'Scanning: nx… loading nx graph',
+      'Scanned: nx',
+    ]);
   });
 
   it('detects folder with jest.config.ts as project when no nx project exists at that path', async () => {

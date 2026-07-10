@@ -222,7 +222,7 @@ flowchart LR
 - Run `scanWorkspace()`.
 - Assert messages contain enricher name (e.g. `'code'`) and incrementing file counts (`'1'`, `'2'`, … `'5'`).
 
-### 🚧 Scanner calls done once per enricher
+### ✅ Scanner calls done once per enricher
 
 - Set up `Scanner` with `ProgressReporterFake`.
 - Run `scanWorkspace()` on a workspace with known enricher count.
