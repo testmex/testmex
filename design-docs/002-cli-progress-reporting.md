@@ -47,13 +47,13 @@
 
 The Scanner orchestrates enrichers but does not discover files itself — each enricher does different work inside `enrich()`:
 
-| Enricher | Work |
-|---|---|
-| `CodeEnricher`, `TestEnricher`, `VitestConfigEnricher` | Full `scanDirectory()` loop |
-| `JestEnricher` | Three separate full scans + config parsing |
-| `PackageManagerEnricher` | Reads 1–4 specific lock files |
-| `AngularCliEnricher` | Reads `angular.json` |
-| `NxEnricher` | Runs `nx graph --print` |
+| Enricher                                               | Work                                       |
+| ------------------------------------------------------ | ------------------------------------------ |
+| `CodeEnricher`, `TestEnricher`, `VitestConfigEnricher` | Full `scanDirectory()` loop                |
+| `JestEnricher`                                         | Three separate full scans + config parsing |
+| `PackageManagerEnricher`                               | Reads 1–4 specific lock files              |
+| `AngularCliEnricher`                                   | Reads `angular.json`                       |
+| `NxEnricher`                                           | Runs `nx graph --print`                    |
 
 Only the enricher knows what it is doing. The Scanner cannot report file counts or status without enricher input.
 
@@ -198,11 +198,10 @@ flowchart LR
 - Run existing `scanner.spec.ts` cases unchanged.
 - Assert workspace detection behavior is identical to before migration.
 
-# 🚧 PR#3 — Enricher names, context, and Scanner progress reporting
+# ✅ PR#3 — Enricher names, context, and Scanner progress reporting
 
 ## Tasks
 
-- [ ] Add `defineEnricher({ name, enrich })` helper; add `name` to `Enricher` interface.
 - [x] Add `EnricherOptions` with `workspace` and optional `onProgress(detail: string)`.
 - [x] Update `Enricher.enrich()` signature to accept `EnricherOptions`.
 - [x] Give each enricher a `name` (e.g. `'code'`, `'test'`, `'jest'`, `'nx'`).
@@ -210,7 +209,7 @@ flowchart LR
 - [x] Pass reporter to `Scanner`.
 - [x] Scanner: one spinner per enricher; create before `enrich()`, `done()` after.
 - [x] Scanner: pass `{ onProgress }` callback that prefixes enricher name onto detail.
-- [ ] File-scanning enrichers call `onProgress` with incrementing file counts.
+- [x] `CodeEnricher` calls `onProgress` with incrementing file counts while scanning.
 - [x] Non-scanning enrichers call `onProgress` with contextual status where useful (e.g. Nx: `'loading nx graph'`).
 
 ## Testing Strategy
@@ -220,13 +219,13 @@ flowchart LR
 - Set up `Scanner` with `ProgressReporterFake`.
 - Configure workspace with 5 files.
 - Run `scanWorkspace()`.
-- Assert messages contain enricher name (e.g. `'code'`) and incrementing file counts (`'1'`, `'2'`, … `'5'`).
+- Assert messages contain enricher name (e.g. `'code'`) and incrementing file counts (`'1 files'`, `'2 files'`, … `'5 files'`).
 
 ### ✅ Scanner calls done once per enricher
 
 - Set up `Scanner` with `ProgressReporterFake`.
 - Run `scanWorkspace()` on a workspace with known enricher count.
-- Assert `done` was called once per enricher (not only those that scan files).
+- Assert `done` was called once per enricher via `Scanned: {name}` messages (not only those that scan files).
 
 ### ✅ Non-scanning enricher reports contextual status
 
@@ -277,6 +276,6 @@ flowchart LR
 - **ora spinner** — already available transitively in the lockfile, but `@clack/prompts` is chosen for consistent CLI styling with future interactive prompts.
 - **Throttle in Scanner** — rejected; throttling belongs in `ThrottledProgressReporter` so pipeline stages stay simple and the concern is reusable/testable.
 - **Scanner reports file counts directly** — rejected; the Scanner orchestrates enrichers but does not discover files. Only enrichers know whether they are scanning, reading a config, or running a command.
-- **Tree-level progress on `scanDirectory()`** — rejected; multiple enrichers scan independently (Jest scans three times), so tree-level counting would double/triple-count files and miss non-scan work.
-- **Inject `ProgressReporter` into enrichers** — rejected; enrichers are pack/domain code and should stay decoupled from clack. A narrow `onProgress` callback keeps lifecycle (`createSpinner` / `done`) in the Scanner.
+- **Tree-level progress on** `scanDirectory()` — rejected; multiple enrichers scan independently (Jest scans three times), so tree-level counting would double/triple-count files and miss non-scan work.
+- **Inject** `ProgressReporter` **into enrichers** — rejected; enrichers are pack/domain code and should stay decoupled from clack. A narrow `onProgress` callback keeps lifecycle (`createSpinner` / `done`) in the Scanner.
 - **Structured progress events** (`{ kind: 'count' }` vs `{ kind: 'status' }`) — deferred; free-form `onProgress(detail: string)` is sufficient for v1. Scanner prefixes enricher name; enricher supplies detail.
