@@ -9,7 +9,9 @@ import corePack from '../packs/core';
 import jestPack from '../packs/jest';
 import nxPack from '../packs/nx';
 import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
+import type { ProgressReporter } from '../core/ports/progress-reporter';
 import { NullProgressReporter } from '../core/ports/null-progress-reporter';
+import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
 import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {
@@ -81,11 +83,31 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('scanner reports message per discovered file', () => {
-    // Set up `Scanner` with `ProgressReporterFake`.
-    // Configure workspace with 5 files.
-    // Run `scanWorkspace()`.
-    // Assert fake received at least 5 `message` calls containing incrementing file counts.
+  it.todo('scanner reports message per discovered file', async () => {
+    const progressReporter = new ProgressReporterFake();
+    const { configureWorkspace, scanner } = setUp({ progressReporter });
+
+    configureWorkspace(
+      nxWorkspaceMother
+        .withApp('my-app')
+        .withAppFile('my-app', 'src/one.spec.ts', 'it("one", () => {})')
+        .withAppFile('my-app', 'src/two.spec.ts', 'it("two", () => {})')
+        .withAppFile('my-app', 'src/three.spec.ts', 'it("three", () => {})')
+        .withAppFile('my-app', 'src/four.spec.ts', 'it("four", () => {})')
+        .withAppFile('my-app', 'src/five.spec.ts', 'it("five", () => {})'),
+    );
+
+    await scanner.scanWorkspace();
+
+    const messages = progressReporter.messages();
+
+    expect(messages).toEqual([
+      expect.stringContaining('1'),
+      expect.stringContaining('2'),
+      expect.stringContaining('3'),
+      expect.stringContaining('4'),
+      expect.stringContaining('5'),
+    ]);
   });
 
   it.todo('scanner calls done after each enricher scan', () => {
@@ -131,10 +153,11 @@ describe(Scanner.name, () => {
   );
 });
 
-function setUp() {
+function setUp({
+  progressReporter = new NullProgressReporter(),
+}: { progressReporter?: ProgressReporter } = {}) {
   const commandRunner = new CommandRunnerFake();
   const fileSystem = new FileSystemFake();
-  const progressReporter = new NullProgressReporter();
 
   return {
     configureWorkspace: (

@@ -1,22 +1,26 @@
 import type { ProgressReporter, ProgressSpinner } from './progress-reporter';
 
 export class ProgressReporterFake implements ProgressReporter {
-  private _message: string | undefined;
+  private readonly _messages: string[] = [];
 
   createSpinner(): ProgressSpinner {
     return {
       message: (message: string) => {
-        this._message = message;
+        this._messages.push(message);
       },
       done: (message?: string) => {
         if (message !== undefined) {
-          this._message = message;
+          this._messages.push(message);
         }
       },
     };
   }
 
   message(): string | undefined {
-    return this._message;
+    return this._messages.at(-1);
+  }
+
+  messages(): readonly string[] {
+    return this._messages;
   }
 }
