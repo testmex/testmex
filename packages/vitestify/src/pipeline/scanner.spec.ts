@@ -9,6 +9,7 @@ import corePack from '../packs/core';
 import jestPack from '../packs/jest';
 import nxPack from '../packs/nx';
 import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
+import { NullProgressReporter } from '../core/ports/null-progress-reporter';
 import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {
@@ -80,6 +81,19 @@ describe(Scanner.name, () => {
     ]);
   });
 
+  it.todo('scanner reports message per discovered file', () => {
+    // Set up `Scanner` with `ProgressReporterFake`.
+    // Configure workspace with 5 files.
+    // Run `scanWorkspace()`.
+    // Assert fake received at least 5 `message` calls containing incrementing file counts.
+  });
+
+  it.todo('scanner calls done after each enricher scan', () => {
+    // Set up `Scanner` with `ProgressReporterFake`.
+    // Run `scanWorkspace()` on a workspace with known enricher count.
+    // Assert `done` was called once per enricher that scans files.
+  });
+
   it(
     'detects folder with jest.config.ts as project when no nx project exists at that path',
     async () => {
@@ -120,6 +134,7 @@ describe(Scanner.name, () => {
 function setUp() {
   const commandRunner = new CommandRunnerFake();
   const fileSystem = new FileSystemFake();
+  const progressReporter = new NullProgressReporter();
 
   return {
     configureWorkspace: (
@@ -136,6 +151,7 @@ function setUp() {
         (pack) => pack.enricherFactories,
       ),
       fileSystem,
+      progressReporter,
     }),
   };
 }

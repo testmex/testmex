@@ -3,6 +3,8 @@ import { CommandRunnerPooled } from '../core/domain/command-runner-pooled';
 import type { Pack } from '../core/models/pack';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
+import { NullProgressReporter } from '../core/ports/null-progress-reporter';
+import type { ProgressReporter } from '../core/ports/progress-reporter';
 import { FileSystemImpl } from '../infra/file-system.impl';
 import angularCliPack from '../packs/angular-cli';
 import corePack from '../packs/core';
@@ -31,7 +33,12 @@ export class Vitestify {
   constructor({
     commandRunner = new CommandRunnerPooled({ maxConcurrent: 10 }),
     fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
-  }: { commandRunner?: CommandRunner; fileSystem?: FileSystem } = {}) {
+    progressReporter = new NullProgressReporter(),
+  }: {
+    commandRunner?: CommandRunner;
+    fileSystem?: FileSystem;
+    progressReporter?: ProgressReporter;
+  } = {}) {
     this._analyzer = new Analyzer({
       heuristics: this._packs.flatMap((pack) => pack.heuristics),
     });
@@ -40,6 +47,7 @@ export class Vitestify {
       commandRunner,
       enricherFactories: this._packs.flatMap((pack) => pack.enricherFactories),
       fileSystem,
+      progressReporter,
     });
     this._transformer = new Transformer({
       transforms: this._packs.flatMap((pack) => pack.transforms),
