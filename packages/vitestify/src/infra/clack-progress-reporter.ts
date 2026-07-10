@@ -32,6 +32,6 @@ export class ClackProgressReporter implements ProgressReporter {
 }
 
 const NO_OP_SPINNER: ProgressSpinner = {
-  message: () => {},
-  done: () => {},
+  message: () => undefined,
+  done: () => undefined,
 };
