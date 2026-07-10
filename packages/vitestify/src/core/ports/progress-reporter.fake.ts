@@ -1,8 +1,5 @@
 import type { ProgressReporter, ProgressSpinner } from './progress-reporter';
 
-/**
- * @deprecated 🚧 work in progress
- */
 export class ProgressReporterFake implements ProgressReporter {
   private _message: string | undefined;
 

@@ -82,18 +82,18 @@ flowchart LR
   PR3 --> PR4
 ```
 
-# 🚧 PR#1 — Scaffold ProgressReporter port and implementations
+# ✅ PR#1 — Scaffold ProgressReporter port and implementations
 
 ## Tasks
 
-- [ ] Add `ProgressReporter` interface with `createSpinner()` returning `{ update, done }`.
-- [ ] First `update(message)` call starts the clack spinner; subsequent calls update the message.
-- [ ] `done(message?)` stops the spinner with an optional final message.
+- [x] Add `ProgressReporter` interface with `createSpinner()` returning `{ update, done }`.
+- [x] First `update(message)` call starts the clack spinner; subsequent calls update the message.
+- [x] `done(message?)` stops the spinner with an optional final message.
 - [x] Add `ProgressReporterFake` that records `update` and `done` calls for tests.
 - [x] Add `ThrottledProgressReporter` decorator that wraps a `ProgressReporter` and throttles `update()` to a configurable interval (default 100ms).
 - [x] `ThrottledProgressReporter` always flushes the latest pending message on `done()` — no stale count at phase end.
-- [ ] Add `ClackProgressReporter` in infra; no-op all methods when `!process.stdout.isTTY`.
-- [ ] Add `@clack/prompts` dependency to `@testmex/vitestify`.
+- [x] Add `ClackProgressReporter` in infra; no-op all methods when `!process.stdout.isTTY`.
+- [x] Add `@clack/prompts` dependency to `@testmex/vitestify`.
 
 ## Testing Strategy
 
