@@ -1,10 +1,7 @@
-import debug from 'debug';
 import type { Workspace } from '../core/domain/workspace';
 import type { Transform } from '../core/models/transform';
 import { NullProgressReporter } from '../core/ports/null-progress-reporter';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
-
-const log = debug('vitestify:transformer');
 
 export class Transformer {
   private readonly _progressReporter: ProgressReporter;
@@ -22,17 +19,15 @@ export class Transformer {
   }
 
   async transform(workspace: Workspace): Promise<void> {
-    log('running %d transforms', this._transforms.length);
     for (const [index, transform] of this._transforms.entries()) {
-      log('transform %d/%d', index + 1, this._transforms.length);
+      const step = index + 1;
+      const total = this._transforms.length;
       const spinner = this._progressReporter.createSpinner();
-      spinner.message(`Transforming: ${transform.name}`);
+      spinner.message(`Transforming [${step}/${total}] ${transform.name}`);
       await transform.apply(workspace);
-      spinner.done(`Transformed: ${transform.name}`);
+      spinner.done(`Transformed  [${step}/${total}] ${transform.name}`);
     }
 
-    log('committing workspace tree');
     await workspace.tree.commit();
-    log('done');
   }
 }

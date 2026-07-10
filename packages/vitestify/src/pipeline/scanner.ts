@@ -33,9 +33,8 @@ export class Scanner {
 
     const total = enrichers.length;
 
-    for (let i = 0; i < enrichers.length; i++) {
-      const enricher = enrichers[i];
-      const step = i + 1;
+    for (const [index, enricher] of enrichers.entries()) {
+      const step = index + 1;
       const spinner = this._progressReporter.createSpinner();
       let lastMessage: string | undefined;
 

@@ -31,10 +31,10 @@ describe(Transformer, () => {
     await transformer.transform(workspace);
 
     expect(progressReporter.messages()).toEqual([
-      'Transforming: jest-mock',
-      'Transformed: jest-mock',
-      'Transforming: jest-spy-on',
-      'Transformed: jest-spy-on',
+      'Transforming [1/2] jest-mock',
+      'Transformed  [1/2] jest-mock',
+      'Transforming [2/2] jest-spy-on',
+      'Transformed  [2/2] jest-spy-on',
     ]);
   });
 });

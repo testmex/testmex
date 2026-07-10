@@ -1,22 +1,32 @@
-import debug from 'debug';
 import type { Workspace } from '../core/domain/workspace';
 import type { Heuristic } from '../core/models/heuristic';
-
-const log = debug('vitestify:analyzer');
+import { NullProgressReporter } from '../core/ports/null-progress-reporter';
+import type { ProgressReporter } from '../core/ports/progress-reporter';
 
 export class Analyzer {
   private readonly _heuristics: Heuristic[];
+  private readonly _progressReporter: ProgressReporter;
 
-  constructor({ heuristics }: { heuristics: Heuristic[] }) {
+  constructor({
+    heuristics,
+    progressReporter = new NullProgressReporter(),
+  }: {
+    heuristics: Heuristic[];
+    progressReporter?: ProgressReporter;
+  }) {
     this._heuristics = heuristics;
+    this._progressReporter = progressReporter;
   }
 
   async analyze(workspace: Workspace): Promise<void> {
-    log('running %d heuristics', this._heuristics.length);
+    const total = this._heuristics.length;
+    const spinner = this._progressReporter.createSpinner();
+
     for (const [index, heuristic] of this._heuristics.entries()) {
-      log('heuristic %d/%d', index + 1, this._heuristics.length);
+      spinner.message(`Analyzing [${index + 1}/${total}] ${heuristic.name}`);
       workspace.addFindings(await heuristic.inspect(workspace.asReadonly()));
     }
-    log('discovered %d findings', workspace.findings.length);
+
+    spinner.done(`Analyzed ${total} heuristics`);
   }
 }
