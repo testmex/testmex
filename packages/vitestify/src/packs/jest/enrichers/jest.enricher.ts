@@ -1,5 +1,9 @@
 import { basename, dirname, join } from 'node:path/posix';
-import type { FileInfo, ReadonlyWorkspace } from '../../../core/domain/workspace';
+import type {
+  FileInfo,
+  FileTag,
+  ReadonlyWorkspace,
+} from '../../../core/domain/workspace';
 import { Enricher, type EnricherOptions } from '../../../core/models/enricher';
 import {
   relativePath,
@@ -9,14 +13,41 @@ import { SgEditor } from '../../../infra/ast/sg-editor';
 import { fileTags } from '../../core/identifiers';
 import { JEST_CTS_EXTENSION, JEST_TSX_EXTENSION } from '../constants';
 
+const JEST_CONFIG_FILE_NAMES = [
+  'jest.config.ts',
+  'jest.config.js',
+  'jest.config.mjs',
+  'jest.config.mts',
+  'jest.config.cjs',
+  'jest.config.cts',
+] as const;
+
 const JEST_SETUP_FILE_KEYS = ['setupFiles', 'setupFilesAfterEnv'];
+
+type JestDiscoveredFileType = typeof fileTags.jestConfig | typeof fileTags.test;
+
+interface JestDiscoveredFile {
+  path: RelativePath;
+  type: JestDiscoveredFileType;
+}
 
 export class JestEnricher implements Enricher {
   readonly name = 'jest';
 
-  async enrich({ workspace }: EnricherOptions) {
-    const jestConfigPaths = await this._discoverJestConfigPaths(workspace);
-    const jestTestPaths = await this._discoverJestTestPaths(workspace);
+  async enrich({ onProgress, workspace }: EnricherOptions) {
+    const files: Array<{ type: FileTag; path: RelativePath }> = [];
+    for await (const file of this._discoverJestFiles(workspace)) {
+      files.push(file);
+      onProgress?.(`${files.length} files`);
+    }
+
+    const jestConfigPaths = files
+      .filter((file) => file.type === fileTags.jestConfig)
+      .map((file) => file.path);
+    const jestTestPaths = files
+      .filter((file) => file.type === fileTags.test)
+      .map((file) => file.path);
+
     const jestSetupFileInfos = await this._discoverJestSetupFileInfos(
       workspace,
       jestConfigPaths,
@@ -49,37 +80,23 @@ export class JestEnricher implements Enricher {
     };
   }
 
-  private async _discoverJestConfigPaths(workspace: ReadonlyWorkspace) {
-    const files = [];
+  private async *_discoverJestFiles(
+    workspace: ReadonlyWorkspace,
+  ): AsyncGenerator<JestDiscoveredFile> {
     for await (const path of workspace.tree.scanDirectory()) {
-      files.push(path);
+      if (
+        path.endsWith(JEST_CTS_EXTENSION) ||
+        path.endsWith(JEST_TSX_EXTENSION)
+      ) {
+        yield { path, type: fileTags.test };
+      }
+
+      if (
+        JEST_CONFIG_FILE_NAMES.some((name) => basename(path).endsWith(name))
+      ) {
+        yield { path, type: fileTags.jestConfig };
+      }
     }
-    const jestConfigAlternativeFileNames = [
-      'jest.config.ts',
-      'jest.config.js',
-      'jest.config.mjs',
-      'jest.config.mts',
-      'jest.config.cjs',
-      'jest.config.cts',
-    ];
-
-    return files.filter((path) =>
-      jestConfigAlternativeFileNames.some((name) =>
-        basename(path).endsWith(name),
-      ),
-    );
-  }
-
-  private async _discoverJestTestPaths(workspace: ReadonlyWorkspace) {
-    const paths = [];
-    for await (const path of workspace.tree.scanDirectory()) {
-      paths.push(path);
-    }
-
-    return paths.filter(
-      (path) =>
-        path.endsWith(JEST_CTS_EXTENSION) || path.endsWith(JEST_TSX_EXTENSION),
-    );
   }
 
   private async _discoverJestSetupFileInfos(
