@@ -5,6 +5,7 @@ import { findingTypes } from '../../identifiers';
 const jestSymbolPattern = /\bjest\b/;
 
 export const jestSymbolHeuristic = defineFileContentHeuristic({
+  name: 'jest-symbol',
   predicate: (file) =>
     file.tags.includes(coreFileTags.test) ||
     file.tags.includes(coreFileTags.code),
