@@ -5,7 +5,10 @@ import { isCodeFile } from '../../utils';
 
 export class CodeEnricher implements Enricher {
   async enrich(workspace: ReadonlyWorkspace) {
-    const files = await workspace.tree.scanDirectory();
+    const files = [];
+    for await (const path of workspace.tree.scanDirectory()) {
+      files.push(path);
+    }
 
     return {
       fileInfos: files

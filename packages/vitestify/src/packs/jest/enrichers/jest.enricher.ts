@@ -48,7 +48,10 @@ export class JestEnricher implements Enricher {
   }
 
   private async _discoverJestConfigPaths(workspace: ReadonlyWorkspace) {
-    const files = await workspace.tree.scanDirectory();
+    const files = [];
+    for await (const path of workspace.tree.scanDirectory()) {
+      files.push(path);
+    }
     const jestConfigAlternativeFileNames = [
       'jest.config.ts',
       'jest.config.js',
@@ -66,7 +69,10 @@ export class JestEnricher implements Enricher {
   }
 
   private async _discoverJestTestPaths(workspace: ReadonlyWorkspace) {
-    const paths = await workspace.tree.scanDirectory();
+    const paths = [];
+    for await (const path of workspace.tree.scanDirectory()) {
+      paths.push(path);
+    }
 
     return paths.filter(
       (path) =>

@@ -115,6 +115,11 @@ describe(Scanner.name, () => {
       ]);
     },
   );
+
+  it.todo('existing scanner integration tests still pass', () => {
+    // Run existing `scanner.spec.ts` cases unchanged.
+    // Assert workspace detection behavior is identical to before migration.
+  });
 });
 
 function setUp() {

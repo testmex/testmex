@@ -45,8 +45,10 @@ export class Tree {
     return parsed as T;
   }
 
-  async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
-    return this._fileSystemCached.scanDirectory(path);
+  async *scanDirectory(path?: RelativePath): AsyncIterable<RelativePath> {
+    for await (const file of this._fileSystemCached.scanDirectory(path)) {
+      yield file;
+    }
   }
 
   async write(path: RelativePath, content: string): Promise<void> {

@@ -35,7 +35,7 @@ export class FileSystemImpl implements FileSystem {
     }
   }
 
-  async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
+  async *scanDirectory(path?: RelativePath): AsyncIterable<RelativePath> {
     const pattern = path ? `${path}/**/*` : '**/*';
 
     const files = await globby(pattern, {
@@ -44,7 +44,9 @@ export class FileSystemImpl implements FileSystem {
       onlyFiles: true,
     });
 
-    return files.map((file: string) => this._toPosixPath(relativePath(file)));
+    for (const file of files) {
+      yield this._toPosixPath(relativePath(file));
+    }
   }
 
   async writeFile(path: RelativePath, content: string): Promise<void> {
