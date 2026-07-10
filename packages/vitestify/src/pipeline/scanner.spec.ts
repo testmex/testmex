@@ -123,7 +123,7 @@ describe(Scanner.name, () => {
 
     expect(doneMessages).toEqual([
       'Scanned  [1/7] angular-cli',
-      'Scanned  [2/7] nx · loading nx graph',
+      'Scanned  [2/7] nx · 1 project(s) detected',
       'Scanned  [3/7] jest',
       'Scanned  [4/7] code · 4 files',
       'Scanned  [5/7] package-manager · pnpm detected (good choice 😉)',
@@ -147,7 +147,8 @@ describe(Scanner.name, () => {
     expect(nxMessages).toEqual([
       'Scanning [2/7] nx',
       'Scanning [2/7] nx · loading nx graph',
-      'Scanned  [2/7] nx · loading nx graph',
+      'Scanning [2/7] nx · 1 project(s) detected',
+      'Scanned  [2/7] nx · 1 project(s) detected',
     ]);
   });
 

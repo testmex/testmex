@@ -20,12 +20,14 @@ export class NxEnricher implements Enricher {
     onProgress?.('loading nx graph');
     const graph = await this._runNxGraphCommand();
 
-    return {
-      projects: Object.values(graph.graph.nodes).map((node) => ({
-        name: node.name,
-        path: relativePath(node.data.root),
-      })),
-    };
+    const projects = Object.values(graph.graph.nodes).map((node) => ({
+      name: node.name,
+      path: relativePath(node.data.root),
+    }));
+
+    onProgress?.(`${projects.length} project(s) detected`);
+
+    return { projects };
   }
 
   private async _runNxGraphCommand(): Promise<NxGraph> {
