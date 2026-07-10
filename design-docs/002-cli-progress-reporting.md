@@ -239,7 +239,7 @@ flowchart LR
 
 - [x] Pass reporter to `Transformer`, `Finalizer`.
 - [x] Transformer: one spinner per transform; `message` with transform name during `apply()`; `done` after each transform completes.
-- [ ] Finalizer: one spinner per command; `message` with `Running command: {command}` during `run()`; `done` with `Command done: {command}` after each command completes.
+- [x] Finalizer: one spinner per command; `message` with `Running command: {command}` during `run()`; `done` with `Command done: {command}` after each command completes.
 - [ ] CLI wires `new ThrottledProgressReporter(new ClackProgressReporter())` into `Vitestify`.
 
 ## Testing Strategy
@@ -251,7 +251,7 @@ flowchart LR
 - Assert messages contain each transform name.
 - Assert `done` called twice via `Transformed: {name}` messages.
 
-### 🚧 Finalizer reports command string during run
+### ✅ Finalizer reports command string during run
 
 - Set up `Finalizer` with `ProgressReporterFake` and workspace with 2 queued commands.
 - Run `finalize()`.

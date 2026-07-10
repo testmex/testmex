@@ -33,7 +33,7 @@ describe(Finalizer, () => {
     ]);
   });
 
-  it.todo('finalizer reports command string during run', async () => {
+  it('finalizer reports command string during run', async () => {
     const progressReporter = new ProgressReporterFake();
     const commandRunner: CommandRunner = {
       run: async () => '',
