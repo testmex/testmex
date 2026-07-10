@@ -106,7 +106,7 @@ async enrich({ workspace, onProgress }: EnricherOptions) {
 }
 ```
 
-Add `name` to `Enricher` (like `Transform.name`) via a `defineEnricher({ name, enrich })` helper.
+Enrichers declare `readonly name` on the class (e.g. `readonly name = 'code'` on `CodeEnricher`).
 
 ## Diagram
 
@@ -118,7 +118,7 @@ flowchart TD
   vitestify --> transformer["Transformer"]
   vitestify --> finalizer["Finalizer"]
 
-  cli --> throttledReporter(("ThrottledProgressReporter<br>[intervalMs: 100]"))
+  cli --> throttledReporter(("ThrottledProgressReporter<br>[duration: 100]"))
   throttledReporter --> clackReporter(("ClackProgressReporter"))
   clackReporter --> clackSpinner["@clack/prompts spinner"]
 
@@ -159,7 +159,7 @@ flowchart LR
 - [x] First `message()` call starts the clack spinner; subsequent calls update the message.
 - [x] `done(message?)` stops the spinner with an optional final message.
 - [x] Add `ProgressReporterFake` that records `message` and `done` calls for tests.
-- [x] Add `ThrottledProgressReporter` decorator that wraps a `ProgressReporter` and throttles `message()` to a configurable interval (default 100ms).
+- [x] Add `ThrottledProgressReporter` decorator that wraps a `ProgressReporter` and throttles `message()` to a configurable duration (default 100ms).
 - [x] `ThrottledProgressReporter` always flushes the latest pending message on `done()` — no stale count at phase end.
 - [x] Add `ClackProgressReporter` in infra; no-op all methods when `!process.stdout.isTTY`.
 - [x] Add `@clack/prompts` dependency to `@testmex/vitestify`.
@@ -168,32 +168,34 @@ flowchart LR
 
 ### ✅ ThrottledProgressReporter keeps pending message until interval elapses
 
-- Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
+- Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ duration: 100 })`.
 - Call `message('1/5')`, advance timers by 90ms, then call `message('2/5')`.
 - Assert inner fake's last message is still `'1/5'`.
 
 ### ✅ ThrottledProgressReporter forwards pending message after interval elapses
 
-- Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
+- Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ duration: 100 })`.
 - Call `message('1/5')`, advance timers by 90ms, call `message('2/5')`, then advance timers by 10ms.
 - Assert inner fake's last message is `'2/5'`.
 
 ### ✅ ThrottledProgressReporter flushes on done
 
-- Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ intervalMs: 100 })`.
+- Wrap a `ProgressReporterFake` with `ThrottledProgressReporter({ duration: 100 })`.
 - Call `message('count: 99')` then immediately `done('count: 99')`.
 - Assert inner fake's last message is `'count: 99'` and done message is `'count: 99'`.
 
-# 🚧 PR#2 — Migrate FileSystem.scanDirectory to AsyncIterable
+# ✅ PR#2 — Migrate FileSystem.scanDirectory to AsyncIterable
 
 ## Tasks
 
-- [ ] Change `FileSystem.scanDirectory()` to return `AsyncIterable<RelativePath>`.
-- [ ] Implement `FileSystemImpl.scanDirectory()` with `globbyStream` + `async function*`.
-- [ ] Update `FileSystemCached`, `Tree`, `FileSystemFake` to match new signature.
-- [ ] Update enrichers to collect paths: `for await (const path of workspace.tree.scanDirectory())`.
+- [x] Change `FileSystem.scanDirectory()` to return `AsyncIterable<RelativePath>`.
+- [x] Implement `FileSystemImpl.scanDirectory()` with `globbyStream` + `async function*`.
+- [x] Update `FileSystemCached`, `Tree`, `FileSystemFake` to match new signature.
+- [x] Update enrichers to collect paths: `for await (const path of workspace.tree.scanDirectory())`.
 
-### 🚧 Existing scanner integration tests still pass
+## Testing Strategy
+
+### ✅ Existing scanner integration tests still pass
 
 - Run existing `scanner.spec.ts` cases unchanged.
 - Assert workspace detection behavior is identical to before migration.
@@ -237,34 +239,36 @@ flowchart LR
 
 ## Tasks
 
+- [ ] Add `name` to `Heuristic` interface.
+- [ ] Add `name` to `defineFileContentHeuristic` args (like `defineFileTransform`).
 - [ ] Pass reporter to `Analyzer`, `Transformer`, `Finalizer`.
-- [ ] Analyzer: one spinner per heuristic; `done` after each heuristic completes.
-- [ ] Transformer: one spinner per transform; `done` after each transform completes.
-- [ ] Finalizer: one spinner per command; `done` after each command completes.
+- [ ] Analyzer: one spinner per heuristic; `message` with heuristic name during `inspect()`; `done` after each heuristic completes.
+- [ ] Transformer: one spinner per transform; `message` with transform name during `apply()`; `done` after each transform completes.
+- [ ] Finalizer: one spinner per command; `message` with command string during `run()`; `done` after each command completes.
 - [ ] CLI wires `new ThrottledProgressReporter(new ClackProgressReporter())` into `Vitestify`.
 
 ## Testing Strategy
 
 ### 🚧 Analyzer reports heuristic name during inspect
 
-- Set up `Analyzer` with `ProgressReporterFake` and 2 heuristics named `heuristic-a`, `heuristic-b`.
+- Set up `Analyzer` with `ProgressReporterFake` and 2 heuristics with `name` `'heuristic-a'` and `'heuristic-b'`.
 - Run `analyze()`.
 - Assert messages contain `heuristic-a` and `heuristic-b`.
-- Assert `done` called twice.
+- Assert `done` called twice via `Analyzed: {name}` messages.
 
 ### 🚧 Transformer reports transform name during apply
 
-- Set up `Transformer` with `ProgressReporterFake` and 2 transforms.
+- Set up `Transformer` with `ProgressReporterFake` and 2 transforms with `name` set.
 - Run `transform()`.
 - Assert messages contain each transform name.
-- Assert `done` called twice.
+- Assert `done` called twice via `Transformed: {name}` messages.
 
 ### 🚧 Finalizer reports command string during run
 
 - Set up `Finalizer` with `ProgressReporterFake` and workspace with 2 queued commands.
 - Run `finalize()`.
 - Assert messages contain command strings.
-- Assert `done` called twice.
+- Assert `done` called twice via `Finalized: {command}` messages.
 
 ### 🚧 CLI wires ThrottledProgressReporter around ClackProgressReporter
 

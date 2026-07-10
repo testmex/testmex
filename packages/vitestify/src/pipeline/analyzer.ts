@@ -15,9 +15,7 @@ export class Analyzer {
     log('running %d heuristics', this._heuristics.length);
     for (const [index, heuristic] of this._heuristics.entries()) {
       log('heuristic %d/%d', index + 1, this._heuristics.length);
-      workspace.addFindings(
-        await heuristic.inspect(workspace.asReadonly()),
-      );
+      workspace.addFindings(await heuristic.inspect(workspace.asReadonly()));
     }
     log('discovered %d findings', workspace.findings.length);
   }
