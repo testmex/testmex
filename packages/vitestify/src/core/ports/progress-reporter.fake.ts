@@ -4,7 +4,22 @@ import type { ProgressReporter, ProgressSpinner } from './progress-reporter';
  * @deprecated 🚧 work in progress
  */
 export class ProgressReporterFake implements ProgressReporter {
+  private _message: string | undefined;
+
   createSpinner(): ProgressSpinner {
-    throw new Error('🚧 work in progress');
+    return {
+      update: (message: string) => {
+        this._message = message;
+      },
+      done: (message?: string) => {
+        if (message !== undefined) {
+          this._message = message;
+        }
+      },
+    };
+  }
+
+  message(): string | undefined {
+    return this._message;
   }
 }
