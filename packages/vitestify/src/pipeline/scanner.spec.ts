@@ -99,13 +99,13 @@ describe(Scanner.name, () => {
       .messages()
       .filter((message) => message.includes('code'));
     expect(codeMessages).toEqual([
-      'Scanning: code',
-      'Scanning: code… 1 files',
-      'Scanning: code… 2 files',
-      'Scanning: code… 3 files',
-      'Scanning: code… 4 files',
-      'Scanning: code… 5 files',
-      'Scanned: code',
+      'Scanning [4/7] code',
+      'Scanning [4/7] code · 1 files',
+      'Scanning [4/7] code · 2 files',
+      'Scanning [4/7] code · 3 files',
+      'Scanning [4/7] code · 4 files',
+      'Scanning [4/7] code · 5 files',
+      'Scanned  [4/7] code · 5 files',
     ]);
   });
 
@@ -119,16 +119,16 @@ describe(Scanner.name, () => {
 
     const doneMessages = progressReporter
       .messages()
-      .filter((message) => message.startsWith('Scanned:'));
+      .filter((message) => message.startsWith('Scanned'));
 
     expect(doneMessages).toEqual([
-      'Scanned: angular-cli',
-      'Scanned: nx',
-      'Scanned: jest',
-      'Scanned: code',
-      'Scanned: package-manager',
-      'Scanned: test',
-      'Scanned: vitest-config',
+      'Scanned  [1/7] angular-cli',
+      'Scanned  [2/7] nx · loading nx graph',
+      'Scanned  [3/7] jest',
+      'Scanned  [4/7] code · 4 files',
+      'Scanned  [5/7] package-manager',
+      'Scanned  [6/7] test',
+      'Scanned  [7/7] vitest-config',
     ]);
   });
 
@@ -145,9 +145,9 @@ describe(Scanner.name, () => {
       .filter((message) => message.includes('nx'));
 
     expect(nxMessages).toEqual([
-      'Scanning: nx',
-      'Scanning: nx… loading nx graph',
-      'Scanned: nx',
+      'Scanning [2/7] nx',
+      'Scanning [2/7] nx · loading nx graph',
+      'Scanned  [2/7] nx · loading nx graph',
     ]);
   });
 
