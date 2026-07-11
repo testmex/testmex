@@ -23,9 +23,27 @@ export class Transformer {
       const step = index + 1;
       const total = this._transforms.length;
       const spinner = this._progressReporter.createSpinner();
-      spinner.message(`Transforming [${step}/${total}] ${transform.name}`);
-      await transform.apply(workspace);
-      spinner.done(`Transformed  [${step}/${total}] ${transform.name}`);
+      let lastMessage: string | undefined;
+
+      const formatTransformMessage = (
+        phase: 'transforming' | 'transformed',
+        message?: string,
+      ) => {
+        const prefix = phase === 'transforming' ? 'Transforming' : 'Transformed ';
+        const line = `${prefix} [${step}/${total}] ${transform.name}`;
+        return message === undefined ? line : `${line} · ${message}`;
+      };
+
+      spinner.message(formatTransformMessage('transforming'));
+
+      await transform.apply(workspace, {
+        onProgress: (message) => {
+          lastMessage = message;
+          spinner.message(formatTransformMessage('transforming', message));
+        },
+      });
+
+      spinner.done(formatTransformMessage('transformed', lastMessage));
     }
 
     await workspace.tree.commit();

@@ -13,20 +13,24 @@ import { findingTypes } from '../../../identifiers';
 
 export const renameJestToSpecTransform = defineTransform({
   name: 'rename-jest-to-spec',
-  apply: async (workspace) => {
+  apply: async (workspace, { onProgress } = {}) => {
     const jestTestPaths = workspace.findings
       .filter((finding) => finding.type === findingTypes.jestSymbol)
       .flatMap((finding) =>
         finding.filePath === undefined ? [] : [finding.filePath],
       );
+    let transformedCount = 0;
 
     for (const path of jestTestPaths) {
       const renamedPath = renameJestToSpecFile(path);
 
       if (renamedPath !== null) {
         await workspace.rename(path, renamedPath);
+        transformedCount++;
       }
     }
+
+    onProgress?.(`${transformedCount} file(s) transformed`);
   },
 });
 

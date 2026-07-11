@@ -39,9 +39,10 @@ const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
 
 export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
-  apply: async (workspace) => {
+  apply: async (workspace, { onProgress } = {}) => {
     const { commands, findings, tree } = workspace;
     const devDependencies = new Set<string>(['vite-tsconfig-paths', 'vitest']);
+    let transformedCount = 0;
 
     for (const project of await _collectProjectsToTransform(workspace)) {
       const context: VitestConfigTransformContext = {
@@ -67,7 +68,7 @@ export const vitestConfigTransform = defineTransform({
         continue;
       }
 
-      await _generateVitestConfig({
+      transformedCount += await _generateVitestConfig({
         context,
         devDependencies,
         workspace,
@@ -77,6 +78,8 @@ export const vitestConfigTransform = defineTransform({
     if (devDependencies.size > 0) {
       commands.add([workspace.packageManager, 'add', '-D', ...devDependencies]);
     }
+
+    onProgress?.(`${transformedCount} file(s) transformed`);
   },
 });
 
@@ -142,7 +145,7 @@ async function _generateVitestConfig({
   context: VitestConfigTransformContext;
   devDependencies: Set<string>;
   workspace: WritableWorkspace;
-}): Promise<void> {
+}): Promise<number> {
   if (context.usesAngular == null) {
     _analyzeAngularUsage(context);
   }
@@ -154,8 +157,11 @@ async function _generateVitestConfig({
 
   _maybeAppendJestDomVitestSetup(context);
 
+  let transformedCount = 0;
+
   if (context.usesAngular) {
     await _addAngularVitestSetup(context);
+    transformedCount++;
     devDependencies.add('@analogjs/vite-plugin-angular');
     devDependencies.add('@analogjs/vitest-angular');
   }
@@ -163,9 +169,15 @@ async function _generateVitestConfig({
     devDependencies.add('@vitejs/plugin-react');
   }
 
-  await _maybeAddTestingLibraryReactSetup(context);
+  if (context.usesTestingLibraryReact) {
+    await _maybeAddTestingLibraryReactSetup(context);
+    transformedCount++;
+  }
 
   await _writeVitestConfig(context, workspace);
+  transformedCount++;
+
+  return transformedCount;
 }
 
 /**

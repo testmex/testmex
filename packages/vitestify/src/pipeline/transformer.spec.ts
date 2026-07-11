@@ -15,11 +15,15 @@ describe(Transformer, () => {
       transforms: [
         defineTransform({
           name: 'jest-mock',
-          apply: async () => undefined,
+          apply: async (_workspace, { onProgress } = {}) => {
+            onProgress?.('2 file(s) transformed');
+          },
         }),
         defineTransform({
           name: 'jest-spy-on',
-          apply: async () => undefined,
+          apply: async (_workspace, { onProgress } = {}) => {
+            onProgress?.('0 file(s) transformed');
+          },
         }),
       ],
     });
@@ -32,9 +36,11 @@ describe(Transformer, () => {
 
     expect(progressReporter.messages()).toEqual([
       'Transforming [1/2] jest-mock',
-      'Transformed  [1/2] jest-mock',
+      'Transforming [1/2] jest-mock · 2 file(s) transformed',
+      'Transformed  [1/2] jest-mock · 2 file(s) transformed',
       'Transforming [2/2] jest-spy-on',
-      'Transformed  [2/2] jest-spy-on',
+      'Transforming [2/2] jest-spy-on · 0 file(s) transformed',
+      'Transformed  [2/2] jest-spy-on · 0 file(s) transformed',
     ]);
   });
 });

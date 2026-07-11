@@ -7,8 +7,9 @@ const TSCONFIG_SPEC_FILE_NAME = 'tsconfig.spec.json';
 
 export const tsconfigTransform = defineTransform({
   name: 'tsconfig',
-  apply: async (workspace) => {
+  apply: async (workspace, { onProgress } = {}) => {
     const { tree } = workspace;
+    let transformedCount = 0;
 
     for (const file of workspace.files) {
       if (!file.tags.includes(fileTags.jestConfig)) {
@@ -37,7 +38,10 @@ export const tsconfigTransform = defineTransform({
       tsconfigSpec.compilerOptions.module = 'preserve';
 
       await tree.write(tsconfigSpecPath, JSON.stringify(tsconfigSpec, null, 2));
+      transformedCount++;
     }
+
+    onProgress?.(`${transformedCount} file(s) transformed`);
   },
 });
 

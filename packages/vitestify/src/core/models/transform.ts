@@ -2,7 +2,12 @@ import type { WritableWorkspace } from '../domain/workspace';
 
 export interface Transform {
   name: string;
-  apply(workspace: WritableWorkspace): Promise<void>;
+  apply(
+    workspace: WritableWorkspace,
+    options?: {
+      onProgress?(detail: string): void;
+    },
+  ): Promise<void>;
 }
 
 export function defineTransform(args: Transform): Transform {
@@ -15,9 +20,16 @@ export function defineTransformGroup(
 ): Transform {
   return defineTransform({
     name,
-    apply: async (workspace) => {
-      for (const transform of transforms) {
-        await transform.apply(workspace);
+    apply: async (workspace, { onProgress } = {}) => {
+      for (const [index, transform] of transforms.entries()) {
+        const step = index + 1;
+        const total = transforms.length;
+
+        await transform.apply(workspace, {
+          onProgress: (detail) => {
+            onProgress?.(`[${step}/${total}] ${transform.name} · ${detail}`);
+          },
+        });
       }
     },
   });
