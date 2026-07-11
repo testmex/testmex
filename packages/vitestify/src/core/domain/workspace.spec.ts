@@ -362,7 +362,7 @@ describe(Workspace.name, () => {
     expect(workspace.findings).toEqual([]);
   });
 
-  it('applyEnrichment() merges projects and package manager into info', () => {
+  it('applyEnrichment() merges projects and package manager', () => {
     const workspace = new Workspace({
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
@@ -372,10 +372,10 @@ describe(Workspace.name, () => {
       packageManager: 'pnpm',
     });
 
-    expect(workspace.info).toMatchObject({
-      projects: [{ name: 'my-app', path: 'apps/my-app' }],
-      packageManager: 'pnpm',
-    });
+    expect(workspace.getProjects()).toMatchObject([
+      { name: 'my-app', path: 'apps/my-app' },
+    ]);
+    expect(workspace.getPackageManager()).toBe('pnpm');
   });
 });
 

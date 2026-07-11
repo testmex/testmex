@@ -1,7 +1,11 @@
 import { relative } from 'node:path/posix';
 import type { Finding } from '../models/finding';
 import { relativePath, type RelativePath } from '../models/relative-path';
-import { WorkspaceEnrichment, WorkspaceState } from '../models/workspace-state';
+import {
+  type PackageManager,
+  WorkspaceEnrichment,
+  WorkspaceState,
+} from '../models/workspace-state';
 import type { Command } from '../ports/command-runner';
 import type { ReadonlyTree, Tree } from './tree';
 
@@ -36,8 +40,12 @@ export class Workspace {
     return this._findings;
   }
 
-  get info(): WorkspaceState {
-    return this._info;
+  getPackageManager(): PackageManager {
+    return this._info.packageManager;
+  }
+
+  getProjects(): readonly Project[] {
+    return this._info.projects;
   }
 
   asReadonly(): ReadonlyWorkspace {
@@ -51,7 +59,7 @@ export class Workspace {
   getFiles(): FileInfoWithProjects[] {
     return [...this._fileTags.entries()].flatMap(([path, tags]) => {
       const file = { path, tags };
-      const projects = _findProjectsForFile(file, this.info.projects);
+      const projects = _findProjectsForFile(file, this.getProjects());
 
       return [{ ...file, projects }];
     });
@@ -112,7 +120,11 @@ export class Workspace {
 export interface ReadonlyWorkspace
   extends Pick<
     Workspace,
-    'info' | 'findings' | 'getFiles' | 'getProjectFiles'
+    | 'findings'
+    | 'getFiles'
+    | 'getPackageManager'
+    | 'getProjectFiles'
+    | 'getProjects'
   > {
   readonly tree: ReadonlyTree;
 }
@@ -166,7 +178,10 @@ export class CommandQueue {
   }
 }
 
-function _findProjectsForFile(file: FileInfo, projects: Project[]): Project[] {
+function _findProjectsForFile(
+  file: FileInfo,
+  projects: readonly Project[],
+): Project[] {
   const matches = projects.filter((project) => {
     const pathRelativeToProject = relative(project.path, file.path);
 

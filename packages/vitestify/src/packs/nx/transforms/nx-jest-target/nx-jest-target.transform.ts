@@ -5,9 +5,9 @@ import { relativePath } from '../../../../core/models/relative-path';
 export const nxJestTargetTransform = defineTransform({
   name: 'nx-jest-target',
   apply: async (workspace) => {
-    const { info, tree } = workspace;
+    const { tree } = workspace;
 
-    for (const project of info.projects) {
+    for (const project of workspace.getProjects()) {
       const projectJsonPath = relativePath(join(project.path, 'project.json'));
       const projectJson = await tree.maybeReadJsonFile<ProjectJson>(
         projectJsonPath,
