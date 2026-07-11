@@ -1,5 +1,5 @@
 import { relative } from 'node:path/posix';
-import { Entities } from '../entities';
+import { Entities } from '../utils/entities';
 import type { Finding } from './finding';
 import { relativePath, type RelativePath } from './relative-path';
 
