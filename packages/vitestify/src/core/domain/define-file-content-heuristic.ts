@@ -9,15 +9,18 @@ export interface FileContentInspectionArgs {
 }
 
 export interface DefineFileContentHeuristicArgs {
+  name: string;
   predicate: (file: FileInfo) => boolean;
   inspect: (args: FileContentInspectionArgs) => Finding[];
 }
 
 export function defineFileContentHeuristic({
+  name,
   predicate,
   inspect,
 }: DefineFileContentHeuristicArgs): Heuristic {
   return defineHeuristic({
+    name,
     inspect: async (workspace) => {
       const findingsList = await Promise.all(
         workspace

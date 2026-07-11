@@ -1,14 +1,17 @@
-import { Analyzer } from './analyzer';
 import { CommandRunnerPooled } from '../core/domain/command-runner-pooled';
+import { ThrottledProgressReporter } from '../core/domain/throttled-progress-reporter';
 import type { Pack } from '../core/models/pack';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
+import type { ProgressReporter } from '../core/ports/progress-reporter';
+import { ClackProgressReporter } from '../infra/clack-progress-reporter';
 import { FileSystemImpl } from '../infra/file-system.impl';
 import angularCliPack from '../packs/angular-cli';
 import corePack from '../packs/core';
 import jestPack from '../packs/jest';
 import nxPack from '../packs/nx';
 import { Scanner } from '../pipeline/scanner';
+import { Analyzer } from './analyzer';
 import { Finalizer } from './finalizer';
 import { Transformer } from './transformer';
 
@@ -31,18 +34,28 @@ export class Vitestify {
   constructor({
     commandRunner = new CommandRunnerPooled({ maxConcurrent: 10 }),
     fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
-  }: { commandRunner?: CommandRunner; fileSystem?: FileSystem } = {}) {
+    progressReporter = new ThrottledProgressReporter(
+      new ClackProgressReporter(),
+    ),
+  }: {
+    commandRunner?: CommandRunner;
+    fileSystem?: FileSystem;
+    progressReporter?: ProgressReporter;
+  } = {}) {
     this._analyzer = new Analyzer({
       heuristics: this._packs.flatMap((pack) => pack.heuristics),
+      progressReporter,
     });
-    this._finalizer = new Finalizer({ commandRunner });
+    this._finalizer = new Finalizer({ commandRunner, progressReporter });
     this._scanner = new Scanner({
       commandRunner,
       enricherFactories: this._packs.flatMap((pack) => pack.enricherFactories),
       fileSystem,
+      progressReporter,
     });
     this._transformer = new Transformer({
       transforms: this._packs.flatMap((pack) => pack.transforms),
+      progressReporter,
     });
   }
 

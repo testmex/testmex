@@ -6,6 +6,7 @@ const JEST_DOM_IMPORT_PATTERN = /['"]@testing-library\/jest-dom['"]/;
 const REACT_IMPORT_PATTERN = /['"]@testing-library\/react['"]/;
 
 export const testingLibraryHeuristic = defineFileContentHeuristic({
+  name: 'testing-library',
   predicate: (file) =>
     file.tags.includes(fileTags.code) || file.tags.includes(fileTags.test),
   inspect: ({ file, projects, content }) => {

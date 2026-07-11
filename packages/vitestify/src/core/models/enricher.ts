@@ -2,8 +2,14 @@ import type { CommandRunner } from '../ports/command-runner';
 import type { ReadonlyWorkspace } from '../domain/workspace';
 import type { WorkspaceEnrichment } from './workspace-info';
 
+export interface EnricherOptions {
+  workspace: ReadonlyWorkspace;
+  onProgress?(detail: string): void;
+}
+
 export interface Enricher {
-  enrich(workspace: ReadonlyWorkspace): Promise<WorkspaceEnrichment>;
+  name: string;
+  enrich(options: EnricherOptions): Promise<WorkspaceEnrichment>;
 }
 
 export interface EnricherFactoryArgs {
@@ -11,3 +17,8 @@ export interface EnricherFactoryArgs {
 }
 
 export type EnricherFactory = (args: EnricherFactoryArgs) => Enricher;
+
+export interface DefineEnricherArgs {
+  name: string;
+  enrich: (options: EnricherOptions) => Promise<WorkspaceEnrichment>;
+}

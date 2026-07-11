@@ -14,8 +14,9 @@ jobs:
       - name: Check for // TIDYUP in added lines
         id: tidyup
         run: |
-          git fetch origin main
-          if git diff main...HEAD | egrep '^\+ +// TIDYUP'; then
+          BASE="${{ github.event.repository.default_branch }}"
+          git fetch origin "$BASE"
+          if git diff "origin/${BASE}...HEAD" | egrep '^\+ +// TIDYUP'; then
             echo "found=true" >> "$GITHUB_OUTPUT"
           else
             echo "found=false" >> "$GITHUB_OUTPUT"

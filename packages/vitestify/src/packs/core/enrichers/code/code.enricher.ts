@@ -1,16 +1,26 @@
-import { Enricher } from '../../../../core/models/enricher';
-import type { ReadonlyWorkspace } from '../../../../core/domain/workspace';
+import {
+  Enricher,
+  type EnricherOptions,
+} from '../../../../core/models/enricher';
 import { fileTags } from '../../identifiers';
 import { isCodeFile } from '../../utils';
 
 export class CodeEnricher implements Enricher {
-  async enrich(workspace: ReadonlyWorkspace) {
-    const files = await workspace.tree.scanDirectory();
+  readonly name = 'code';
+
+  async enrich({ workspace, onProgress }: EnricherOptions) {
+    const files = [];
+    for await (const path of workspace.tree.scanDirectory()) {
+      if (!isCodeFile(path)) {
+        continue;
+      }
+
+      files.push(path);
+      onProgress?.(`found ${files.length} file(s)`);
+    }
 
     return {
-      fileInfos: files
-        .filter(isCodeFile)
-        .map((path) => ({ path, tags: [fileTags.code] })),
+      fileInfos: files.map((path) => ({ path, tags: [fileTags.code] })),
     };
   }
 }

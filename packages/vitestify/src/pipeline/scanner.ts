@@ -1,49 +1,65 @@
-import debug from 'debug';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
 import { EnricherFactory } from '../core/models/enricher';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
-
-const log = debug('vitestify:scanner');
+import type { ProgressReporter } from '../core/ports/progress-reporter';
 
 export class Scanner {
   private readonly _commandRunner: CommandRunner;
   private readonly _enricherFactories: EnricherFactory[];
   private readonly _fileSystem: FileSystem;
+  private readonly _progressReporter: ProgressReporter;
 
   constructor(args: {
     commandRunner: CommandRunner;
     enricherFactories: EnricherFactory[];
     fileSystem: FileSystem;
+    progressReporter: ProgressReporter;
   }) {
     this._commandRunner = args.commandRunner;
     this._enricherFactories = args.enricherFactories;
     this._fileSystem = args.fileSystem;
+    this._progressReporter = args.progressReporter;
   }
 
   async scanWorkspace(): Promise<Workspace> {
-    log('scanning workspace');
     const tree = new Tree({ fileSystem: this._fileSystem });
     const enrichers = this._enricherFactories.map((factory) =>
       factory({ commandRunner: this._commandRunner }),
     );
 
-    let count = 0;
     const workspace = new Workspace({ tree });
-    for (const enricher of enrichers) {
-      const result = await enricher.enrich(workspace.asReadonly());
+
+    const total = enrichers.length;
+
+    for (const [index, enricher] of enrichers.entries()) {
+      const step = index + 1;
+      const spinner = this._progressReporter.createSpinner();
+      let lastMessage: string | undefined;
+
+      const formatEnricherMessage = (
+        phase: 'scanning' | 'scanned',
+        message?: string,
+      ) => {
+        const prefix = phase === 'scanning' ? 'Scanning' : 'Scanned ';
+        const line = `${prefix} [${step}/${total}] ${enricher.name}`;
+        return message === undefined ? line : `${line} · ${message}`;
+      };
+
+      spinner.message(formatEnricherMessage('scanning'));
+
+      const result = await enricher.enrich({
+        workspace: workspace.asReadonly(),
+        onProgress: (message) => {
+          lastMessage = message;
+          spinner.message(formatEnricherMessage('scanning', message));
+        },
+      });
+
+      spinner.done(formatEnricherMessage('scanned', lastMessage));
 
       workspace.applyEnrichment(result);
-
-      count = workspace.getFiles().length;
-      if (count > 0) {
-        log(`found ${count} files`);
-      }
-    }
-
-    if (count === 0) {
-      log('no files found');
     }
 
     return workspace;

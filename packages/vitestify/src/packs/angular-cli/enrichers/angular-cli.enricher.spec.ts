@@ -28,10 +28,10 @@ async function enrich(files: Record<RelativePath, string>) {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(files);
   const enricher = new AngularCliEnricher();
-  return enricher.enrich(
-    new Workspace({
+  return enricher.enrich({
+    workspace: new Workspace({
       info: new WorkspaceInfo(),
       tree: new Tree({ fileSystem }),
     }),
-  );
+  });
 }

@@ -9,6 +9,9 @@ import corePack from '../packs/core';
 import jestPack from '../packs/jest';
 import nxPack from '../packs/nx';
 import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
+import type { ProgressReporter } from '../core/ports/progress-reporter';
+import { NullProgressReporter } from '../core/ports/null-progress-reporter';
+import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
 import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {
@@ -80,44 +83,105 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it(
-    'detects folder with jest.config.ts as project when no nx project exists at that path',
-    async () => {
-      const { configureWorkspace, scanner } = setUp();
+  it('scanner reports enricher name and file count from enricher callbacks', async () => {
+    const progressReporter = new ProgressReporterFake();
+    const { configureWorkspace, scanner } = setUp({ progressReporter });
 
-      configureWorkspace(
-        nxWorkspaceMother
-          .withLib('backend-recipes-core', 'libs/backend/recipes/core')
-          .withWorkspaceFile(
-            'libs/backend/jest.config.ts',
-            'export default {}',
-          ),
-      );
+    configureWorkspace(
+      nxWorkspaceMother
+        .withApp('my-app')
+        .withAppFile('my-app', 'src/app.spec.ts', 'it("works", () => {})'),
+    );
 
-      const workspace = await scanner.scanWorkspace();
+    await scanner.scanWorkspace();
 
-      expect.soft(workspace.info.projects).toEqual(
-        expect.arrayContaining([
-          {
-            name: 'backend-recipes-core',
-            path: relativePath('libs/backend/recipes/core'),
-          } satisfies Partial<Project>,
-          {
-            path: relativePath('libs/backend'),
-          } satisfies Partial<Project>,
-        ]),
-      );
-      expect.soft(workspace.getProjectFiles('libs/backend')).toMatchObject([
+    const codeMessages = progressReporter
+      .messages()
+      .filter((message) => message.includes('[6/7] test'));
+    expect(codeMessages).toEqual([
+      'Scanning [6/7] test',
+      'Scanning [6/7] test · found 1 file(s)',
+      'Scanned  [6/7] test · found 1 file(s)',
+    ]);
+  });
+
+  it('scanner calls done once per enricher', async () => {
+    const progressReporter = new ProgressReporterFake();
+    const { configureWorkspace, scanner } = setUp({ progressReporter });
+
+    configureWorkspace(nxWorkspaceMother.withApp('my-app'));
+
+    await scanner.scanWorkspace();
+
+    const doneMessages = progressReporter
+      .messages()
+      .filter((message) => message.startsWith('Scanned'));
+
+    expect(doneMessages).toEqual([
+      'Scanned  [1/7] angular-cli',
+      'Scanned  [2/7] nx · 1 project(s) detected',
+      'Scanned  [3/7] jest',
+      'Scanned  [4/7] code',
+      'Scanned  [5/7] package-manager · pnpm detected (good choice 😉)',
+      'Scanned  [6/7] test',
+      'Scanned  [7/7] vitest-config',
+    ]);
+  });
+
+  it('non-scanning enricher reports contextual status', async () => {
+    const progressReporter = new ProgressReporterFake();
+    const { configureWorkspace, scanner } = setUp({ progressReporter });
+
+    configureWorkspace(nxWorkspaceMother.withApp('my-app'));
+
+    await scanner.scanWorkspace();
+
+    const nxMessages = progressReporter
+      .messages()
+      .filter((message) => message.includes('nx'));
+
+    expect(nxMessages).toEqual([
+      'Scanning [2/7] nx',
+      'Scanning [2/7] nx · loading nx graph',
+      'Scanning [2/7] nx · 1 project(s) detected',
+      'Scanned  [2/7] nx · 1 project(s) detected',
+    ]);
+  });
+
+  it('detects folder with jest.config.ts as project when no nx project exists at that path', async () => {
+    const { configureWorkspace, scanner } = setUp();
+
+    configureWorkspace(
+      nxWorkspaceMother
+        .withLib('backend-recipes-core', 'libs/backend/recipes/core')
+        .withWorkspaceFile('libs/backend/jest.config.ts', 'export default {}'),
+    );
+
+    const workspace = await scanner.scanWorkspace();
+
+    expect.soft(workspace.info.projects).toEqual(
+      expect.arrayContaining([
         {
-          path: relativePath('libs/backend/jest.config.ts'),
-          tags: ['jest-config'],
-        },
-      ]);
-    },
-  );
+          name: 'backend-recipes-core',
+          path: relativePath('libs/backend/recipes/core'),
+        } satisfies Partial<Project>,
+        {
+          path: relativePath('libs/backend'),
+        } satisfies Partial<Project>,
+      ]),
+    );
+    expect.soft(workspace.getProjectFiles('libs/backend')).toMatchObject([
+      {
+        path: relativePath('libs/backend/jest.config.ts'),
+        tags: ['jest-config'],
+      },
+    ]);
+  });
 });
 
-function setUp() {
+function setUp({
+  progressReporter = new NullProgressReporter(),
+}: { progressReporter?: ProgressReporter } = {}) {
   const commandRunner = new CommandRunnerFake();
   const fileSystem = new FileSystemFake();
 
@@ -136,6 +200,7 @@ function setUp() {
         (pack) => pack.enricherFactories,
       ),
       fileSystem,
+      progressReporter,
     }),
   };
 }

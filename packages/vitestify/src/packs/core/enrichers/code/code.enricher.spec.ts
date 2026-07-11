@@ -97,10 +97,10 @@ async function enrich(mother: WorkspaceMother) {
   const tree = new Tree({ fileSystem });
   const enricher = new CodeEnricher();
 
-  return enricher.enrich(
-    new Workspace({
+  return enricher.enrich({
+    workspace: new Workspace({
       info: mother.buildWorkspaceInfo(),
       tree,
     }),
-  );
+  });
 }

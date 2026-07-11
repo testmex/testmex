@@ -15,15 +15,15 @@ export class FileSystemFake implements FileSystem {
     return this._files.get(path) ?? null;
   }
 
-  async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
+  async *scanDirectory(path?: RelativePath): AsyncIterable<RelativePath> {
     const files = Array.from(this._files.keys());
+    const filtered = !path
+      ? files
+      : files.filter((file) => file.startsWith(`${path}/`));
 
-    if (!path) {
-      return files;
+    for (const file of filtered) {
+      yield file;
     }
-
-    const prefix = `${path}/`;
-    return files.filter((file) => file.startsWith(prefix));
   }
 
   async writeFile(path: RelativePath, content: string): Promise<void> {

@@ -6,7 +6,7 @@ import {
 } from 'node:fs/promises';
 import { dirname, join, sep } from 'node:path';
 import { posix } from 'node:path/posix';
-import { globby } from 'globby';
+import { globbyStream } from 'globby';
 import type { RelativePath } from '../core/models/relative-path';
 import { relativePath } from '../core/models/relative-path';
 import type { FileSystem } from '../core/ports/file-system';
@@ -35,16 +35,16 @@ export class FileSystemImpl implements FileSystem {
     }
   }
 
-  async scanDirectory(path?: RelativePath): Promise<RelativePath[]> {
+  async *scanDirectory(path?: RelativePath): AsyncIterable<RelativePath> {
     const pattern = path ? `${path}/**/*` : '**/*';
 
-    const files = await globby(pattern, {
+    for await (const file of globbyStream(pattern, {
       cwd: this._workspaceRoot,
       gitignore: true,
       onlyFiles: true,
-    });
-
-    return files.map((file: string) => this._toPosixPath(relativePath(file)));
+    })) {
+      yield this._toPosixPath(relativePath(file));
+    }
   }
 
   async writeFile(path: RelativePath, content: string): Promise<void> {
