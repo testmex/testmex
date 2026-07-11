@@ -107,7 +107,7 @@ export class WorkspaceState {
       /* We invalidate instead of recomputing because we will generally
        * receive multiple enrichments during the scanning phase
        * before receiving the getFiles calls during the transform phase. */
-      this._fileEntities.invalidateLazyProperty('projects');
+      this._fileEntities.invalidateComputedProperty('projects');
     }
 
     if (enrichment.packageManager !== undefined) {

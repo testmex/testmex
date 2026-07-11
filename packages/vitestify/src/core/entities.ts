@@ -28,7 +28,7 @@ export class Entities<KEY, ENTITY extends object, COMPUTED extends object> {
     return this._entities.get(key);
   }
 
-  invalidateLazyProperty<K extends keyof COMPUTED>(property: K): void {
+  invalidateComputedProperty<K extends keyof COMPUTED>(property: K): void {
     if (this._computedFns[property] === undefined) {
       return;
     }
