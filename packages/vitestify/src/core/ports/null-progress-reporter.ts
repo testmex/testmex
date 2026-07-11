@@ -5,6 +5,9 @@ export class NullProgressReporter implements ProgressReporter {
     return {
       message: () => undefined,
       done: () => undefined,
+      error: () => {
+        throw new Error('🚧 work in progress');
+      },
     };
   }
 }

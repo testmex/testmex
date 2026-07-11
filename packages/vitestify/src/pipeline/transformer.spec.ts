@@ -43,4 +43,19 @@ describe(Transformer, () => {
       'Transformed  [2/2] jest-spy-on · 0 file(s) transformed',
     ]);
   });
+
+  it.todo('transformer reports transform error on progress', () => {
+    // set up Transformer with ProgressReporterFake and a transform that throws
+    // run transform()
+    // assert progress messages contain failed transform with error message
+  });
+
+  it.todo('transformer continues to next transform after error', () => {
+    // set up Transformer with ProgressReporterFake and 2 transforms
+    // first transform throws during apply
+    // second transform succeeds
+    // run transform()
+    // assert progress messages contain failed message for first transform
+    // assert progress messages contain transformed message for second transform
+  });
 });

@@ -26,24 +26,39 @@ export class Transformer {
       let lastMessage: string | undefined;
 
       const formatTransformMessage = (
-        phase: 'transforming' | 'transformed',
+        phase: 'transforming' | 'transformed' | 'failed',
         message?: string,
       ) => {
-        const prefix = phase === 'transforming' ? 'Transforming' : 'Transformed ';
+        const prefix =
+          phase === 'transforming'
+            ? 'Transforming'
+            : phase === 'transformed'
+              ? 'Transformed '
+              : 'Failed     ';
         const line = `${prefix} [${step}/${total}] ${transform.name}`;
         return message === undefined ? line : `${line} · ${message}`;
       };
 
       spinner.message(formatTransformMessage('transforming'));
 
-      await transform.apply(workspace, {
-        onProgress: (message) => {
-          lastMessage = message;
-          spinner.message(formatTransformMessage('transforming', message));
-        },
-      });
+      try {
+        await transform.apply(workspace, {
+          onProgress: (message) => {
+            lastMessage = message;
+            spinner.message(formatTransformMessage('transforming', message));
+          },
+        });
 
-      spinner.done(formatTransformMessage('transformed', lastMessage));
+        spinner.done(formatTransformMessage('transformed', lastMessage));
+      } catch (error) {
+        spinner.error(
+          formatTransformMessage(
+            'failed',
+            error instanceof Error ? error.message : String(error),
+          ),
+        );
+        continue;
+      }
     }
 
     await workspace.tree.commit();

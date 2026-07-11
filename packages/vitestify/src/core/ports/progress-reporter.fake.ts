@@ -13,6 +13,10 @@ export class ProgressReporterFake implements ProgressReporter {
           this._messages.push(message);
         }
       },
+      error: (message: string) => {
+        this._messages.push(message);
+        throw new Error('🚧 work in progress');
+      },
     };
   }
 
