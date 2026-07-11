@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { fileTag, type FileTag } from '../domain/workspace';
 import { findingType } from './finding';
 import { relativePath, type RelativePath } from './relative-path';
-import { WorkspaceState } from './workspace-state';
+import { fileTag, type FileTag, WorkspaceState } from './workspace-state';
 
 describe(WorkspaceState, () => {
   it('returns a file with its matching project', () => {

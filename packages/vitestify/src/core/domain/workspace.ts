@@ -1,12 +1,24 @@
 import type { Finding } from '../models/finding';
 import type { RelativePath } from '../models/relative-path';
 import {
+  type FileInfo,
+  type FileInfoWithProjects,
+  type FileTag,
   type PackageManager,
+  type Project,
   WorkspaceEnrichment,
   WorkspaceState,
 } from '../models/workspace-state';
 import type { Command } from '../ports/command-runner';
 import type { ReadonlyTree, Tree } from './tree';
+
+export type {
+  FileInfo,
+  FileInfoWithProjects,
+  FileTag,
+  Project,
+} from '../models/workspace-state';
+export { fileTag } from '../models/workspace-state';
 
 /**
  * This is a service wrapping the workspace state, commands, and tree.
@@ -118,30 +130,6 @@ export type WorkspaceTree = WritableTree & Pick<Tree, 'commit'>;
 
 export type WritableTree = ReadonlyTree &
   Pick<Tree, 'commit' | 'maybeReadFile' | 'maybeReadJsonFile' | 'write'>;
-
-export interface Project {
-  name?: string;
-  path: RelativePath;
-}
-
-export interface FileInfo {
-  path: RelativePath;
-  tags: FileTag[];
-}
-
-export interface FileInfoWithProjects extends FileInfo {
-  projects: Project[];
-}
-
-export type FileTag = string & {
-  readonly [__fileTagBrand]: true;
-};
-
-export function fileTag(tag: string): FileTag {
-  return tag as FileTag;
-}
-
-declare const __fileTagBrand: unique symbol;
 
 export class CommandQueue {
   private readonly _commands: Command[] = [];

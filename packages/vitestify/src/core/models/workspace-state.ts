@@ -1,16 +1,34 @@
 import { relative } from 'node:path/posix';
-import type {
-  FileInfo,
-  FileInfoWithProjects,
-  FileTag,
-  Project,
-} from '../domain/workspace';
 import type { Finding } from './finding';
 import { relativePath, type RelativePath } from './relative-path';
 
 export const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn'] as const;
 
 export type PackageManager = (typeof PACKAGE_MANAGERS)[number];
+
+export interface Project {
+  name?: string;
+  path: RelativePath;
+}
+
+export interface FileInfo {
+  path: RelativePath;
+  tags: FileTag[];
+}
+
+export interface FileInfoWithProjects extends FileInfo {
+  projects: Project[];
+}
+
+export type FileTag = string & {
+  readonly [__fileTagBrand]: true;
+};
+
+export function fileTag(tag: string): FileTag {
+  return tag as FileTag;
+}
+
+declare const __fileTagBrand: unique symbol;
 
 export interface WorkspaceEnrichment {
   fileInfos?: FileInfo[];
@@ -23,8 +41,11 @@ type FileEntity = FileInfo & { projects?: Project[] };
 export class WorkspaceState {
   private _packageManager: PackageManager;
   private _projects: Project[];
-  private readonly _fileEntities = new Map<RelativePath, FileEntity>();
-  private _cachedFiles: FileInfoWithProjects[] | undefined;
+  private readonly _fileEntities = new Entities<RelativePath, FileEntity>({
+    lazyProperties: {
+      projects: (entity) => this._findProjectsForFile(entity),
+    },
+  });
 
   private readonly _findings: Finding[] = [];
 
@@ -52,13 +73,7 @@ export class WorkspaceState {
   }
 
   getFiles(): FileInfoWithProjects[] {
-    if (this._cachedFiles !== undefined) {
-      return this._cachedFiles;
-    }
-
-    return (this._cachedFiles = Array.from(this._fileEntities.values()).map(
-      (entity) => this._ensureProjectsForFile(entity),
-    ));
+    return this._fileEntities.values() as FileInfoWithProjects[];
   }
 
   getProjectFiles(nameOrPath: string): FileInfo[] {
@@ -89,7 +104,7 @@ export class WorkspaceState {
       /* We invalidate instead of recomputing because we will generally
        * receive multiple enrichments during the scanning phase
        * before receiving the getFiles calls during the transform phase. */
-      this._invalidateAllCaches();
+      this._fileEntities.invalidateLazyProperty('projects');
     }
 
     if (enrichment.packageManager !== undefined) {
@@ -99,13 +114,11 @@ export class WorkspaceState {
 
   delete(path: RelativePath): void {
     this._fileEntities.delete(path);
-    this._invalidateCachedFiles();
     this._removeFindingsForPath(path);
   }
 
   rename(originalPath: RelativePath, newPath: RelativePath): void {
     this._moveFileEntity(originalPath, newPath);
-    this._invalidateCachedFiles();
     this._updateFindingPaths(originalPath, newPath);
   }
 
@@ -124,21 +137,7 @@ export class WorkspaceState {
       return existing;
     }
 
-    const entity: FileEntity = { path, tags: [] };
-    this._fileEntities.set(path, entity);
-    this._invalidateCachedFiles();
-
-    return entity;
-  }
-
-  private _ensureProjectsForFile(
-    entity: FileEntity,
-  ): FileEntity & { projects: Project[] } {
-    if (entity.projects === undefined) {
-      entity.projects = this._findProjectsForFile(entity);
-    }
-
-    return entity as FileEntity & { projects: Project[] };
+    return this._fileEntities.create(path, { path, tags: [] });
   }
 
   private _findProjectsForFile(file: FileInfo): Project[] {
@@ -200,8 +199,7 @@ export class WorkspaceState {
     if (existingEntity === undefined) {
       entity.path = newPath;
       entity.projects = undefined;
-      this._fileEntities.set(newPath, entity);
-      this._invalidateCachedFiles();
+      this._fileEntities.create(newPath, entity);
       return;
     }
 
@@ -214,17 +212,6 @@ export class WorkspaceState {
     }
 
     existingEntity.tags = mergedTags;
-  }
-
-  private _invalidateAllCaches(): void {
-    for (const entity of this._fileEntities.values()) {
-      entity.projects = undefined;
-    }
-    this._invalidateCachedFiles();
-  }
-
-  private _invalidateCachedFiles(): void {
-    this._cachedFiles = undefined;
   }
 
   private _updateFindingPaths(
@@ -244,5 +231,90 @@ export class WorkspaceState {
         this._findings.splice(i, 1);
       }
     }
+  }
+}
+
+type LazyProperties<TEntity extends object> = {
+  [K in keyof TEntity]?: (entity: TEntity) => TEntity[K];
+};
+
+interface EntitiesOptions<TEntity extends object> {
+  lazyProperties?: LazyProperties<TEntity>;
+}
+
+class Entities<TKey, TEntity extends object> {
+  private readonly _entities = new Map<TKey, TEntity>();
+  private _cachedValues: TEntity[] | undefined;
+  private readonly _lazyProperties: LazyProperties<TEntity>;
+
+  constructor({ lazyProperties = {} }: EntitiesOptions<TEntity> = {}) {
+    this._lazyProperties = lazyProperties;
+  }
+
+  create(key: TKey, entity: TEntity): TEntity {
+    this._entities.set(key, entity);
+    this._invalidateCachedValues();
+
+    return entity;
+  }
+
+  delete(key: TKey): void {
+    this._entities.delete(key);
+    this._invalidateCachedValues();
+  }
+
+  get(key: TKey): TEntity | undefined {
+    return this._entities.get(key);
+  }
+
+  invalidateLazyProperty<K extends keyof TEntity>(property: K): void {
+    if (this._lazyProperties[property] === undefined) {
+      return;
+    }
+
+    for (const entity of this._entities.values()) {
+      entity[property] = undefined as TEntity[K];
+    }
+
+    this._invalidateCachedValues();
+  }
+
+  update(key: TKey, updater: (entity: TEntity) => void): TEntity | undefined {
+    const entity = this._entities.get(key);
+
+    if (entity === undefined) {
+      return undefined;
+    }
+
+    updater(entity);
+
+    return entity;
+  }
+
+  values(): TEntity[] {
+    if (this._cachedValues !== undefined) {
+      return this._cachedValues;
+    }
+
+    return (this._cachedValues = [...this._entities.values()].map((entity) =>
+      this._resolveLazyProperties(entity),
+    ));
+  }
+
+  private _invalidateCachedValues(): void {
+    this._cachedValues = undefined;
+  }
+
+  private _resolveLazyProperties(entity: TEntity): TEntity {
+    for (const [key, resolver] of Object.entries(this._lazyProperties) as [
+      keyof TEntity,
+      (entity: TEntity) => TEntity[keyof TEntity],
+    ][]) {
+      if (entity[key] === undefined) {
+        entity[key] = resolver(entity);
+      }
+    }
+
+    return entity;
   }
 }
