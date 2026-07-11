@@ -146,7 +146,7 @@ export class WorkspaceState {
   }
 
   private _findProjectsForFile(file: FileInfo): Project[] {
-    const matches = this.getProjects().filter((project) => {
+    const matches = this._projects.filter((project) => {
       const pathRelativeToProject = relative(project.path, file.path);
 
       return (
