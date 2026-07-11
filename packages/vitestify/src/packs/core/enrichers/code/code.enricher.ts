@@ -16,7 +16,7 @@ export class CodeEnricher implements Enricher {
       }
 
       files.push(path);
-      onProgress?.(`found ${files.length} file(s)`);
+      onProgress?.(`${files.length} file(s) found`);
     }
 
     return {

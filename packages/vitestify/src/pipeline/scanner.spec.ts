@@ -100,8 +100,8 @@ describe(Scanner.name, () => {
       .filter((message) => message.includes('[6/7] test'));
     expect(codeMessages).toEqual([
       'Scanning [6/7] test',
-      'Scanning [6/7] test · found 1 file(s)',
-      'Scanned  [6/7] test · found 1 file(s)',
+      'Scanning [6/7] test · 1 file(s) found',
+      'Scanned  [6/7] test · 1 file(s) found',
     ]);
   });
 

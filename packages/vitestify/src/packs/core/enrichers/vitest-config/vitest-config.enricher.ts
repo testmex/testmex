@@ -27,7 +27,7 @@ export class VitestConfigEnricher implements Enricher {
       }
 
       files.push(path);
-      onProgress?.(`found ${files.length} file(s)`);
+      onProgress?.(`${files.length} file(s) found`);
     }
 
     return {
