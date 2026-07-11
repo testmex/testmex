@@ -3,7 +3,7 @@ import { fileTag } from '../domain/workspace';
 import { relativePath } from './relative-path';
 import { WorkspaceState } from './workspace-state';
 
-describe(WorkspaceState.name, () => {
+describe(WorkspaceState, () => {
   it('keeps tags after rename', () => {
     const state = new WorkspaceState();
     const originalPath = relativePath('apps/my-app/src/app.spec.ts');
