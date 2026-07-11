@@ -121,12 +121,9 @@ describe(WorkspaceState, () => {
   });
 
   it('returns a file with its matching root project', () => {
-    const state = stateWithFiles(
-      [{ path: relativePath('src/app.ts') }],
-      {
-        projects: [{ name: 'my-app', path: relativePath('.') }],
-      },
-    );
+    const state = stateWithFiles([{ path: relativePath('src/app.ts') }], {
+      projects: [{ name: 'my-app', path: relativePath('.') }],
+    });
 
     expect(state.getFiles()).toMatchObject([
       {
@@ -167,12 +164,9 @@ describe(WorkspaceState, () => {
   });
 
   it('finds project files by project name when project is at root', () => {
-    const state = stateWithFiles(
-      [{ path: relativePath('src/app.spec.ts') }],
-      {
-        projects: [{ name: 'my-app', path: relativePath('.') }],
-      },
-    );
+    const state = stateWithFiles([{ path: relativePath('src/app.spec.ts') }], {
+      projects: [{ name: 'my-app', path: relativePath('.') }],
+    });
 
     expect(state.getProjectFiles('my-app')).toMatchObject([
       {
@@ -182,10 +176,9 @@ describe(WorkspaceState, () => {
   });
 
   it('finds project files by project path when project is at root', () => {
-    const state = stateWithFiles(
-      [{ path: relativePath('src/app.spec.ts') }],
-      { projects: [{ path: relativePath('.') }] },
-    );
+    const state = stateWithFiles([{ path: relativePath('src/app.spec.ts') }], {
+      projects: [{ path: relativePath('.') }],
+    });
 
     expect(state.getProjectFiles('.')).toMatchObject([
       {
@@ -320,6 +313,21 @@ describe(WorkspaceState, () => {
     expect(state.getFindings()).toEqual([]);
   });
 
+  it('invalidates cached files after tag()', () => {
+    const state = stateWithFiles([
+      { path: relativePath('apps/my-app/src/app.ts') },
+    ]);
+
+    state.getFiles();
+
+    state.tag(relativePath('apps/my-app/src/app.spec.ts'), fileTag('test'));
+
+    expect(state.getFiles()).toMatchObject([
+      { path: 'apps/my-app/src/app.ts' },
+      { path: 'apps/my-app/src/app.spec.ts', tags: ['test'] },
+    ]);
+  });
+
   it('recomputes projects after enrichment instead of serving previous state', () => {
     const state = new WorkspaceState({
       projects: [],
@@ -328,7 +336,8 @@ describe(WorkspaceState, () => {
 
     state.tag(path, fileTag('test'));
 
-    const filesBeforeEnrichment = state.getFiles();
+    /* Deep clone because objects are mutated for performance reasons. */
+    const filesBeforeEnrichment = JSON.parse(JSON.stringify(state.getFiles()));
 
     state.applyEnrichment({
       projects: [{ name: 'app-a', path: relativePath('apps/app-a') }],

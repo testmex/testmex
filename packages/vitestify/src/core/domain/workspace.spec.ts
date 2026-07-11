@@ -54,11 +54,10 @@ describe(Workspace, () => {
     fileSystem.configure({
       [path]: 'console.log("hello");',
     });
-
+    
     workspace.tag(path, fileTag('code'));
 
     workspace.delete(path);
-
     await workspace.tree.commit();
 
     expect(await fileSystem.maybeReadFile(path)).toBeNull();

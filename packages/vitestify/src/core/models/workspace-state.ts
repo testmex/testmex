@@ -18,15 +18,13 @@ export interface WorkspaceEnrichment {
   projects?: Project[];
 }
 
-interface FileState {
-  tags: FileTag[];
-  cachedProjects?: Project[];
-}
+type FileEntity = FileInfo & { projects?: Project[] };
 
 export class WorkspaceState {
   private _packageManager: PackageManager;
   private _projects: Project[];
-  private readonly _fileStateMap = new Map<RelativePath, FileState>();
+  private readonly _fileEntities = new Map<RelativePath, FileEntity>();
+  private _cachedFiles: FileInfoWithProjects[] | undefined;
 
   private readonly _findings: Finding[] = [];
 
@@ -54,11 +52,13 @@ export class WorkspaceState {
   }
 
   getFiles(): FileInfoWithProjects[] {
-    return [...this._fileStateMap.entries()].map(([path, state]) => ({
-      path,
-      tags: state.tags,
-      projects: this._getProjectsForFile(path),
-    }));
+    if (this._cachedFiles !== undefined) {
+      return this._cachedFiles;
+    }
+
+    return (this._cachedFiles = Array.from(this._fileEntities.values()).map(
+      (entity) => this._ensureProjectsForFile(entity),
+    ));
   }
 
   getProjectFiles(nameOrPath: string): FileInfo[] {
@@ -89,7 +89,7 @@ export class WorkspaceState {
       /* We invalidate instead of recomputing because we will generally
        * receive multiple enrichments during the scanning phase
        * before receiving the getFiles calls during the transform phase. */
-      this._invalidateAllProjectCaches();
+      this._invalidateAllCaches();
     }
 
     if (enrichment.packageManager !== undefined) {
@@ -98,51 +98,47 @@ export class WorkspaceState {
   }
 
   delete(path: RelativePath): void {
-    this._fileStateMap.delete(path);
+    this._fileEntities.delete(path);
+    this._invalidateCachedFiles();
     this._removeFindingsForPath(path);
   }
 
   rename(originalPath: RelativePath, newPath: RelativePath): void {
-    this._moveFileState(originalPath, newPath);
+    this._moveFileEntity(originalPath, newPath);
+    this._invalidateCachedFiles();
     this._updateFindingPaths(originalPath, newPath);
   }
 
   tag(path: RelativePath, tag: FileTag): void {
-    const state = this._getOrCreateFileState(path);
+    const entity = this._getOrCreateFileEntity(path);
 
-    if (!state.tags.includes(tag)) {
-      state.tags = [...state.tags, tag];
+    if (!entity.tags.includes(tag)) {
+      entity.tags = [...entity.tags, tag];
     }
   }
 
-  private _getOrCreateFileState(path: RelativePath): FileState {
-    const existing = this._fileStateMap.get(path);
+  private _getOrCreateFileEntity(path: RelativePath): FileEntity {
+    const existing = this._fileEntities.get(path);
 
     if (existing !== undefined) {
       return existing;
     }
 
-    const state: FileState = { tags: [] };
-    this._fileStateMap.set(path, state);
+    const entity: FileEntity = { path, tags: [] };
+    this._fileEntities.set(path, entity);
+    this._invalidateCachedFiles();
 
-    return state;
+    return entity;
   }
 
-  private _getProjectsForFile(path: RelativePath): Project[] {
-    const state = this._fileStateMap.get(path);
-
-    if (state === undefined) {
-      return [];
+  private _ensureProjectsForFile(
+    entity: FileEntity,
+  ): FileEntity & { projects: Project[] } {
+    if (entity.projects === undefined) {
+      entity.projects = this._findProjectsForFile(entity);
     }
 
-    if (state.cachedProjects !== undefined) {
-      return state.cachedProjects;
-    }
-
-    return (state.cachedProjects = this._findProjectsForFile({
-      path,
-      tags: state.tags,
-    }));
+    return entity as FileEntity & { projects: Project[] };
   }
 
   private _findProjectsForFile(file: FileInfo): Project[] {
@@ -187,42 +183,48 @@ export class WorkspaceState {
     return [{ path: projects[0].path, name }];
   }
 
-  private _moveFileState(
+  private _moveFileEntity(
     originalPath: RelativePath,
     newPath: RelativePath,
   ): void {
-    const state = this._fileStateMap.get(originalPath);
+    const entity = this._fileEntities.get(originalPath);
 
-    if (state === undefined) {
+    if (entity === undefined) {
       return;
     }
 
-    this._fileStateMap.delete(originalPath);
+    this._fileEntities.delete(originalPath);
 
-    const existingState = this._fileStateMap.get(newPath);
+    const existingEntity = this._fileEntities.get(newPath);
 
-    if (existingState === undefined) {
-      state.cachedProjects = undefined;
-      this._fileStateMap.set(newPath, state);
-
+    if (existingEntity === undefined) {
+      entity.path = newPath;
+      entity.projects = undefined;
+      this._fileEntities.set(newPath, entity);
+      this._invalidateCachedFiles();
       return;
     }
 
-    const mergedTags = [...existingState.tags];
+    const mergedTags = [...existingEntity.tags];
 
-    for (const tag of state.tags) {
+    for (const tag of entity.tags) {
       if (!mergedTags.includes(tag)) {
         mergedTags.push(tag);
       }
     }
 
-    existingState.tags = mergedTags;
+    existingEntity.tags = mergedTags;
   }
 
-  private _invalidateAllProjectCaches(): void {
-    for (const state of this._fileStateMap.values()) {
-      state.cachedProjects = undefined;
+  private _invalidateAllCaches(): void {
+    for (const entity of this._fileEntities.values()) {
+      entity.projects = undefined;
     }
+    this._invalidateCachedFiles();
+  }
+
+  private _invalidateCachedFiles(): void {
+    this._cachedFiles = undefined;
   }
 
   private _updateFindingPaths(
