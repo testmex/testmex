@@ -15,11 +15,11 @@ describe(Transformer, () => {
       transforms: [
         defineTransform({
           name: 'jest-mock',
-          apply: async () => {},
+          apply: async () => undefined,
         }),
         defineTransform({
           name: 'jest-spy-on',
-          apply: async () => {},
+          apply: async () => undefined,
         }),
       ],
     });
