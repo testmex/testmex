@@ -30,8 +30,12 @@ export class ClackProgressReporter implements ProgressReporter {
 
         clackSpinner.stop(message);
       },
-      error: () => {
-        throw new Error('🚧 work in progress');
+      error: (message: string) => {
+        if (!started) {
+          return;
+        }
+
+        clackSpinner.error(message);
       },
     };
   }
@@ -41,7 +45,5 @@ export class ClackProgressReporter implements ProgressReporter {
 const NO_OP_SPINNER: ProgressSpinner = {
   message: () => undefined,
   done: () => undefined,
-  error: () => {
-    throw new Error('🚧 work in progress');
-  },
+  error: () => undefined,
 };
