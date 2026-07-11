@@ -94,7 +94,19 @@ export interface ReadonlyWorkspace
   readonly tree: ReadonlyTree;
 }
 
-export interface WritableWorkspace extends Workspace {
+export interface WritableWorkspace
+  extends Pick<
+    Workspace,
+    | 'commands'
+    | 'files'
+    | 'findings'
+    | 'packageManager'
+    | 'projects'
+    | 'getProjectFiles'
+    | 'delete'
+    | 'rename'
+    | 'tag'
+  > {
   readonly tree: WorkspaceTree;
 }
 
