@@ -40,7 +40,7 @@ const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
 export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
   apply: async (workspace) => {
-    const { commands, findings, info, tree } = workspace;
+    const { commands, findings, tree } = workspace;
     const devDependencies = new Set<string>(['vite-tsconfig-paths', 'vitest']);
 
     for (const project of await _collectProjectsToTransform(workspace)) {
@@ -75,7 +75,12 @@ export const vitestConfigTransform = defineTransform({
     }
 
     if (devDependencies.size > 0) {
-      commands.add([info.packageManager, 'add', '-D', ...devDependencies]);
+      commands.add([
+        workspace.packageManager,
+        'add',
+        '-D',
+        ...devDependencies,
+      ]);
     }
   },
 });
@@ -112,7 +117,7 @@ async function _collectProjectsToTransform(
   );
   const jestConfigProjects = new Map(
     workspace
-      .getFiles()
+      .files
       .filter((file) => file.tags.includes(fileTags.jestConfig))
       .map((file) => [
         relativePath(dirname(file.path)),

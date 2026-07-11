@@ -30,7 +30,7 @@ describe('setup-files', () => {
       transforms: [setupFilesTransform],
     });
 
-    expect(workspace.getFiles()).toContainEqual({
+    expect(workspace.files).toContainEqual({
       path: 'apps/my-app/vitest-test.setup.ts',
       projects: [
         {

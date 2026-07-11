@@ -1,43 +1,52 @@
-import { relative } from 'node:path/posix';
 import type { Finding } from '../models/finding';
-import { relativePath, type RelativePath } from '../models/relative-path';
-import { WorkspaceEnrichment, WorkspaceInfo } from '../models/workspace-info';
+import type { RelativePath } from '../models/relative-path';
+import {
+  type PackageManager,
+  WorkspaceEnrichment,
+  WorkspaceState,
+} from '../models/workspace-state';
 import type { Command } from '../ports/command-runner';
 import type { ReadonlyTree, Tree } from './tree';
 
 /**
- * This is the workspace aggregate root.
+ * This is a service wrapping the workspace state, commands, and tree.
  */
 export class Workspace {
   readonly commands: CommandQueue;
   readonly tree: WorkspaceTree;
 
-  private readonly _fileTags = new Map<RelativePath, FileTag[]>();
-  private readonly _findings: Finding[] = [];
-  private _info: WorkspaceInfo;
+  private _state: WorkspaceState;
   private readonly _tree: Tree;
 
   constructor({
-    info = new WorkspaceInfo(),
+    info = new WorkspaceState(),
     tree,
     commands = new CommandQueue(),
   }: {
-    info?: WorkspaceInfo;
+    info?: WorkspaceState;
     tree: Tree;
     commands?: CommandQueue;
   }) {
     this.commands = commands;
-    this._info = info;
+    this._state = info;
 
     this.tree = this._tree = tree;
   }
 
-  get findings(): readonly Finding[] {
-    return this._findings;
+  get files(): FileInfoWithProjects[] {
+    return this._state.getFiles();
   }
 
-  get info(): WorkspaceInfo {
-    return this._info;
+  get findings(): readonly Finding[] {
+    return this._state.getFindings();
+  }
+
+  get packageManager(): PackageManager {
+    return this._state.getPackageManager();
+  }
+
+  get projects(): readonly Project[] {
+    return this._state.getProjects();
   }
 
   asReadonly(): ReadonlyWorkspace {
@@ -48,48 +57,21 @@ export class Workspace {
     return this;
   }
 
-  getFiles(): FileInfoWithProjects[] {
-    return [...this._fileTags.entries()].flatMap(([path, tags]) => {
-      const file = { path, tags };
-      const projects = _findProjectsForFile(file, this.info.projects);
-
-      return [{ ...file, projects }];
-    });
-  }
-
   getProjectFiles(nameOrPath: string): FileInfo[] {
-    const path = relativePath(nameOrPath);
-
-    return this.getFiles()
-      .filter(({ projects }) =>
-        projects.some(
-          (project) => project.name === nameOrPath || project.path === path,
-        ),
-      )
-      .map(({ path, tags }) => ({ path, tags }));
+    return this._state.getProjectFiles(nameOrPath);
   }
 
   addFindings(findings: Finding[]): void {
-    this._findings.push(...findings);
+    this._state.addFindings(findings);
   }
 
   applyEnrichment(enrichment: WorkspaceEnrichment): void {
-    for (const fileInfo of enrichment.fileInfos ?? []) {
-      for (const tag of fileInfo.tags) {
-        this.tag(fileInfo.path, tag);
-      }
-    }
-
-    this._info = this._info.merge({
-      projects: enrichment.projects,
-      packageManager: enrichment.packageManager,
-    });
+    this._state.applyEnrichment(enrichment);
   }
 
   delete(path: RelativePath): void {
     this._tree.delete(path);
-    this._fileTags.delete(path);
-    _removeFindingsForPath(this._findings, path);
+    this._state.delete(path);
   }
 
   async rename(
@@ -97,22 +79,17 @@ export class Workspace {
     newPath: RelativePath,
   ): Promise<void> {
     await this._tree.rename(originalPath, newPath);
-    _moveTags(this._fileTags, originalPath, newPath);
-    _updateFindingPaths(this._findings, originalPath, newPath);
+    this._state.rename(originalPath, newPath);
   }
 
   tag(path: RelativePath, tag: FileTag): void {
-    const tags = this._fileTags.get(path) ?? [];
-
-    if (!tags.includes(tag)) {
-      this._fileTags.set(path, [...tags, tag]);
-    }
+    this._state.tag(path, tag);
   }
 }
 export interface ReadonlyWorkspace
   extends Pick<
     Workspace,
-    'info' | 'findings' | 'getFiles' | 'getProjectFiles'
+    'files' | 'findings' | 'getProjectFiles' | 'packageManager' | 'projects'
   > {
   readonly tree: ReadonlyTree;
 }
@@ -163,90 +140,5 @@ export class CommandQueue {
 
   all(): readonly Command[] {
     return this._commands;
-  }
-}
-
-function _findProjectsForFile(file: FileInfo, projects: Project[]): Project[] {
-  const matches = projects.filter((project) => {
-    const pathRelativeToProject = relative(project.path, file.path);
-
-    return (
-      pathRelativeToProject === '' || !pathRelativeToProject.startsWith('..')
-    );
-  });
-
-  return _deduplicateProjects(matches);
-}
-
-function _deduplicateProjects(projects: Project[]): Project[] {
-  const byPath = new Map<RelativePath, Project[]>();
-
-  for (const project of projects) {
-    const group = byPath.get(project.path) ?? [];
-    group.push(project);
-    byPath.set(project.path, group);
-  }
-
-  return [...byPath.values()].flatMap(_mergeProjectsAtSamePath);
-}
-
-function _mergeProjectsAtSamePath(projects: Project[]): Project[] {
-  const names = new Set(
-    projects.flatMap((project) =>
-      project.name === undefined ? [] : [project.name],
-    ),
-  );
-
-  if (names.size > 1) {
-    return [...names].map((name) => ({ path: projects[0].path, name }));
-  }
-
-  const name = names.size === 1 ? [...names][0] : undefined;
-
-  return [{ path: projects[0].path, name }];
-}
-
-function _moveTags(
-  fileTags: Map<RelativePath, FileTag[]>,
-  originalPath: RelativePath,
-  newPath: RelativePath,
-): void {
-  const tags = fileTags.get(originalPath);
-
-  if (tags === undefined) {
-    return;
-  }
-
-  fileTags.delete(originalPath);
-
-  const existingTags = fileTags.get(newPath) ?? [];
-  const mergedTags = [...existingTags];
-
-  for (const tag of tags) {
-    if (!mergedTags.includes(tag)) {
-      mergedTags.push(tag);
-    }
-  }
-
-  fileTags.set(newPath, mergedTags);
-}
-
-function _removeFindingsForPath(findings: Finding[], path: RelativePath): void {
-  for (let index = findings.length - 1; index >= 0; index--) {
-    if (findings[index].filePath === path) {
-      findings.splice(index, 1);
-    }
-  }
-}
-
-function _updateFindingPaths(
-  findings: Finding[],
-  originalPath: RelativePath,
-  newPath: RelativePath,
-): void {
-  for (const finding of findings) {
-    if (finding.filePath === originalPath) {
-      finding.filePath = newPath;
-    }
   }
 }

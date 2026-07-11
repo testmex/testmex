@@ -22,7 +22,7 @@ describe(Scanner.name, () => {
 
     const workspace = await scanner.scanWorkspace();
 
-    expect.soft(workspace.info.projects).toMatchObject([
+    expect.soft(workspace.projects).toMatchObject([
       {
         name: 'my-app',
         path: relativePath('apps/my-app'),
@@ -37,7 +37,7 @@ describe(Scanner.name, () => {
 
     const workspace = await scanner.scanWorkspace();
 
-    expect.soft(workspace.info.projects).toMatchObject([
+    expect.soft(workspace.projects).toMatchObject([
       {
         name: 'my-app',
         path: relativePath('apps/my-app'),
@@ -159,7 +159,7 @@ describe(Scanner.name, () => {
 
     const workspace = await scanner.scanWorkspace();
 
-    expect.soft(workspace.info.projects).toEqual(
+    expect.soft(workspace.projects).toEqual(
       expect.arrayContaining([
         {
           name: 'backend-recipes-core',

@@ -7,13 +7,13 @@ import {
   type FileInfo,
 } from '../domain/workspace';
 import { relativePath, type RelativePath } from './relative-path';
-import { WorkspaceInfo } from './workspace-info';
+import { WorkspaceState } from './workspace-state';
 
 export function createTestingWorkspace(mother: WorkspaceMother): Workspace {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(mother.buildFiles());
   const workspace = new Workspace({
-    info: mother.buildWorkspaceInfo(),
+    info: mother.buildWorkspaceState(),
     tree: new Tree({ fileSystem }),
   });
 
@@ -56,11 +56,11 @@ export class WorkspaceMother {
     return files;
   }
 
-  buildWorkspaceInfo(): WorkspaceInfo {
+  buildWorkspaceState(): WorkspaceState {
     const name = this._state.name;
     const root = relativePath(`apps/${name}`);
 
-    return new WorkspaceInfo({
+    return new WorkspaceState({
       projects: [{ name, path: root }],
     });
   }

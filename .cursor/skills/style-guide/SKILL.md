@@ -15,12 +15,12 @@ Use `interface` for object shapes. Use `type` only when `interface` cannot expre
 ```typescript
 // ✅
 export interface Workspace {
-  info: WorkspaceInfo;
+  info: WorkspaceState;
   tree: Tree;
 }
 
 // ❌
-export type Workspace = { info: WorkspaceInfo; tree: Tree };
+export type Workspace = { info: WorkspaceState; tree: Tree };
 ```
 
 ## Branded strings

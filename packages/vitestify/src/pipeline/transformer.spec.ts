@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
 import { defineTransform } from '../core/models/transform';
-import { WorkspaceInfo } from '../core/models/workspace-info';
+import { WorkspaceState } from '../core/models/workspace-state';
 import { FileSystemFake } from '../core/ports/file-system.fake';
 import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
 import { Transformer } from './transformer';
@@ -24,7 +24,7 @@ describe(Transformer, () => {
       ],
     });
     const workspace = new Workspace({
-      info: new WorkspaceInfo(),
+      info: new WorkspaceState(),
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
 

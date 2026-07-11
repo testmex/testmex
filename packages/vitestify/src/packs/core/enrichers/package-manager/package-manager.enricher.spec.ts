@@ -5,7 +5,7 @@ import {
   relativePath,
   type RelativePath,
 } from '../../../../core/models/relative-path';
-import { WorkspaceInfo } from '../../../../core/models/workspace-info';
+import { WorkspaceState } from '../../../../core/models/workspace-state';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
 import { PackageManagerEnricher } from './package-manager.enricher';
 
@@ -109,7 +109,7 @@ async function enrich(files: Record<RelativePath, string>) {
 
   return enricher.enrich({
     workspace: new Workspace({
-      info: new WorkspaceInfo(),
+      info: new WorkspaceState(),
       tree: new Tree({ fileSystem }),
     }),
   });

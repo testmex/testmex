@@ -67,7 +67,7 @@ export class JestEnricher implements Enricher {
       ],
       projects: jestConfigPaths.flatMap((filePath) => {
         const path = relativePath(dirname(filePath));
-        const alreadyExists = workspace.info.projects.some(
+        const alreadyExists = workspace.projects.some(
           (project) => project.path === path,
         );
 

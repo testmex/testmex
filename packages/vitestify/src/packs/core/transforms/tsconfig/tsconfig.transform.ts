@@ -10,7 +10,7 @@ export const tsconfigTransform = defineTransform({
   apply: async (workspace) => {
     const { tree } = workspace;
 
-    for (const file of workspace.getFiles()) {
+    for (const file of workspace.files) {
       if (!file.tags.includes(fileTags.jestConfig)) {
         continue;
       }
