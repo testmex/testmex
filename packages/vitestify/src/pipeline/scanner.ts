@@ -57,9 +57,9 @@ export class Scanner {
         },
       });
 
-      spinner.done(formatEnricherMessage('scanned', lastMessage));
-
       workspace.applyEnrichment(result);
+
+      spinner.done(formatEnricherMessage('scanned', lastMessage));
     }
 
     return workspace;

@@ -18,10 +18,16 @@ export interface WorkspaceEnrichment {
   projects?: Project[];
 }
 
+interface FileState {
+  tags: FileTag[];
+  cachedProjects?: Project[];
+}
+
 export class WorkspaceState {
   private _packageManager: PackageManager;
   private _projects: Project[];
-  private readonly _fileTags = new Map<RelativePath, FileTag[]>();
+  private readonly _fileStateMap = new Map<RelativePath, FileState>();
+
   private readonly _findings: Finding[] = [];
 
   constructor({
@@ -48,12 +54,11 @@ export class WorkspaceState {
   }
 
   getFiles(): FileInfoWithProjects[] {
-    return [...this._fileTags.entries()].flatMap(([path, tags]) => {
-      const file = { path, tags };
-      const projects = _findProjectsForFile(file, this.getProjects());
-
-      return [{ ...file, projects }];
-    });
+    return [...this._fileStateMap.entries()].map(([path, state]) => ({
+      path,
+      tags: state.tags,
+      projects: this._getProjectsForFile(path),
+    }));
   }
 
   getProjectFiles(nameOrPath: string): FileInfo[] {
@@ -81,6 +86,10 @@ export class WorkspaceState {
 
     if (enrichment.projects !== undefined) {
       this._projects = [...this._projects, ...enrichment.projects];
+      /* We invalidate instead of recomputing because we will generally
+       * receive multiple enrichments during the scanning phase
+       * before receiving the getFiles calls during the transform phase. */
+      this._invalidateAllProjectCaches();
     }
 
     if (enrichment.packageManager !== undefined) {
@@ -89,112 +98,149 @@ export class WorkspaceState {
   }
 
   delete(path: RelativePath): void {
-    this._fileTags.delete(path);
-    _removeFindingsForPath(this._findings, path);
+    this._fileStateMap.delete(path);
+    this._removeFindingsForPath(path);
   }
 
   rename(originalPath: RelativePath, newPath: RelativePath): void {
-    _moveTags(this._fileTags, originalPath, newPath);
-    _updateFindingPaths(this._findings, originalPath, newPath);
+    this._moveFileState(originalPath, newPath);
+    this._updateFindingPaths(originalPath, newPath);
   }
 
   tag(path: RelativePath, tag: FileTag): void {
-    const tags = this._fileTags.get(path) ?? [];
+    const state = this._getOrCreateFileState(path);
 
-    if (!tags.includes(tag)) {
-      this._fileTags.set(path, [...tags, tag]);
+    if (!state.tags.includes(tag)) {
+      state.tags = [...state.tags, tag];
     }
   }
-}
 
-export function createWorkspaceState(): WorkspaceState {
-  return new WorkspaceState();
-}
+  private _getOrCreateFileState(path: RelativePath): FileState {
+    const existing = this._fileStateMap.get(path);
 
-function _findProjectsForFile(
-  file: FileInfo,
-  projects: readonly Project[],
-): Project[] {
-  const matches = projects.filter((project) => {
-    const pathRelativeToProject = relative(project.path, file.path);
+    if (existing !== undefined) {
+      return existing;
+    }
 
-    return (
-      pathRelativeToProject === '' || !pathRelativeToProject.startsWith('..')
+    const state: FileState = { tags: [] };
+    this._fileStateMap.set(path, state);
+
+    return state;
+  }
+
+  private _getProjectsForFile(path: RelativePath): Project[] {
+    const state = this._fileStateMap.get(path);
+
+    if (state === undefined) {
+      return [];
+    }
+
+    if (state.cachedProjects !== undefined) {
+      return state.cachedProjects;
+    }
+
+    return (state.cachedProjects = this._findProjectsForFile({
+      path,
+      tags: state.tags,
+    }));
+  }
+
+  private _findProjectsForFile(file: FileInfo): Project[] {
+    const matches = this.getProjects().filter((project) => {
+      const pathRelativeToProject = relative(project.path, file.path);
+
+      return (
+        pathRelativeToProject === '' || !pathRelativeToProject.startsWith('..')
+      );
+    });
+
+    return this._deduplicateProjects(matches);
+  }
+
+  private _deduplicateProjects(projects: Project[]): Project[] {
+    const byPath = new Map<RelativePath, Project[]>();
+
+    for (const project of projects) {
+      const group = byPath.get(project.path) ?? [];
+      group.push(project);
+      byPath.set(project.path, group);
+    }
+
+    return [...byPath.values()].flatMap((projectsAtPath) =>
+      this._mergeProjectsAtSamePath(projectsAtPath),
     );
-  });
-
-  return _deduplicateProjects(matches);
-}
-
-function _deduplicateProjects(projects: Project[]): Project[] {
-  const byPath = new Map<RelativePath, Project[]>();
-
-  for (const project of projects) {
-    const group = byPath.get(project.path) ?? [];
-    group.push(project);
-    byPath.set(project.path, group);
   }
 
-  return [...byPath.values()].flatMap(_mergeProjectsAtSamePath);
-}
+  private _mergeProjectsAtSamePath(projects: Project[]): Project[] {
+    const names = new Set(
+      projects.flatMap((project) =>
+        project.name === undefined ? [] : [project.name],
+      ),
+    );
 
-function _mergeProjectsAtSamePath(projects: Project[]): Project[] {
-  const names = new Set(
-    projects.flatMap((project) =>
-      project.name === undefined ? [] : [project.name],
-    ),
-  );
+    if (names.size > 1) {
+      return [...names].map((name) => ({ path: projects[0].path, name }));
+    }
 
-  if (names.size > 1) {
-    return [...names].map((name) => ({ path: projects[0].path, name }));
+    const name = names.size === 1 ? [...names][0] : undefined;
+
+    return [{ path: projects[0].path, name }];
   }
 
-  const name = names.size === 1 ? [...names][0] : undefined;
+  private _moveFileState(
+    originalPath: RelativePath,
+    newPath: RelativePath,
+  ): void {
+    const state = this._fileStateMap.get(originalPath);
 
-  return [{ path: projects[0].path, name }];
-}
+    if (state === undefined) {
+      return;
+    }
 
-function _moveTags(
-  fileTags: Map<RelativePath, FileTag[]>,
-  originalPath: RelativePath,
-  newPath: RelativePath,
-): void {
-  const tags = fileTags.get(originalPath);
+    this._fileStateMap.delete(originalPath);
 
-  if (tags === undefined) {
-    return;
+    const existingState = this._fileStateMap.get(newPath);
+
+    if (existingState === undefined) {
+      state.cachedProjects = undefined;
+      this._fileStateMap.set(newPath, state);
+
+      return;
+    }
+
+    const mergedTags = [...existingState.tags];
+
+    for (const tag of state.tags) {
+      if (!mergedTags.includes(tag)) {
+        mergedTags.push(tag);
+      }
+    }
+
+    existingState.tags = mergedTags;
   }
 
-  fileTags.delete(originalPath);
-
-  const existingTags = fileTags.get(newPath) ?? [];
-  const mergedTags = [...existingTags];
-
-  for (const tag of tags) {
-    if (!mergedTags.includes(tag)) {
-      mergedTags.push(tag);
+  private _invalidateAllProjectCaches(): void {
+    for (const state of this._fileStateMap.values()) {
+      state.cachedProjects = undefined;
     }
   }
 
-  fileTags.set(newPath, mergedTags);
-}
-
-function _removeFindingsForPath(findings: Finding[], path: RelativePath): void {
-  for (let index = findings.length - 1; index >= 0; index--) {
-    if (findings[index].filePath === path) {
-      findings.splice(index, 1);
+  private _updateFindingPaths(
+    originalPath: RelativePath,
+    newPath: RelativePath,
+  ): void {
+    for (const finding of this._findings) {
+      if (finding.filePath === originalPath) {
+        finding.filePath = newPath;
+      }
     }
   }
-}
 
-function _updateFindingPaths(
-  findings: Finding[],
-  originalPath: RelativePath,
-  newPath: RelativePath,
-): void {
-  for (const finding of findings) {
-    if (finding.filePath === originalPath) {
-      finding.filePath = newPath;
+  private _removeFindingsForPath(path: RelativePath): void {
+    for (let i = this._findings.length - 1; i >= 0; i--) {
+      if (this._findings[i].filePath === path) {
+        this._findings.splice(i, 1);
+      }
     }
   }
 }
