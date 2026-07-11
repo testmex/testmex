@@ -7,7 +7,7 @@ export const nxProjectJsonTransform = defineTransform({
   apply: async (workspace) => {
     const { tree } = workspace;
 
-    for (const project of workspace.getProjects()) {
+    for (const project of workspace.projects) {
       const projectJsonPath = relativePath(join(project.path, 'project.json'));
       const content = await tree.maybeReadFile(projectJsonPath);
 

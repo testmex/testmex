@@ -30,8 +30,7 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
 
       const taggedPaths =
         fileTags !== undefined
-          ? workspace
-              .getFiles()
+          ? workspace.files
               .filter((file) => matchesFileTags(file.tags))
               .map((file) => file.path)
           : undefined;
@@ -48,7 +47,7 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
       const paths =
         taggedPaths !== undefined && findingPaths !== undefined
           ? findingPaths.filter((path) => {
-              const file = workspace.getFiles().find(({ path: filePath }) => filePath === path);
+              const file = workspace.files.find(({ path: filePath }) => filePath === path);
 
               return file != null && matchesFileTags(file.tags);
             })

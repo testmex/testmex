@@ -49,7 +49,7 @@ export const angularBuilderJestTransform = defineTransform({
 
     if (devDependencies.size > 0) {
       commands.add([
-        workspace.getPackageManager(),
+        workspace.packageManager,
         'add',
         '-D',
         ...devDependencies,

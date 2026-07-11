@@ -31,7 +31,7 @@ describe(renameSpecToJestTransform.name, () => {
         ),
       )
       .toBeNull();
-    expect.soft(workspace.getFiles()).toMatchObject([
+    expect.soft(workspace.files).toMatchObject([
       {
         path: 'apps/my-app/src/app.jest.cts',
         tags: ['test'],
@@ -65,7 +65,7 @@ describe(renameSpecToJestTransform.name, () => {
         ),
       )
       .toBeNull();
-    expect.soft(workspace.getFiles()).toMatchObject([
+    expect.soft(workspace.files).toMatchObject([
       {
         path: 'apps/my-app/src/app.jest.tsx',
         tags: ['test'],

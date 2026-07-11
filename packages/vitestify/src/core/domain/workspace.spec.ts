@@ -16,7 +16,7 @@ describe(Workspace.name, () => {
       },
     );
 
-    expect(workspace.getFiles()).toMatchObject([
+    expect(workspace.files).toMatchObject([
       {
         path: 'apps/my-app/src/app.ts',
         projects: [{ name: 'my-app', path: 'apps/my-app' }],
@@ -30,7 +30,7 @@ describe(Workspace.name, () => {
       { projects: [] },
     );
 
-    expect(workspace.getFiles()).toMatchObject([
+    expect(workspace.files).toMatchObject([
       { path: 'libs/frontend/a/index.ts' },
     ]);
   });
@@ -46,7 +46,7 @@ describe(Workspace.name, () => {
       },
     );
 
-    expect(workspace.getFiles()).toMatchObject([
+    expect(workspace.files).toMatchObject([
       {
         path: 'libs/frontend/a/index.ts',
         projects: [
@@ -68,7 +68,7 @@ describe(Workspace.name, () => {
       },
     );
 
-    expect(workspace.getFiles()).toMatchObject([
+    expect(workspace.files).toMatchObject([
       {
         path: 'libs/backend/jest.config.ts',
         projects: [{ name: 'backend', path: 'libs/backend' }],
@@ -87,7 +87,7 @@ describe(Workspace.name, () => {
       },
     );
 
-    expect(workspace.getFiles()).toMatchObject([
+    expect(workspace.files).toMatchObject([
       {
         path: 'libs/backend/jest.config.ts',
         projects: [{ path: 'libs/backend' }],
@@ -112,7 +112,7 @@ describe(Workspace.name, () => {
       },
     );
 
-    expect(workspace.getFiles()).toMatchObject([
+    expect(workspace.files).toMatchObject([
       {
         path: 'libs/backend/a/index.ts',
         projects: [
@@ -131,7 +131,7 @@ describe(Workspace.name, () => {
       },
     );
 
-    expect(workspace.getFiles()).toMatchObject([
+    expect(workspace.files).toMatchObject([
       {
         path: 'src/app.ts',
         projects: [{ name: 'my-app', path: '.' }],
@@ -205,7 +205,7 @@ describe(Workspace.name, () => {
       },
     );
 
-    expect(workspace.asReadonly().getFiles()).toMatchObject([
+    expect(workspace.asReadonly().files).toMatchObject([
       {
         path: 'apps/my-app/src/app.ts',
         projects: [{ name: 'my-app', path: 'apps/my-app' }],
@@ -227,7 +227,7 @@ describe(Workspace.name, () => {
       ],
     });
 
-    expect(workspace.getFiles()).toMatchObject([
+    expect(workspace.files).toMatchObject([
       { path: 'src/app.ts', tags: ['code'] },
     ]);
   });
@@ -240,7 +240,7 @@ describe(Workspace.name, () => {
 
     workspace.tag(path, fileTag('test'));
 
-    expect(workspace.getFiles()).toEqual([
+    expect(workspace.files).toEqual([
       {
         path: 'apps/my-app/src/app.spec.ts',
         tags: ['test'],
@@ -259,7 +259,7 @@ describe(Workspace.name, () => {
     workspace.tag(path, tag);
     workspace.tag(path, tag);
 
-    expect(workspace.getFiles()).toEqual([
+    expect(workspace.files).toEqual([
       {
         path: 'apps/my-app/src/app.spec.ts',
         tags: ['test'],
@@ -283,7 +283,7 @@ describe(Workspace.name, () => {
 
     await workspace.rename(originalPath, newPath);
 
-    expect(workspace.getFiles()).toEqual([
+    expect(workspace.files).toEqual([
       {
         path: 'apps/my-app/src/app.jest.cts',
         tags: ['test'],
@@ -336,7 +336,7 @@ describe(Workspace.name, () => {
 
     workspace.delete(path);
 
-    expect(workspace.getFiles()).toEqual([]);
+    expect(workspace.files).toEqual([]);
   });
 
   it('delete() removes findings', () => {
@@ -372,10 +372,10 @@ describe(Workspace.name, () => {
       packageManager: 'pnpm',
     });
 
-    expect(workspace.getProjects()).toMatchObject([
+    expect(workspace.projects).toMatchObject([
       { name: 'my-app', path: 'apps/my-app' },
     ]);
-    expect(workspace.getPackageManager()).toBe('pnpm');
+    expect(workspace.packageManager).toBe('pnpm');
   });
 });
 

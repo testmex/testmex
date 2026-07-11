@@ -23,8 +23,7 @@ export function defineFileContentHeuristic({
     name,
     inspect: async (workspace) => {
       const findingsList = await Promise.all(
-        workspace
-          .getFiles()
+        workspace.files
           .filter((file) => predicate(file))
           .map(async ({ projects, ...file }) => {
             const content = await workspace.tree.maybeReadFile(file.path);

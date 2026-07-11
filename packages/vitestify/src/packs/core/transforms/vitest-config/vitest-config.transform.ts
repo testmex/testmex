@@ -76,7 +76,7 @@ export const vitestConfigTransform = defineTransform({
 
     if (devDependencies.size > 0) {
       commands.add([
-        workspace.getPackageManager(),
+        workspace.packageManager,
         'add',
         '-D',
         ...devDependencies,
@@ -117,7 +117,7 @@ async function _collectProjectsToTransform(
   );
   const jestConfigProjects = new Map(
     workspace
-      .getFiles()
+      .files
       .filter((file) => file.tags.includes(fileTags.jestConfig))
       .map((file) => [
         relativePath(dirname(file.path)),

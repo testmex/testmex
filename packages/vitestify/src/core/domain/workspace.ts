@@ -37,11 +37,11 @@ export class Workspace {
     return this._state.findings;
   }
 
-  getPackageManager(): PackageManager {
+  get packageManager(): PackageManager {
     return this._state.getPackageManager();
   }
 
-  getProjects(): readonly Project[] {
+  get projects(): readonly Project[] {
     return this._state.getProjects();
   }
 
@@ -53,7 +53,7 @@ export class Workspace {
     return this;
   }
 
-  getFiles(): FileInfoWithProjects[] {
+  get files(): FileInfoWithProjects[] {
     return this._state.getFiles();
   }
 
@@ -89,11 +89,11 @@ export class Workspace {
 export interface ReadonlyWorkspace
   extends Pick<
     Workspace,
+    | 'files'
     | 'findings'
-    | 'getFiles'
-    | 'getPackageManager'
     | 'getProjectFiles'
-    | 'getProjects'
+    | 'packageManager'
+    | 'projects'
   > {
   readonly tree: ReadonlyTree;
 }

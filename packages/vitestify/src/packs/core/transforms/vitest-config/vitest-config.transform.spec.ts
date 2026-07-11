@@ -617,7 +617,7 @@ afterEach(() => {
 
     await transform(workspace);
 
-    expect(workspace.getFiles()).toContainEqual(
+    expect(workspace.files).toContainEqual(
       expect.objectContaining({
         path: 'apps/my-app/vitest.config.mts',
         tags: ['vitest-config'],

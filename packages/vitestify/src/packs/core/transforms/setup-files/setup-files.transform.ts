@@ -9,7 +9,7 @@ const JEST_PRESET_ANGULAR_MODULE_PREFIX = 'jest-preset-angular';
 export const setupFilesTransform = defineTransform({
   name: 'setup-files',
   apply: async (workspace) => {
-    for (const file of workspace.getFiles()) {
+    for (const file of workspace.files) {
       if (!_isJestSetupFile(file.tags)) {
         continue;
       }
