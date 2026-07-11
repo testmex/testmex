@@ -44,10 +44,29 @@ describe(Transformer, () => {
     ]);
   });
 
-  it.todo('transformer reports transform error on progress', () => {
-    // set up Transformer with ProgressReporterFake and a transform that throws
-    // run transform()
-    // assert progress messages contain failed transform with error message
+  it('transformer reports transform error on progress', async () => {
+    const progressReporter = new ProgressReporterFake();
+    const transformer = new Transformer({
+      progressReporter,
+      transforms: [
+        defineTransform({
+          name: 'jest-mock',
+          apply: async () => {
+            throw new Error('parse failed');
+          },
+        }),
+      ],
+    });
+    const workspace = new Workspace({
+      info: new WorkspaceState(),
+      tree: new Tree({ fileSystem: new FileSystemFake() }),
+    });
+
+    await transformer.transform(workspace);
+
+    expect(progressReporter.errors()).toEqual([
+      'Transform failed [1/1] jest-mock · parse failed',
+    ]);
   });
 
   it.todo('transformer continues to next transform after error', () => {

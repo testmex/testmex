@@ -3,6 +3,12 @@ import type { Transform } from '../core/models/transform';
 import { NullProgressReporter } from '../core/ports/null-progress-reporter';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
 
+const TRANSFORM_MESSAGE_PREFIX = {
+  transforming: 'Transforming',
+  transformed: 'Transformed ',
+  error: 'Transform failed',
+} as const;
+
 export class Transformer {
   private readonly _progressReporter: ProgressReporter;
   private readonly _transforms: Transform[];
@@ -26,15 +32,10 @@ export class Transformer {
       let lastMessage: string | undefined;
 
       const formatTransformMessage = (
-        phase: 'transforming' | 'transformed' | 'failed',
+        phase: keyof typeof TRANSFORM_MESSAGE_PREFIX,
         message?: string,
       ) => {
-        const prefix =
-          phase === 'transforming'
-            ? 'Transforming'
-            : phase === 'transformed'
-              ? 'Transformed '
-              : 'Failed     ';
+        const prefix = TRANSFORM_MESSAGE_PREFIX[phase];
         const line = `${prefix} [${step}/${total}] ${transform.name}`;
         return message === undefined ? line : `${line} · ${message}`;
       };
@@ -53,7 +54,7 @@ export class Transformer {
       } catch (error) {
         spinner.error(
           formatTransformMessage(
-            'failed',
+            'error',
             error instanceof Error ? error.message : String(error),
           ),
         );
