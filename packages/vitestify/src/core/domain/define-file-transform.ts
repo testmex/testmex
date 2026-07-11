@@ -1,6 +1,7 @@
 import type { FindingType } from '../models/finding';
 import { defineTransform, type Transform } from '../models/transform';
 import type { FileTag } from './workspace';
+import { yieldToEventLoop } from '../utils/yield-to-event-loop';
 
 interface DefineFileTransformBase {
   name: string;
@@ -47,7 +48,9 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
       const paths =
         taggedPaths !== undefined && findingPaths !== undefined
           ? findingPaths.filter((path) => {
-              const file = workspace.files.find(({ path: filePath }) => filePath === path);
+              const file = workspace.files.find(
+                ({ path: filePath }) => filePath === path,
+              );
 
               return file != null && matchesFileTags(file.tags);
             })
@@ -58,6 +61,9 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
         if (content != null) {
           await tree.write(path, args.apply(content));
         }
+
+        /* Give the opportunity to `clack` to intercept CTRL+C. */
+        await yieldToEventLoop();
       }
     },
   });
