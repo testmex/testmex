@@ -35,7 +35,7 @@ export class WorkspaceState {
     this._projects = projects;
   }
 
-  get findings(): readonly Finding[] {
+  getFindings(): readonly Finding[] {
     return this._findings;
   }
 
