@@ -104,7 +104,7 @@ async function runAngularBuilderJestTransform(
   const fileSystem = new FileSystemFake();
   fileSystem.configure(files);
   const workspace = new Workspace({
-    info: mother.buildWorkspaceInfo(),
+    info: mother.buildWorkspaceState(),
     tree: new Tree({ fileSystem }),
   });
 

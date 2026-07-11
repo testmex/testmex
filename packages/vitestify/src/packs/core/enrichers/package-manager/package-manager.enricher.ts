@@ -7,7 +7,7 @@ import { relativePath } from '../../../../core/models/relative-path';
 import {
   PACKAGE_MANAGERS,
   type PackageManager,
-} from '../../../../core/models/workspace-info';
+} from '../../../../core/models/workspace-state';
 
 export class PackageManagerEnricher implements Enricher {
   readonly name = 'package-manager';

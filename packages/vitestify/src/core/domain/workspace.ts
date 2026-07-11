@@ -1,7 +1,7 @@
 import { relative } from 'node:path/posix';
 import type { Finding } from '../models/finding';
 import { relativePath, type RelativePath } from '../models/relative-path';
-import { WorkspaceEnrichment, WorkspaceInfo } from '../models/workspace-info';
+import { WorkspaceEnrichment, WorkspaceState } from '../models/workspace-state';
 import type { Command } from '../ports/command-runner';
 import type { ReadonlyTree, Tree } from './tree';
 
@@ -14,15 +14,15 @@ export class Workspace {
 
   private readonly _fileTags = new Map<RelativePath, FileTag[]>();
   private readonly _findings: Finding[] = [];
-  private _info: WorkspaceInfo;
+  private _info: WorkspaceState;
   private readonly _tree: Tree;
 
   constructor({
-    info = new WorkspaceInfo(),
+    info = new WorkspaceState(),
     tree,
     commands = new CommandQueue(),
   }: {
-    info?: WorkspaceInfo;
+    info?: WorkspaceState;
     tree: Tree;
     commands?: CommandQueue;
   }) {
@@ -36,7 +36,7 @@ export class Workspace {
     return this._findings;
   }
 
-  get info(): WorkspaceInfo {
+  get info(): WorkspaceState {
     return this._info;
   }
 

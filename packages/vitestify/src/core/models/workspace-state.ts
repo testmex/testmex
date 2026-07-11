@@ -10,7 +10,7 @@ export interface WorkspaceEnrichment {
   projects?: Project[];
 }
 
-export class WorkspaceInfo {
+export class WorkspaceState {
   readonly packageManager: PackageManager;
   readonly projects: Project[];
 
@@ -28,14 +28,14 @@ export class WorkspaceInfo {
   merge(overrides: {
     projects?: Project[];
     packageManager?: PackageManager;
-  }): WorkspaceInfo {
-    return new WorkspaceInfo({
+  }): WorkspaceState {
+    return new WorkspaceState({
       projects: [...this.projects, ...(overrides.projects ?? [])],
       packageManager: overrides.packageManager ?? this.packageManager,
     });
   }
 }
 
-export function createWorkspaceInfo(): WorkspaceInfo {
-  return new WorkspaceInfo();
+export function createWorkspaceState(): WorkspaceState {
+  return new WorkspaceState();
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
-import { WorkspaceInfo } from '../core/models/workspace-info';
+import { WorkspaceState } from '../core/models/workspace-state';
 import type { Command, CommandRunner } from '../core/ports/command-runner';
 import { FileSystemFake } from '../core/ports/file-system.fake';
 import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
@@ -18,7 +18,7 @@ describe(Finalizer, () => {
     };
     const finalizer = new Finalizer({ commandRunner });
     const workspace = new Workspace({
-      info: new WorkspaceInfo(),
+      info: new WorkspaceState(),
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
 
@@ -40,7 +40,7 @@ describe(Finalizer, () => {
     };
     const finalizer = new Finalizer({ commandRunner, progressReporter });
     const workspace = new Workspace({
-      info: new WorkspaceInfo(),
+      info: new WorkspaceState(),
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
 

@@ -4,7 +4,7 @@ import { Workspace } from './workspace';
 import { relativePath, type RelativePath } from '../models/relative-path';
 import { FileSystemFake } from '../ports/file-system.fake';
 import { fileTag, type FileTag } from '../domain/workspace';
-import { WorkspaceInfo } from '../models/workspace-info';
+import { WorkspaceState } from '../models/workspace-state';
 import { findingType } from '../models/finding';
 
 describe(Workspace.name, () => {
@@ -381,10 +381,10 @@ describe(Workspace.name, () => {
 
 function workspaceWithFiles(
   files: { path: RelativePath; tags?: FileTag[] }[],
-  info: ConstructorParameters<typeof WorkspaceInfo>[0] = {},
+  info: ConstructorParameters<typeof WorkspaceState>[0] = {},
 ): Workspace {
   const workspace = new Workspace({
-    info: new WorkspaceInfo(info),
+    info: new WorkspaceState(info),
     tree: new Tree({ fileSystem: new FileSystemFake() }),
   });
 

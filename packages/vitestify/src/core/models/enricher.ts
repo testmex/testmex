@@ -1,6 +1,6 @@
 import type { CommandRunner } from '../ports/command-runner';
 import type { ReadonlyWorkspace } from '../domain/workspace';
-import type { WorkspaceEnrichment } from './workspace-info';
+import type { WorkspaceEnrichment } from './workspace-state';
 
 export interface EnricherOptions {
   workspace: ReadonlyWorkspace;
