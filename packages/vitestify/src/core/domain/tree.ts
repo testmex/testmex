@@ -1,7 +1,7 @@
 import d from 'debug';
 import { parse, type ParseError } from 'jsonc-parser';
 import type { RelativePath } from '../models/relative-path';
-import type { FileSystem } from '../ports/file-system';
+import type { FileSystem, ScanDirectoryOptions } from '../ports/file-system';
 import { FileSystemCached } from './file-system-cached';
 
 const debug = d('vitestify:tree');
@@ -45,8 +45,10 @@ export class Tree {
     return parsed as T;
   }
 
-  async *scanDirectory(path?: RelativePath): AsyncIterable<RelativePath> {
-    for await (const file of this._fileSystemCached.scanDirectory(path)) {
+  async *scanDirectory(
+    options?: ScanDirectoryOptions,
+  ): AsyncIterable<RelativePath> {
+    for await (const file of this._fileSystemCached.scanDirectory(options)) {
       yield file;
     }
   }

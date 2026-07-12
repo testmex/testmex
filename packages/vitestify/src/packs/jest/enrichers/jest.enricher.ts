@@ -19,6 +19,8 @@ const JEST_CONFIG_FILE_NAMES = [
   'jest.config.cts',
 ] as const;
 
+const JEST_FILE_GLOB_PATTERN = '**/*.{ts,tsx,cts,js,mjs,mts,cjs}';
+
 const JEST_SETUP_FILE_KEYS = ['setupFiles', 'setupFilesAfterEnv'];
 
 type JestDiscoveredFileType = typeof fileTags.jestConfig | typeof fileTags.test;
@@ -80,7 +82,9 @@ export class JestEnricher implements Enricher {
   private async *_discoverJestFiles(
     workspace: ReadonlyWorkspace,
   ): AsyncGenerator<JestDiscoveredFile> {
-    for await (const path of workspace.tree.scanDirectory()) {
+    for await (const path of workspace.tree.scanDirectory({
+      pattern: JEST_FILE_GLOB_PATTERN,
+    })) {
       if (
         path.endsWith(JEST_CTS_EXTENSION) ||
         path.endsWith(JEST_TSX_EXTENSION)

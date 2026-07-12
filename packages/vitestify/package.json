@@ -28,6 +28,7 @@
     "vitest": "4.1.10"
   },
   "devDependencies": {
-    "@types/debug": "4.1.13"
+    "@types/debug": "4.1.13",
+    "micromatch": "4.0.8"
   }
 }

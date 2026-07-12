@@ -9,7 +9,10 @@ import { posix } from 'node:path/posix';
 import { globbyStream } from 'globby';
 import type { RelativePath } from '../core/models/relative-path';
 import { relativePath } from '../core/models/relative-path';
-import type { FileSystem } from '../core/ports/file-system';
+import type {
+  FileSystem,
+  ScanDirectoryOptions,
+} from '../core/ports/file-system';
 
 export class FileSystemImpl implements FileSystem {
   private readonly _workspaceRoot: string;
@@ -35,15 +38,23 @@ export class FileSystemImpl implements FileSystem {
     }
   }
 
-  async *scanDirectory(path?: RelativePath): AsyncIterable<RelativePath> {
-    const pattern = path ? `${path}/**/*` : '**/*';
+  async *scanDirectory(
+    options?: ScanDirectoryOptions,
+  ): AsyncIterable<RelativePath> {
+    const root = options?.root;
+    const pattern = options?.pattern ?? '**/*';
+    const cwd = root
+      ? join(this._workspaceRoot, this._fromPosixPath(root))
+      : this._workspaceRoot;
 
     for await (const file of globbyStream(pattern, {
-      cwd: this._workspaceRoot,
+      cwd,
       gitignore: true,
       onlyFiles: true,
     })) {
-      yield this._toPosixPath(relativePath(file));
+      const relativeFile = this._toPosixPath(file);
+
+      yield relativePath(root ? `${root}/${relativeFile}` : relativeFile);
     }
   }
 
@@ -76,11 +87,11 @@ export class FileSystemImpl implements FileSystem {
     );
   }
 
-  private _toPosixPath(path: RelativePath): RelativePath {
+  private _toPosixPath(path: string): RelativePath {
     return relativePath(path.split(sep).join(posix.sep));
   }
 
-  private _fromPosixPath(path: RelativePath): RelativePath {
+  private _fromPosixPath(path: RelativePath): string {
     return relativePath(path.split(posix.sep).join(sep));
   }
 }

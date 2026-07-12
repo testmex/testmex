@@ -1,5 +1,5 @@
 import type { RelativePath } from '../models/relative-path';
-import type { FileSystem } from '../ports/file-system';
+import type { FileSystem, ScanDirectoryOptions } from '../ports/file-system';
 
 /**
  * Caches reads from a delegate {@link FileSystem}.
@@ -27,8 +27,10 @@ export class FileSystemCached implements FileSystem {
     return null;
   }
 
-  async *scanDirectory(path?: RelativePath): AsyncIterable<RelativePath> {
-    for await (const file of this._inner.scanDirectory(path)) {
+  async *scanDirectory(
+    options?: ScanDirectoryOptions,
+  ): AsyncIterable<RelativePath> {
+    for await (const file of this._inner.scanDirectory(options)) {
       yield file;
     }
   }

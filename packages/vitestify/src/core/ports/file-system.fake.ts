@@ -1,5 +1,6 @@
+import micromatch from 'micromatch';
 import type { RelativePath } from '../models/relative-path';
-import type { FileSystem } from './file-system';
+import type { FileSystem, ScanDirectoryOptions } from './file-system';
 
 export class FileSystemFake implements FileSystem {
   private readonly _files = new Map<RelativePath, string>();
@@ -15,13 +16,23 @@ export class FileSystemFake implements FileSystem {
     return this._files.get(path) ?? null;
   }
 
-  async *scanDirectory(path?: RelativePath): AsyncIterable<RelativePath> {
-    const files = Array.from(this._files.keys());
-    const filtered = !path
-      ? files
-      : files.filter((file) => file.startsWith(`${path}/`));
+  async *scanDirectory(
+    options?: ScanDirectoryOptions,
+  ): AsyncIterable<RelativePath> {
+    const root = options?.root;
+    const pattern = options?.pattern ?? '**/*';
 
-    for (const file of filtered) {
+    for (const file of this._files.keys()) {
+      if (root && !file.startsWith(`${root}/`)) {
+        continue;
+      }
+
+      const pathToMatch = root ? file.slice(root.length + 1) : file;
+
+      if (!micromatch.isMatch(pathToMatch, pattern)) {
+        continue;
+      }
+
       yield file;
     }
   }

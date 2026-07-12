@@ -10,6 +10,9 @@ import type { RelativePath } from '../../../../core/models/relative-path';
 import { fileTags } from '../../identifiers';
 import { isTestFile } from '../../utils';
 
+const TEST_FILE_GLOB_PATTERN =
+  '**/*.{snap,spec.ts,spec.tsx,test.ts,test.tsx}';
+
 type TestDiscoveredFileType = typeof fileTags.snapshot | typeof fileTags.test;
 
 interface TestDiscoveredFile {
@@ -51,7 +54,9 @@ export class TestEnricher implements Enricher {
   private async *_discoverTestFiles(
     workspace: ReadonlyWorkspace,
   ): AsyncGenerator<TestDiscoveredFile> {
-    for await (const path of workspace.tree.scanDirectory()) {
+    for await (const path of workspace.tree.scanDirectory({
+      pattern: TEST_FILE_GLOB_PATTERN,
+    })) {
       if (path.endsWith('.snap')) {
         yield { path, type: fileTags.snapshot };
       }

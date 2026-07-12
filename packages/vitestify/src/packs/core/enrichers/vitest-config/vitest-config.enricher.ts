@@ -14,12 +14,17 @@ const VITEST_CONFIG_FILE_NAMES = [
   'vitest.config.cts',
 ] as const;
 
+const VITEST_CONFIG_GLOB_PATTERN =
+  '**/vitest.config.{mts,ts,js,mjs,cjs,cts}';
+
 export class VitestConfigEnricher implements Enricher {
   readonly name = 'vitest-config';
 
   async enrich({ workspace, onProgress }: EnricherOptions) {
     const files = [];
-    for await (const path of workspace.tree.scanDirectory()) {
+    for await (const path of workspace.tree.scanDirectory({
+      pattern: VITEST_CONFIG_GLOB_PATTERN,
+    })) {
       if (
         !VITEST_CONFIG_FILE_NAMES.some((name) => basename(path).endsWith(name))
       ) {

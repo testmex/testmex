@@ -114,6 +114,9 @@ importers:
       '@types/debug':
         specifier: 4.1.13
         version: 4.1.13
+      micromatch:
+        specifier: 4.0.8
+        version: 4.0.8
 
 packages:
 
