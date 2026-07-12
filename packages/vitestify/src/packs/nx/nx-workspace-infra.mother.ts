@@ -2,6 +2,7 @@ import {
   relativePath,
   type RelativePath,
 } from '../../core/models/relative-path';
+import type { CommandRunnerResult } from '../../core/ports/command-runner.fake';
 
 class NxWorkspaceInfraMother {
   constructor(private readonly _state: State = { appFiles: {}, libs: [] }) {}
@@ -91,7 +92,7 @@ class NxWorkspaceInfraMother {
     return files;
   }
 
-  buildCommands(): Record<string, string> {
+  buildCommands(): Record<string, CommandRunnerResult> {
     if (!this._hasProjects()) {
       throw new Error('NxWorkspaceInfraMother: configure a workspace first');
     }
@@ -108,11 +109,13 @@ class NxWorkspaceInfraMother {
     }
 
     return {
-      ['pnpm add -D vite-tsconfig-paths vitest']: '',
-      ['npx nx add @nx/vitest']: '',
-      ['npx nx graph --print']: JSON.stringify({
-        graph: { nodes },
-      }),
+      ['pnpm add -D vite-tsconfig-paths vitest']: { output: '' },
+      ['npx nx add @nx/vitest']: { output: '' },
+      ['npx nx graph --print']: {
+        output: JSON.stringify({
+          graph: { nodes },
+        }),
+      },
     };
   }
 

@@ -1,6 +1,7 @@
 import { angularJsonMother } from './angular-json.mother';
 import { ANGULAR_JSON_PATH } from '../core/angular-json';
 import { type RelativePath } from '../../core/models/relative-path';
+import type { CommandRunnerResult } from '../../core/ports/command-runner.fake';
 
 class AngularCliWorkspaceInfraMother {
   constructor(private readonly _state: State = {}) {}
@@ -12,7 +13,7 @@ class AngularCliWorkspaceInfraMother {
     });
   }
 
-  buildCommands(): Record<string, string> {
+  buildCommands(): Record<string, CommandRunnerResult> {
     return {};
   }
 
