@@ -251,6 +251,32 @@ describe(WorkspaceState, () => {
     ]);
   });
 
+  it.todo('stores findings on file info', () => {
+    // Create WorkspaceState
+    // Call applyHeuristicResults({ findings: [{ type, filePath }] })
+    // Assert getFiles() includes the file with findings: [type]
+  });
+
+  it.todo('dedupes finding types with the same type on the same file', () => {
+    // Apply the same finding type twice for one file
+    // Assert findings contains the type only once
+  });
+
+  it.todo('merges multiple types from one heuristic result', () => {
+    // Apply one result with multiple types for the same file
+    // Assert all types are stored on the file
+  });
+
+  it.todo('keeps findings after rename', () => {
+    // Apply findings, rename the file
+    // Assert findings remain on the renamed file entity
+  });
+
+  it.todo('removes findings after delete', () => {
+    // Apply findings, delete the file
+    // Assert the file entity (and findings) are gone
+  });
+
   it('updates finding paths after rename', () => {
     const state = new WorkspaceState();
     const originalPath = relativePath('apps/my-app/src/app.spec.ts');
