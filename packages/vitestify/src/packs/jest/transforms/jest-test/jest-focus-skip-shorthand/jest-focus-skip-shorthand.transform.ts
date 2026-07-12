@@ -3,10 +3,10 @@ import { SgEditor } from '../../../../../infra/ast/sg-editor';
 import { findingTypes } from '../../../identifiers';
 import { isTransformable } from '../../../utils';
 
-export const replaceApiTransform = defineFileTransform({
-  name: 'replace-api',
+export const jestFocusSkipShorthandTransform = defineFileTransform({
+  name: 'jest-focus-skip-shorthand',
   fileTags: (tags) => isTransformable(tags),
-  findingType: findingTypes.jestSymbol,
+  findingType: findingTypes.jestFocusSkipShorthand,
   apply: (content) => {
     const editor = new SgEditor(content);
 

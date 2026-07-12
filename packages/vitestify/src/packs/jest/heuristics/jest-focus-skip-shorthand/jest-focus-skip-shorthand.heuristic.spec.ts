@@ -7,9 +7,9 @@ import {
 import { Analyzer } from '../../../../pipeline/analyzer';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
-import { replaceApiHeuristic } from './replace-api.heuristic';
+import { jestFocusSkipShorthandHeuristic } from './jest-focus-skip-shorthand.heuristic';
 
-describe('replaceApiHeuristic', () => {
+describe('jestFocusSkipShorthandHeuristic', () => {
   it('reports findings in code files', async () => {
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp('my-app').withFile(
@@ -22,12 +22,14 @@ describe('replaceApiHeuristic', () => {
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [replaceApiHeuristic] });
+    const analyzer = new Analyzer({
+      heuristics: [jestFocusSkipShorthandHeuristic],
+    });
     await analyzer.analyze(workspace);
 
     expect(workspace.findings).toEqual([
       {
-        type: findingTypes.jestSymbol,
+        type: findingTypes.jestFocusSkipShorthand,
         projects: [{ name: 'my-app', path: 'apps/my-app' }],
         filePath: 'apps/my-app/src/testing/utils.ts',
       },

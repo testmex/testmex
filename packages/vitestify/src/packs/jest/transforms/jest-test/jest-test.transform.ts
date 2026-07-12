@@ -5,7 +5,7 @@ import { jestSetMockTransform } from './jest-set-mock/jest-set-mock.transform';
 import { jestSetTimeoutTransform } from './jest-set-timeout/jest-set-timeout.transform';
 import { jestTypesTransform } from './jest-types/jest-types.transform';
 import { jestViTransform } from './jest-vi/jest-vi.transform';
-import { replaceApiTransform } from './replace-api/replace-api.transform';
+import { jestFocusSkipShorthandTransform } from './jest-focus-skip-shorthand/jest-focus-skip-shorthand.transform';
 import { snapTransform } from './snap/snap.transform';
 import { renameJestToSpecTransform } from './rename-jest-to-spec/rename-jest-to-spec.transform';
 import { vitestImportsTransform } from './vitest-imports/vitest-imports.transform';
@@ -17,7 +17,7 @@ export const jestTestTransform = defineTransformGroup('jest-test', [
   jestSetTimeoutTransform,
   jestTypesTransform,
   jestViTransform,
-  replaceApiTransform,
+  jestFocusSkipShorthandTransform,
   snapTransform,
   vitestImportsTransform,
   renameJestToSpecTransform,

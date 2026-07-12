@@ -8,7 +8,7 @@ import { relativePath } from '../../../../core/models/relative-path';
 import { runTransform } from '../../../../testing/run-transform';
 import { fileTags } from '../../../core/identifiers';
 import { jestSymbolHeuristic } from '../../heuristics/jest-symbol/jest-symbol.heuristic';
-import { replaceApiHeuristic } from '../../heuristics/replace-api/replace-api.heuristic';
+import { jestFocusSkipShorthandHeuristic } from '../../heuristics/jest-focus-skip-shorthand/jest-focus-skip-shorthand.heuristic';
 import { vitestImportsNeededHeuristic } from '../../heuristics/vitest-imports-needed/vitest-imports-needed.heuristic';
 import { jestTestTransform } from './jest-test.transform';
 
@@ -45,7 +45,7 @@ async function _transformSetupTestFile(content: string) {
     workspace,
     heuristics: [
       jestSymbolHeuristic,
-      replaceApiHeuristic,
+      jestFocusSkipShorthandHeuristic,
       vitestImportsNeededHeuristic,
     ],
     transforms: [jestTestTransform],

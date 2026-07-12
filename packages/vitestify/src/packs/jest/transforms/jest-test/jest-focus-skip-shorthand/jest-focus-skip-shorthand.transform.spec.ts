@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { transformTestFile as runTransformTestFile } from '../../../testing';
-import { replaceApiHeuristic } from '../../../heuristics/replace-api/replace-api.heuristic';
-import { replaceApiTransform } from './replace-api.transform';
+import { jestFocusSkipShorthandHeuristic } from '../../../heuristics/jest-focus-skip-shorthand/jest-focus-skip-shorthand.heuristic';
+import { jestFocusSkipShorthandTransform } from './jest-focus-skip-shorthand.transform';
 
-describe(replaceApiTransform.name, () => {
+describe(jestFocusSkipShorthandTransform.name, () => {
   it('rewrites `fit(` → `it.only(`', async () => {
     expect(
       await transformTestFile(`fit('filters', async () => { /* … */ });`),
@@ -121,7 +121,7 @@ test.fails('Should not fetch public views is user is not a member', async () => 
 
 function transformTestFile(content: string) {
   return runTransformTestFile(content, {
-    heuristics: [replaceApiHeuristic],
-    transforms: [replaceApiTransform],
+    heuristics: [jestFocusSkipShorthandHeuristic],
+    transforms: [jestFocusSkipShorthandTransform],
   });
 }

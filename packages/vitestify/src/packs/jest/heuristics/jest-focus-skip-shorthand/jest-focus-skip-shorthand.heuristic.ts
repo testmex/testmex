@@ -2,22 +2,22 @@ import { defineFileContentHeuristic } from '../../../../core/domain/define-file-
 import { fileTags as coreFileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
 
-const replaceApiPattern =
+const JEST_FOCUS_SKIP_SHORTHAND_PATTERN =
   /\b[xf](?:describe|it|test)(?:\.|\s*\()|(?:it|test)(?:\.(?:only|skip))?\.failing\b/;
 
-export const replaceApiHeuristic = defineFileContentHeuristic({
-  name: 'replace-api',
+export const jestFocusSkipShorthandHeuristic = defineFileContentHeuristic({
+  name: 'jest-focus-skip-shorthand',
   predicate: (file) =>
     file.tags.includes(coreFileTags.test) ||
     file.tags.includes(coreFileTags.code),
   inspect: ({ file, projects, content }) => {
-    if (!replaceApiPattern.test(content)) {
+    if (!JEST_FOCUS_SKIP_SHORTHAND_PATTERN.test(content)) {
       return [];
     }
 
     return [
       {
-        type: findingTypes.jestSymbol,
+        type: findingTypes.jestFocusSkipShorthand,
         projects,
         filePath: file.path,
       },
