@@ -10,17 +10,11 @@ export const jestFocusSkipShorthandHeuristic = defineFileContentHeuristic({
   predicate: (file) =>
     file.tags.includes(coreFileTags.test) ||
     file.tags.includes(coreFileTags.code),
-  inspect: ({ file, projects, content }) => {
+  inspect: ({ content }) => {
     if (!JEST_FOCUS_SKIP_SHORTHAND_PATTERN.test(content)) {
       return [];
     }
 
-    return [
-      {
-        type: findingTypes.jestFocusSkipShorthand,
-        projects,
-        filePath: file.path,
-      },
-    ];
+    return [findingTypes.jestFocusSkipShorthand];
   },
 });

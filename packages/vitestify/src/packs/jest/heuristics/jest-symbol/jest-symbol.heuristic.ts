@@ -9,17 +9,11 @@ export const jestSymbolHeuristic = defineFileContentHeuristic({
   predicate: (file) =>
     file.tags.includes(coreFileTags.test) ||
     file.tags.includes(coreFileTags.code),
-  inspect: ({ file, projects, content }) => {
+  inspect: ({ content }) => {
     if (!jestSymbolPattern.test(content)) {
       return [];
     }
 
-    return [
-      {
-        type: findingTypes.jestSymbol,
-        projects,
-        filePath: file.path,
-      },
-    ];
+    return [findingTypes.jestSymbol];
   },
 });

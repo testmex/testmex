@@ -1,17 +1,16 @@
-import type { Finding } from '../models/finding';
+import type { FindingType, HeuristicResult } from '../models/finding';
 import { defineHeuristic, type Heuristic } from '../models/heuristic';
-import type { FileInfo, Project } from './workspace';
+import type { FileInfo } from './workspace';
 
 export interface FileContentInspectionArgs {
   file: FileInfo;
-  projects: Project[];
   content: string;
 }
 
 export interface DefineFileContentHeuristicArgs {
   name: string;
   predicate: (file: FileInfo) => boolean;
-  inspect: (args: FileContentInspectionArgs) => Finding[];
+  inspect: (args: FileContentInspectionArgs) => FindingType[];
 }
 
 export function defineFileContentHeuristic({
@@ -25,14 +24,21 @@ export function defineFileContentHeuristic({
       const findingsList = await Promise.all(
         workspace.files
           .filter((file) => predicate(file))
-          .map(async ({ projects, ...file }) => {
+          .map(async (file) => {
             const content = await workspace.tree.maybeReadFile(file.path);
 
-            return content === null ? [] : inspect({ file, projects, content });
+            if (content === null) {
+              return [];
+            }
+
+            return inspect({ file, content }).map((type) => ({
+              type,
+              filePath: file.path,
+            }));
           }),
       );
 
-      return findingsList.flat();
+      return { findings: findingsList.flat() };
     },
   });
 }

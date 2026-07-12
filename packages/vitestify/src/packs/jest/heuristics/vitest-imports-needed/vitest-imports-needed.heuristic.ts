@@ -8,16 +8,8 @@ export const vitestImportsNeededHeuristic = defineFileContentHeuristic({
   predicate: (file) =>
     file.tags.includes(coreFileTags.test) ||
     file.tags.includes(coreFileTags.code),
-  inspect: ({ file, projects, content }) =>
-    _isUsingJestGlobals(content)
-      ? [
-          {
-            filePath: file.path,
-            projects,
-            type: findingTypes.vitestImportsNeeded,
-          },
-        ]
-      : [],
+  inspect: ({ content }) =>
+    _isUsingJestGlobals(content) ? [findingTypes.vitestImportsNeeded] : [],
 });
 
 function _isUsingJestGlobals(content: string): boolean {

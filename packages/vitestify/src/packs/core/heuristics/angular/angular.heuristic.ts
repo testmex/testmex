@@ -7,17 +7,11 @@ export const angularHeuristic = defineFileContentHeuristic({
   name: 'angular',
   predicate: (file) =>
     file.tags.includes(fileTags.code) || file.tags.includes(fileTags.test),
-  inspect: ({ file, projects, content }) => {
+  inspect: ({ content }) => {
     if (!ANGULAR_PATTERN.test(content)) {
       return [];
     }
 
-    return [
-      {
-        type: findingTypes.angular,
-        projects,
-        filePath: file.path,
-      },
-    ];
+    return [findingTypes.angular];
   },
 });

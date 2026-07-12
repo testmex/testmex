@@ -6,17 +6,11 @@ const DOM_PATTERN = /\b(TestBed|document|testing-library)\b/;
 export const domHeuristic = defineFileContentHeuristic({
   name: 'dom',
   predicate: (file) => file.tags.includes(fileTags.test),
-  inspect: ({ file, projects, content }) => {
+  inspect: ({ content }) => {
     if (!DOM_PATTERN.test(content)) {
       return [];
     }
 
-    return [
-      {
-        type: findingTypes.dom,
-        projects,
-        filePath: file.path,
-      },
-    ];
+    return [findingTypes.dom];
   },
 });
