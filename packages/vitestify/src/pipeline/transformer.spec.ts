@@ -28,7 +28,7 @@ describe(Transformer, () => {
       ],
     });
     const workspace = new Workspace({
-      info: new WorkspaceState(),
+      state: new WorkspaceState(),
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
 
@@ -58,7 +58,7 @@ describe(Transformer, () => {
       ],
     });
     const workspace = new Workspace({
-      info: new WorkspaceState(),
+      state: new WorkspaceState(),
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
 
@@ -89,20 +89,22 @@ describe(Transformer, () => {
       ],
     });
     const workspace = new Workspace({
-      info: new WorkspaceState(),
+      state: new WorkspaceState(),
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
 
     await transformer.transform(workspace);
 
-    expect.soft(progressReporter.errors()).toEqual([
-      'Transform failed [1/2] jest-mock · parse failed',
-    ]);
-    expect.soft(progressReporter.messages()).toEqual([
-      'Transforming [1/2] jest-mock',
-      'Transforming [2/2] jest-spy-on',
-      'Transforming [2/2] jest-spy-on · 1 file(s) transformed',
-      'Transformed  [2/2] jest-spy-on · 1 file(s) transformed',
-    ]);
+    expect
+      .soft(progressReporter.errors())
+      .toEqual(['Transform failed [1/2] jest-mock · parse failed']);
+    expect
+      .soft(progressReporter.messages())
+      .toEqual([
+        'Transforming [1/2] jest-mock',
+        'Transforming [2/2] jest-spy-on',
+        'Transforming [2/2] jest-spy-on · 1 file(s) transformed',
+        'Transformed  [2/2] jest-spy-on · 1 file(s) transformed',
+      ]);
   });
 });

@@ -69,7 +69,7 @@ function workspaceWithFiles(
   info: ConstructorParameters<typeof WorkspaceState>[0] = {},
 ): Workspace {
   const workspace = new Workspace({
-    info: new WorkspaceState(info),
+    state: new WorkspaceState(info),
     tree: new Tree({ fileSystem: new FileSystemFake() }),
   });
 

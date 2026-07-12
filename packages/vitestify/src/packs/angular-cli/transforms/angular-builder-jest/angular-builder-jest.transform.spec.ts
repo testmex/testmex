@@ -5,86 +5,80 @@ import { type RelativePath } from '../../../../core/models/relative-path';
 import { WorkspaceMother } from '../../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
 import { runTransform } from '../../../../testing/run-transform';
-import { ANGULAR_JSON_PATH, type AngularJson } from '../../../core/angular-json';
+import {
+  ANGULAR_JSON_PATH,
+  type AngularJson,
+} from '../../../core/angular-json';
 import { angularBuilderJestTransform } from './angular-builder-jest.transform';
 
 describe('angularBuilderJestTransform', () => {
-  it(
-    'renames test target to jest when using @angular-builders/jest:run',
-    async () => {
-      const { angularJson } = await runAngularBuilderJestTransform({
-        projects: {
-          'my-app': {
-            root: 'apps/my-app',
-            architect: {
-              test: {
-                builder: '@angular-builders/jest:run',
-              },
+  it('renames test target to jest when using @angular-builders/jest:run', async () => {
+    const { angularJson } = await runAngularBuilderJestTransform({
+      projects: {
+        'my-app': {
+          root: 'apps/my-app',
+          architect: {
+            test: {
+              builder: '@angular-builders/jest:run',
             },
           },
         },
-      });
+      },
+    });
 
-      expect.soft(angularJson).toMatchObject({
-        projects: {
-          'my-app': {
-            architect: {
-              jest: {
-                builder: '@angular-builders/jest:run',
-              },
+    expect.soft(angularJson).toMatchObject({
+      projects: {
+        'my-app': {
+          architect: {
+            jest: {
+              builder: '@angular-builders/jest:run',
             },
           },
         },
-      });
-    },
-  );
+      },
+    });
+  });
 
-  it(
-    'creates a new test target that uses @analogjs/vitest-angular:test',
-    async () => {
-      const { angularJson } = await runAngularBuilderJestTransform({
-        projects: {
-          'my-app': {
-            root: 'apps/my-app',
-            architect: {
-              test: {
-                builder: '@angular-builders/jest:run',
-              },
+  it('creates a new test target that uses @analogjs/vitest-angular:test', async () => {
+    const { angularJson } = await runAngularBuilderJestTransform({
+      projects: {
+        'my-app': {
+          root: 'apps/my-app',
+          architect: {
+            test: {
+              builder: '@angular-builders/jest:run',
             },
           },
         },
-      });
+      },
+    });
 
-      expect(angularJson?.projects?.['my-app']?.architect?.test).toMatchObject({
-        builder: '@analogjs/vitest-angular:test',
-      });
-    },
-  );
+    expect(angularJson?.projects?.['my-app']?.architect?.test).toMatchObject({
+      builder: '@analogjs/vitest-angular:test',
+    });
+  });
 
-  it(
-    'installs @analogjs/vitest-angular when a jest builder target is migrated',
-    async () => {
-      const { commands } = await runAngularBuilderJestTransform({
-        projects: {
-          'my-app': {
-            root: 'apps/my-app',
-            architect: {
-              test: {
-                builder: '@angular-builders/jest:run',
-              },
+  it('installs @analogjs/vitest-angular when a jest builder target is migrated', async () => {
+    const { commands } = await runAngularBuilderJestTransform({
+      projects: {
+        'my-app': {
+          root: 'apps/my-app',
+          architect: {
+            test: {
+              builder: '@angular-builders/jest:run',
             },
           },
         },
-      });
+      },
+    });
 
-      expect(commands).toContainEqual([
-        'npm',
-        'add',
-        '-D',
-        '@analogjs/vitest-angular',
-      ]);
-    },
-  );
+    expect(commands).toContainEqual([
+      'npm',
+      'add',
+      '-D',
+      '@analogjs/vitest-angular',
+    ]);
+  });
 });
 
 async function runAngularBuilderJestTransform(
@@ -104,7 +98,7 @@ async function runAngularBuilderJestTransform(
   const fileSystem = new FileSystemFake();
   fileSystem.configure(files);
   const workspace = new Workspace({
-    info: mother.buildWorkspaceState(),
+    state: mother.buildWorkspaceState(),
     tree: new Tree({ fileSystem }),
   });
 

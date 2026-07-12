@@ -31,16 +31,16 @@ export class Workspace {
   private readonly _tree: Tree;
 
   constructor({
-    info = new WorkspaceState(),
-    tree,
     commands = new CommandQueue(),
+    state = new WorkspaceState(),
+    tree,
   }: {
-    info?: WorkspaceState;
-    tree: Tree;
     commands?: CommandQueue;
+    state?: WorkspaceState;
+    tree: Tree;
   }) {
     this.commands = commands;
-    this._state = info;
+    this._state = state;
 
     this.tree = this._tree = tree;
   }
@@ -69,12 +69,12 @@ export class Workspace {
     return this._state.getProjectFiles(nameOrPath);
   }
 
-  applyHeuristicResults(result: HeuristicResult): void {
-    this._state.applyHeuristicResults(result);
-  }
-
   applyEnrichment(enrichment: WorkspaceEnrichment): void {
     this._state.applyEnrichment(enrichment);
+  }
+
+  applyHeuristicResults(result: HeuristicResult): void {
+    this._state.applyHeuristicResults(result);
   }
 
   delete(path: RelativePath): void {

@@ -12,22 +12,14 @@ import { WorkspaceState } from './workspace-state';
 export function createTestingWorkspace(mother: WorkspaceMother): Workspace {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(mother.buildFiles());
-  const workspace = new Workspace({
-    info: mother.buildWorkspaceState(),
+  return new Workspace({
+    state: mother.buildWorkspaceState(),
     tree: new Tree({ fileSystem }),
   });
-
-  for (const { path, tags } of Object.values(mother.buildFileInfos())) {
-    for (const tag of tags) {
-      workspace.tag(path, tag);
-    }
-  }
-
-  return workspace;
 }
 
 export class WorkspaceMother {
-  constructor(private readonly _state: State) {}
+  constructor(private readonly _state: WorkspaceMotherState) {}
 
   static withApp(name: string): WorkspaceMother {
     return new WorkspaceMother({
@@ -60,9 +52,17 @@ export class WorkspaceMother {
     const name = this._state.name;
     const root = relativePath(`apps/${name}`);
 
-    return new WorkspaceState({
+    const state = new WorkspaceState({
       projects: [{ name, path: root }],
     });
+
+    for (const { path, tags } of Object.values(this._state.appFiles)) {
+      for (const tag of tags) {
+        state.tag(path, tag);
+      }
+    }
+
+    return state;
   }
 
   buildFileInfos(): FileInfo[] {
@@ -74,7 +74,11 @@ export class WorkspaceMother {
   }
 }
 
-interface State {
+/**
+ * This is the internal state of the WorkspaceMother class.
+ * Do not mixup with WorkspaceState.
+ */
+interface WorkspaceMotherState {
   name: string;
   appFiles: Record<string, WorkspaceFile>;
 }

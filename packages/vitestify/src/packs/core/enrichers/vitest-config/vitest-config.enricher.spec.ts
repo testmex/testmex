@@ -57,7 +57,7 @@ async function enrich(mother: WorkspaceMother) {
 
   return enricher.enrich({
     workspace: new Workspace({
-      info: mother.buildWorkspaceState(),
+      state: mother.buildWorkspaceState(),
       tree,
     }),
   });

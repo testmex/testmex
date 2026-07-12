@@ -18,7 +18,7 @@ describe(Finalizer, () => {
     };
     const finalizer = new Finalizer({ commandRunner });
     const workspace = new Workspace({
-      info: new WorkspaceState(),
+      state: new WorkspaceState(),
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
 
@@ -40,7 +40,7 @@ describe(Finalizer, () => {
     };
     const finalizer = new Finalizer({ commandRunner, progressReporter });
     const workspace = new Workspace({
-      info: new WorkspaceState(),
+      state: new WorkspaceState(),
       tree: new Tree({ fileSystem: new FileSystemFake() }),
     });
 
