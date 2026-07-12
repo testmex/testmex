@@ -8,6 +8,7 @@ export const reactHeuristic = defineFileContentHeuristic({
   predicate: (file) =>
     file.tags.includes(fileTags.code) || file.tags.includes(fileTags.test),
   inspect: ({ content }) => {
+    // TIDYUP: replace all simple heuristics like this with a ternary
     if (!REACT_PATTERN.test(content)) {
       return [];
     }

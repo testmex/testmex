@@ -54,7 +54,7 @@ describe(Workspace, () => {
     fileSystem.configure({
       [path]: 'console.log("hello");',
     });
-    
+
     workspace.tag(path, fileTag('code'));
 
     workspace.delete(path);
@@ -65,7 +65,7 @@ describe(Workspace, () => {
 });
 
 function workspaceWithFiles(
-  files: { path: RelativePath; tags?: FileTag[] }[],
+  files: Array<{ path: RelativePath; tags?: FileTag[] }>,
   info: ConstructorParameters<typeof WorkspaceState>[0] = {},
 ): Workspace {
   const workspace = new Workspace({

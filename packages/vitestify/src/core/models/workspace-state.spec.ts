@@ -442,13 +442,13 @@ describe(WorkspaceState, () => {
 });
 
 function stateWithFiles(
-  files: { path: RelativePath; tags?: FileTag[] }[],
+  files: Array<{ path: RelativePath; tags?: FileTag[] }>,
   info: ConstructorParameters<typeof WorkspaceState>[0] = {},
 ): WorkspaceState {
   const state = new WorkspaceState(info);
 
   for (const file of files) {
-    const tags = file.tags ?? [fileTag('tracked')];
+    const tags = file.tags ?? [fileTag('code')];
 
     for (const tag of tags) {
       state.tag(file.path, tag);

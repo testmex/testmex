@@ -9,5 +9,5 @@ export function findingType(type: string): FindingType {
 declare const __findingTypeBrand: unique symbol;
 
 export interface HeuristicResult {
-  findings: { type: FindingType; filePath: RelativePath }[];
+  findings: Array<{ type: FindingType; filePath: RelativePath }>;
 }
