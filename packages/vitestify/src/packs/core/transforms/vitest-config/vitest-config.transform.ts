@@ -4,6 +4,7 @@ import type {
   WorkspaceTree,
   WritableWorkspace,
 } from '../../../../core/domain/workspace';
+import type { FindingType } from '../../../../core/models/finding';
 import {
   relativePath,
   type RelativePath,
@@ -355,23 +356,38 @@ function _formatModuleNameMapperReplacement({
   return `join(import.meta.dirname, '${path}')`;
 }
 
-function _analyzeDomUsage(context: VitestConfigTransformContext): void {
-  // TIDYUP: factor out this pattern in this file
-  context.usesJsdom = context.files.some(
+function _projectHasFinding({
+  files,
+  findingType,
+  projectPath,
+}: {
+  files: FileInfoWithProjects[];
+  findingType: FindingType;
+  projectPath: RelativePath;
+}): boolean {
+  return files.some(
     (file) =>
-      file.findings.includes(findingTypes.dom) &&
-      file.projects.some((project) => project.path === context.projectPath),
+      file.findings.includes(findingType) &&
+      file.projects.some((project) => project.path === projectPath),
   );
+}
+
+function _analyzeDomUsage(context: VitestConfigTransformContext): void {
+  context.usesJsdom = _projectHasFinding({
+    files: context.files,
+    findingType: findingTypes.dom,
+    projectPath: context.projectPath,
+  });
 }
 
 function _maybeAppendJestDomVitestSetup(
   context: VitestConfigTransformContext,
 ): void {
-  const usesTestingLibraryJestDom = context.files.some(
-    (file) =>
-      file.findings.includes(findingTypes.testingLibraryJestDom) &&
-      file.projects.some((project) => project.path === context.projectPath),
-  );
+  const usesTestingLibraryJestDom = _projectHasFinding({
+    files: context.files,
+    findingType: findingTypes.testingLibraryJestDom,
+    projectPath: context.projectPath,
+  });
   if (usesTestingLibraryJestDom) {
     context.setupFiles = [
       ...context.setupFiles,
@@ -381,29 +397,29 @@ function _maybeAppendJestDomVitestSetup(
 }
 
 function _analyzeAngularUsage(context: VitestConfigTransformContext) {
-  context.usesAngular = context.files.some(
-    (file) =>
-      file.findings.includes(findingTypes.angular) &&
-      file.projects.some((project) => project.path === context.projectPath),
-  );
+  context.usesAngular = _projectHasFinding({
+    files: context.files,
+    findingType: findingTypes.angular,
+    projectPath: context.projectPath,
+  });
 }
 
 function _analyzeReactUsage(context: VitestConfigTransformContext) {
-  context.usesReact = context.files.some(
-    (file) =>
-      file.findings.includes(findingTypes.react) &&
-      file.projects.some((project) => project.path === context.projectPath),
-  );
+  context.usesReact = _projectHasFinding({
+    files: context.files,
+    findingType: findingTypes.react,
+    projectPath: context.projectPath,
+  });
 }
 
 function _analyzeTestingLibraryReactUsage(
   context: VitestConfigTransformContext,
 ): void {
-  context.usesTestingLibraryReact = context.files.some(
-    (file) =>
-      file.findings.includes(findingTypes.testingLibraryReact) &&
-      file.projects.some((project) => project.path === context.projectPath),
-  );
+  context.usesTestingLibraryReact = _projectHasFinding({
+    files: context.files,
+    findingType: findingTypes.testingLibraryReact,
+    projectPath: context.projectPath,
+  });
 }
 
 async function _maybeAddTestingLibraryReactSetup(
