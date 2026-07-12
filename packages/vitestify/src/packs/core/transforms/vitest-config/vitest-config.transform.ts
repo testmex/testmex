@@ -1,9 +1,9 @@
 import { dirname, join } from 'node:path/posix';
 import type {
+  FileInfoWithProjects,
   WorkspaceTree,
   WritableWorkspace,
 } from '../../../../core/domain/workspace';
-import type { Finding } from '../../../../core/models/finding';
 import {
   relativePath,
   type RelativePath,
