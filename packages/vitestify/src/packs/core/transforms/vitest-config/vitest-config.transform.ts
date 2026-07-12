@@ -1,9 +1,10 @@
 import { dirname, join } from 'node:path/posix';
 import type {
+  FileInfoWithProjects,
   WorkspaceTree,
   WritableWorkspace,
 } from '../../../../core/domain/workspace';
-import type { Finding } from '../../../../core/models/finding';
+import type { FindingType } from '../../../../core/models/finding';
 import {
   relativePath,
   type RelativePath,
@@ -40,13 +41,13 @@ const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
 export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
   apply: async (workspace, { onProgress } = {}) => {
-    const { commands, findings, tree } = workspace;
+    const { commands, files, tree } = workspace;
     const devDependencies = new Set<string>(['vite-tsconfig-paths', 'vitest']);
     let transformedCount = 0;
 
     for (const project of await _collectProjectsToTransform(workspace)) {
       const context: VitestConfigTransformContext = {
-        findings,
+        files,
         jestConfigPath: project.jestConfigPath,
         moduleNameMappings: [],
         projectPath: project.path,
@@ -84,7 +85,7 @@ export const vitestConfigTransform = defineTransform({
 });
 
 interface VitestConfigTransformContext {
-  findings: readonly Finding[];
+  files: FileInfoWithProjects[];
   projectPath: RelativePath;
   jestConfigPath: RelativePath | null;
   moduleNameMappings: JestModuleNameMapping[];
@@ -355,22 +356,38 @@ function _formatModuleNameMapperReplacement({
   return `join(import.meta.dirname, '${path}')`;
 }
 
-function _analyzeDomUsage(context: VitestConfigTransformContext): void {
-  context.usesJsdom = context.findings.some(
-    (finding) =>
-      finding.type === findingTypes.dom &&
-      finding.projects.some((project) => project.path === context.projectPath),
+function _projectHasFinding({
+  files,
+  findingType,
+  projectPath,
+}: {
+  files: FileInfoWithProjects[];
+  findingType: FindingType;
+  projectPath: RelativePath;
+}): boolean {
+  return files.some(
+    (file) =>
+      file.findings.includes(findingType) &&
+      file.projects.some((project) => project.path === projectPath),
   );
+}
+
+function _analyzeDomUsage(context: VitestConfigTransformContext): void {
+  context.usesJsdom = _projectHasFinding({
+    files: context.files,
+    findingType: findingTypes.dom,
+    projectPath: context.projectPath,
+  });
 }
 
 function _maybeAppendJestDomVitestSetup(
   context: VitestConfigTransformContext,
 ): void {
-  const usesTestingLibraryJestDom = context.findings.some(
-    (finding) =>
-      finding.type === findingTypes.testingLibraryJestDom &&
-      finding.projects.some((project) => project.path === context.projectPath),
-  );
+  const usesTestingLibraryJestDom = _projectHasFinding({
+    files: context.files,
+    findingType: findingTypes.testingLibraryJestDom,
+    projectPath: context.projectPath,
+  });
   if (usesTestingLibraryJestDom) {
     context.setupFiles = [
       ...context.setupFiles,
@@ -380,29 +397,29 @@ function _maybeAppendJestDomVitestSetup(
 }
 
 function _analyzeAngularUsage(context: VitestConfigTransformContext) {
-  context.usesAngular = context.findings.some(
-    (finding) =>
-      finding.type === findingTypes.angular &&
-      finding.projects.some((project) => project.path === context.projectPath),
-  );
+  context.usesAngular = _projectHasFinding({
+    files: context.files,
+    findingType: findingTypes.angular,
+    projectPath: context.projectPath,
+  });
 }
 
 function _analyzeReactUsage(context: VitestConfigTransformContext) {
-  context.usesReact = context.findings.some(
-    (finding) =>
-      finding.type === findingTypes.react &&
-      finding.projects.some((project) => project.path === context.projectPath),
-  );
+  context.usesReact = _projectHasFinding({
+    files: context.files,
+    findingType: findingTypes.react,
+    projectPath: context.projectPath,
+  });
 }
 
 function _analyzeTestingLibraryReactUsage(
   context: VitestConfigTransformContext,
 ): void {
-  context.usesTestingLibraryReact = context.findings.some(
-    (finding) =>
-      finding.type === findingTypes.testingLibraryReact &&
-      finding.projects.some((project) => project.path === context.projectPath),
-  );
+  context.usesTestingLibraryReact = _projectHasFinding({
+    files: context.files,
+    findingType: findingTypes.testingLibraryReact,
+    projectPath: context.projectPath,
+  });
 }
 
 async function _maybeAddTestingLibraryReactSetup(

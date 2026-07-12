@@ -213,6 +213,7 @@ describe(WorkspaceState, () => {
       {
         path: 'apps/my-app/src/app.spec.ts',
         tags: ['test'],
+        findings: [],
         projects: [],
       },
     ]);
@@ -230,6 +231,7 @@ describe(WorkspaceState, () => {
       {
         path: 'apps/my-app/src/app.spec.ts',
         tags: ['test'],
+        findings: [],
         projects: [],
       },
     ]);
@@ -251,26 +253,91 @@ describe(WorkspaceState, () => {
     ]);
   });
 
-  it('updates finding paths after rename', () => {
+  it('stores findings on file info', () => {
+    const state = new WorkspaceState();
+    const path = relativePath('apps/my-app/src/app.spec.ts');
+    const type = findingType('jest-symbol');
+
+    state.applyHeuristicResults({
+      findings: [{ type, filePath: path }],
+    });
+
+    expect(state.getFiles()).toMatchObject([
+      {
+        path: 'apps/my-app/src/app.spec.ts',
+        findings: [findingType('jest-symbol')],
+      },
+    ]);
+  });
+
+  it('dedupes finding types with the same type on the same file', () => {
+    const state = new WorkspaceState();
+    const path = relativePath('apps/my-app/src/app.spec.ts');
+    const type = findingType('jest-symbol');
+
+    state.applyHeuristicResults({
+      findings: [
+        { type, filePath: path },
+        { type, filePath: path },
+      ],
+    });
+
+    expect(state.getFiles()).toMatchObject([
+      {
+        path: 'apps/my-app/src/app.spec.ts',
+        findings: [findingType('jest-symbol')],
+      },
+    ]);
+  });
+
+  it('merges multiple types from one heuristic result', () => {
+    const state = new WorkspaceState();
+    const path = relativePath('apps/my-app/jest.setup.ts');
+
+    state.applyHeuristicResults({
+      findings: [
+        {
+          type: findingType('testing-library-jest-dom'),
+          filePath: path,
+        },
+        {
+          type: findingType('testing-library-react'),
+          filePath: path,
+        },
+      ],
+    });
+
+    expect(state.getFiles()).toMatchObject([
+      {
+        path: 'apps/my-app/jest.setup.ts',
+        findings: [
+          findingType('testing-library-jest-dom'),
+          findingType('testing-library-react'),
+        ],
+      },
+    ]);
+  });
+
+  it('keeps findings after rename', () => {
     const state = new WorkspaceState();
     const originalPath = relativePath('apps/my-app/src/app.spec.ts');
     const newPath = relativePath('apps/my-app/src/app.jest.cts');
 
-    state.addFindings([
-      {
-        type: findingType('jest-symbol'),
-        projects: [],
-        filePath: originalPath,
-      },
-    ]);
+    state.applyHeuristicResults({
+      findings: [
+        {
+          type: findingType('jest-symbol'),
+          filePath: originalPath,
+        },
+      ],
+    });
 
     state.rename(originalPath, newPath);
 
-    expect(state.getFindings()).toEqual([
+    expect(state.getFiles()).toMatchObject([
       {
-        type: findingType('jest-symbol'),
-        projects: [],
-        filePath: 'apps/my-app/src/app.jest.cts',
+        path: 'apps/my-app/src/app.jest.cts',
+        findings: [findingType('jest-symbol')],
       },
     ]);
   });
@@ -293,23 +360,6 @@ describe(WorkspaceState, () => {
         projects: [{ name: 'app-b', path: 'apps/app-b' }],
       },
     ]);
-  });
-
-  it('removes findings after delete', () => {
-    const state = new WorkspaceState();
-    const path = relativePath('apps/my-app/main.ts');
-
-    state.addFindings([
-      {
-        type: findingType('code'),
-        projects: [],
-        filePath: path,
-      },
-    ]);
-
-    state.delete(path);
-
-    expect(state.getFindings()).toEqual([]);
   });
 
   it('invalidates cached files after tag()', () => {
@@ -374,13 +424,13 @@ describe(WorkspaceState, () => {
 });
 
 function stateWithFiles(
-  files: { path: RelativePath; tags?: FileTag[] }[],
+  files: Array<{ path: RelativePath; tags?: FileTag[] }>,
   info: ConstructorParameters<typeof WorkspaceState>[0] = {},
 ): WorkspaceState {
   const state = new WorkspaceState(info);
 
   for (const file of files) {
-    const tags = file.tags ?? [fileTag('tracked')];
+    const tags = file.tags ?? [fileTag('code')];
 
     for (const tag of tags) {
       state.tag(file.path, tag);

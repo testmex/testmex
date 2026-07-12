@@ -5,8 +5,8 @@ import {
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
 import { Analyzer } from '../../../../pipeline/analyzer';
+import { fileTags } from '../../identifiers';
 import { angularHeuristic } from './angular.heuristic';
-import { fileTags, findingTypes } from '../../identifiers';
 
 describe('angularHeuristic', () => {
   it('reports findings in code files', async () => {
@@ -24,7 +24,12 @@ describe('angularHeuristic', () => {
     const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toMatchObject([{ type: findingTypes.angular }]);
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/src/app/app.component.ts',
+        findings: ['angular'],
+      },
+    ]);
   });
 
   it('reports findings in test files', async () => {
@@ -41,7 +46,12 @@ describe('angularHeuristic', () => {
     const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toMatchObject([{ type: findingTypes.angular }]);
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/src/app/app.component.spec.ts',
+        findings: ['angular'],
+      },
+    ]);
   });
 
   it('returns no findings when angular is absent', async () => {
@@ -59,7 +69,12 @@ describe('angularHeuristic', () => {
     const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toEqual([]);
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/src/app/utils.ts',
+        findings: [],
+      },
+    ]);
   });
 
   it('returns no findings when @angular appears without quotes', async () => {
@@ -77,6 +92,11 @@ describe('angularHeuristic', () => {
     const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toEqual([]);
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/src/app/utils.ts',
+        findings: [],
+      },
+    ]);
   });
 });

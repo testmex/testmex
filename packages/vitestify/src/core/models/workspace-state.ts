@@ -1,6 +1,6 @@
 import { relative } from 'node:path/posix';
 import { Entities } from '../utils/entities';
-import type { Finding } from './finding';
+import type { FindingType, HeuristicResult } from './finding';
 import { relativePath, type RelativePath } from './relative-path';
 
 export const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn'] as const;
@@ -15,6 +15,7 @@ export interface Project {
 export interface FileInfo {
   path: RelativePath;
   tags: FileTag[];
+  findings: FindingType[];
 }
 
 export interface FileInfoWithProjects extends FileInfo {
@@ -31,8 +32,10 @@ export function fileTag(tag: string): FileTag {
 
 declare const __fileTagBrand: unique symbol;
 
+export type EnrichmentFileInfo = Omit<FileInfo, 'findings'>;
+
 export interface WorkspaceEnrichment {
-  fileInfos?: FileInfo[];
+  fileInfos?: EnrichmentFileInfo[];
   packageManager?: PackageManager;
   projects?: Project[];
 }
@@ -50,8 +53,6 @@ export class WorkspaceState {
     },
   });
 
-  private readonly _findings: Finding[] = [];
-
   constructor({
     packageManager = 'npm',
     projects = [],
@@ -61,10 +62,6 @@ export class WorkspaceState {
   } = {}) {
     this._packageManager = packageManager;
     this._projects = projects;
-  }
-
-  getFindings(): readonly Finding[] {
-    return this._findings;
   }
 
   getPackageManager(): PackageManager {
@@ -88,11 +85,23 @@ export class WorkspaceState {
           (project) => project.name === nameOrPath || project.path === path,
         ),
       )
-      .map(({ path, tags }) => ({ path, tags }));
+      .map(({ path, tags, findings }) => ({ path, tags, findings }));
   }
 
-  addFindings(findings: Finding[]): void {
-    this._findings.push(...findings);
+  applyHeuristicResults(result: HeuristicResult): void {
+    for (const { type, filePath } of result.findings) {
+      const entity =
+        this._fileEntities.get(filePath) ??
+        this._fileEntities.create(filePath, {
+          path: filePath,
+          tags: [],
+          findings: [],
+        });
+
+      if (!entity.findings.includes(type)) {
+        entity.findings = [...entity.findings, type];
+      }
+    }
   }
 
   applyEnrichment(enrichment: WorkspaceEnrichment): void {
@@ -117,18 +126,16 @@ export class WorkspaceState {
 
   delete(path: RelativePath): void {
     this._fileEntities.delete(path);
-    this._removeFindingsForPath(path);
   }
 
   rename(originalPath: RelativePath, newPath: RelativePath): void {
     this._moveFileEntity(originalPath, newPath);
-    this._updateFindingPaths(originalPath, newPath);
   }
 
   tag(path: RelativePath, tag: FileTag): void {
     const entity =
       this._fileEntities.get(path) ??
-      this._fileEntities.create(path, { path, tags: [] });
+      this._fileEntities.create(path, { path, tags: [], findings: [] });
 
     if (!entity.tags.includes(tag)) {
       entity.tags = [...entity.tags, tag];
@@ -195,6 +202,7 @@ export class WorkspaceState {
       this._fileEntities.create(newPath, {
         path: newPath,
         tags: entity.tags,
+        findings: entity.findings,
       });
       return;
     }
@@ -208,24 +216,15 @@ export class WorkspaceState {
     }
 
     existingEntity.tags = mergedTags;
-  }
 
-  private _updateFindingPaths(
-    originalPath: RelativePath,
-    newPath: RelativePath,
-  ): void {
-    for (const finding of this._findings) {
-      if (finding.filePath === originalPath) {
-        finding.filePath = newPath;
+    const mergedFindings = [...existingEntity.findings];
+
+    for (const finding of entity.findings) {
+      if (!mergedFindings.includes(finding)) {
+        mergedFindings.push(finding);
       }
     }
-  }
 
-  private _removeFindingsForPath(path: RelativePath): void {
-    for (let i = this._findings.length - 1; i >= 0; i--) {
-      if (this._findings[i].filePath === path) {
-        this._findings.splice(i, 1);
-      }
-    }
+    existingEntity.findings = mergedFindings;
   }
 }

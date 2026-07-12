@@ -18,7 +18,7 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
     name: args.name,
     apply: async (workspace, { onProgress } = {}) => {
-      const { findings, tree } = workspace;
+      const { tree } = workspace;
 
       const fileTags = 'fileTags' in args ? args.fileTags : undefined;
 
@@ -38,11 +38,9 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
 
       const findingPaths =
         'findingType' in args
-          ? findings
-              .filter((finding) => finding.type === args.findingType)
-              .flatMap((finding) =>
-                finding.filePath === undefined ? [] : [finding.filePath],
-              )
+          ? workspace.files
+              .filter((file) => file.findings.includes(args.findingType))
+              .map((file) => file.path)
           : undefined;
 
       const paths =

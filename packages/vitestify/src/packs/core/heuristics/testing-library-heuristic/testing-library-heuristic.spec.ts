@@ -24,8 +24,11 @@ describe('testingLibraryHeuristic', () => {
     const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toMatchObject([
-      { type: findingTypes.testingLibraryJestDom },
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/jest.setup.ts',
+        findings: [findingTypes.testingLibraryJestDom],
+      },
     ]);
   });
 
@@ -47,9 +50,14 @@ import { render } from '@testing-library/react';
     const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toMatchObject([
-      { type: findingTypes.testingLibraryJestDom },
-      { type: findingTypes.testingLibraryReact },
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/jest.setup.ts',
+        findings: [
+          findingTypes.testingLibraryJestDom,
+          findingTypes.testingLibraryReact,
+        ],
+      },
     ]);
   });
 
@@ -67,8 +75,11 @@ import { render } from '@testing-library/react';
     const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toMatchObject([
-      { type: findingTypes.testingLibraryReact },
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/src/app/app.spec.tsx',
+        findings: [findingTypes.testingLibraryReact],
+      },
     ]);
   });
 
@@ -87,6 +98,11 @@ import { render } from '@testing-library/react';
     const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toEqual([]);
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/src/app/utils.ts',
+        findings: [],
+      },
+    ]);
   });
 });

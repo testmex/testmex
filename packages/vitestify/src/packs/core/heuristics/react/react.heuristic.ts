@@ -7,17 +7,6 @@ export const reactHeuristic = defineFileContentHeuristic({
   name: 'react',
   predicate: (file) =>
     file.tags.includes(fileTags.code) || file.tags.includes(fileTags.test),
-  inspect: ({ file, projects, content }) => {
-    if (!REACT_PATTERN.test(content)) {
-      return [];
-    }
-
-    return [
-      {
-        type: findingTypes.react,
-        projects,
-        filePath: file.path,
-      },
-    ];
-  },
+  inspect: ({ content }) =>
+    REACT_PATTERN.test(content) ? [findingTypes.react] : [],
 });

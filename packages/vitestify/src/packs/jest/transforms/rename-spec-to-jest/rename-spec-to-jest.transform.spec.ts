@@ -6,6 +6,7 @@ import {
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
 import { runTransform } from '../../../../testing/run-transform';
+import { findingTypes } from '../../identifiers';
 import { jestSymbolHeuristic } from '../../heuristics/jest-symbol/jest-symbol.heuristic';
 import { renameSpecToJestTransform } from './rename-spec-to-jest.transform';
 
@@ -35,11 +36,7 @@ describe(renameSpecToJestTransform.name, () => {
       {
         path: 'apps/my-app/src/app.jest.cts',
         tags: ['test'],
-      },
-    ]);
-    expect.soft(workspace.findings).toMatchObject([
-      {
-        filePath: 'apps/my-app/src/app.jest.cts',
+        findings: [findingTypes.jestSymbol],
       },
     ]);
   });

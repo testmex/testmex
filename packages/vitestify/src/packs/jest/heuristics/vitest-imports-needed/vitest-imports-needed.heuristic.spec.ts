@@ -25,8 +25,11 @@ describe('vitestImportsNeededHeuristic', () => {
     const analyzer = new Analyzer({ heuristics: [vitestImportsNeededHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toMatchObject([
-      { type: findingTypes.vitestImportsNeeded },
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/src/testing/utils.ts',
+        findings: [findingTypes.vitestImportsNeeded],
+      },
     ]);
   });
 });
