@@ -1,0 +1,25 @@
+name: Self-Heal
+
+on:
+  workflow_run:
+    workflows: ['test']
+    types:
+      - completed
+
+permissions:
+  actions: read
+
+jobs:
+  trigger-cursor:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cursor webhook
+        env:
+          CURSOR_WEBHOOK_TOKEN: ${{ secrets.CURSOR_AUTOMATION_WEBHOOK_TOKEN }}
+        run: |
+          curl -sf -X POST \
+            "https://api2.cursor.sh/automations/webhook/181302bc-75f6-11f1-a7d1-d6b4613131ce" \
+            -H "Authorization: Bearer ${CURSOR_WEBHOOK_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg branch "${{ github.event.workflow_run.head_branch }}" '{branchName: $branch}')"
