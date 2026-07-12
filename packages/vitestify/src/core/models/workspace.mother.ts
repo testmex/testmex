@@ -69,6 +69,7 @@ export class WorkspaceMother {
     return Object.values(this._state.appFiles).map(({ path, tags }) => ({
       path,
       tags,
+      findings: [],
     }));
   }
 }

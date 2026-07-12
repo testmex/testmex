@@ -194,7 +194,6 @@ describe(WorkspaceState, () => {
         {
           path: relativePath('src/app.ts'),
           tags: [fileTag('code')],
-          findings: [],
         },
       ],
     });

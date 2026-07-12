@@ -32,8 +32,10 @@ export function fileTag(tag: string): FileTag {
 
 declare const __fileTagBrand: unique symbol;
 
+export type EnrichmentFileInfo = Omit<FileInfo, 'findings'>;
+
 export interface WorkspaceEnrichment {
-  fileInfos?: FileInfo[];
+  fileInfos?: EnrichmentFileInfo[];
   packageManager?: PackageManager;
   projects?: Project[];
 }

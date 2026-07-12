@@ -1,9 +1,6 @@
 import { basename, dirname, join } from 'node:path/posix';
-import type {
-  FileInfo,
-  FileTag,
-  ReadonlyWorkspace,
-} from '../../../core/domain/workspace';
+import type { FileTag, ReadonlyWorkspace } from '../../../core/domain/workspace';
+import type { EnrichmentFileInfo } from '../../../core/models/workspace-state';
 import { Enricher, type EnricherOptions } from '../../../core/models/enricher';
 import {
   relativePath,
@@ -102,8 +99,8 @@ export class JestEnricher implements Enricher {
   private async _discoverJestSetupFileInfos(
     workspace: ReadonlyWorkspace,
     jestConfigPaths: RelativePath[],
-  ): Promise<FileInfo[]> {
-    const fileInfos: FileInfo[] = [];
+  ): Promise<EnrichmentFileInfo[]> {
+    const fileInfos: EnrichmentFileInfo[] = [];
 
     for (const jestConfigPath of jestConfigPaths) {
       const jestConfigContent =

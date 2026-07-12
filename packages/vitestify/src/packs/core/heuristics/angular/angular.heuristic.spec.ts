@@ -5,8 +5,8 @@ import {
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
 import { Analyzer } from '../../../../pipeline/analyzer';
+import { fileTags } from '../../identifiers';
 import { angularHeuristic } from './angular.heuristic';
-import { fileTags, findingTypes } from '../../identifiers';
 
 describe('angularHeuristic', () => {
   it('reports findings in code files', async () => {
