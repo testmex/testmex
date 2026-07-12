@@ -27,7 +27,7 @@ describe('angularHeuristic', () => {
     expect(workspace.files).toMatchObject([
       {
         path: 'apps/my-app/src/app/app.component.ts',
-        findings: [findingTypes.angular],
+        findings: ['angular'],
       },
     ]);
   });
@@ -49,7 +49,7 @@ describe('angularHeuristic', () => {
     expect(workspace.files).toMatchObject([
       {
         path: 'apps/my-app/src/app/app.component.spec.ts',
-        findings: [findingTypes.angular],
+        findings: ['angular'],
       },
     ]);
   });

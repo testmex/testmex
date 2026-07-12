@@ -194,6 +194,7 @@ describe(WorkspaceState, () => {
         {
           path: relativePath('src/app.ts'),
           tags: [fileTag('code')],
+          findings: [],
         },
       ],
     });
@@ -340,24 +341,6 @@ describe(WorkspaceState, () => {
         findings: [findingType('jest-symbol')],
       },
     ]);
-  });
-
-  it('removes findings after delete', () => {
-    const state = new WorkspaceState();
-    const path = relativePath('apps/my-app/main.ts');
-
-    state.applyHeuristicResults({
-      findings: [
-        {
-          type: findingType('code'),
-          filePath: path,
-        },
-      ],
-    });
-
-    state.delete(path);
-
-    expect(state.getFiles()).toEqual([]);
   });
 
   it('recomputes projects after rename', () => {

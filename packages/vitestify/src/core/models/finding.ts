@@ -8,6 +8,7 @@ export function findingType(type: string): FindingType {
 
 declare const __findingTypeBrand: unique symbol;
 
+// TIDUP: move to heuristic.ts
 export interface HeuristicResult {
   findings: Array<{ type: FindingType; filePath: RelativePath }>;
 }

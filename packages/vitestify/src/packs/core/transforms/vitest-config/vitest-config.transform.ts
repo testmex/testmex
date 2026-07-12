@@ -356,6 +356,7 @@ function _formatModuleNameMapperReplacement({
 }
 
 function _analyzeDomUsage(context: VitestConfigTransformContext): void {
+  // TIDYUP: factor out this pattern in this file
   context.usesJsdom = context.files.some(
     (file) =>
       file.findings.includes(findingTypes.dom) &&
