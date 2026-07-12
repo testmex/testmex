@@ -5,6 +5,7 @@ export class NullProgressReporter implements ProgressReporter {
     return {
       message: () => undefined,
       done: () => undefined,
+      error: () => undefined,
     };
   }
 }

@@ -37,6 +37,10 @@ export class ThrottledProgressReporter implements ProgressReporter {
         subscription.unsubscribe();
         innerSpinner.done(message);
       },
+      error: (message: string) => {
+        subscription.unsubscribe();
+        innerSpinner.error(message);
+      },
     };
   }
 }

@@ -1,6 +1,7 @@
 import type { ProgressReporter, ProgressSpinner } from './progress-reporter';
 
 export class ProgressReporterFake implements ProgressReporter {
+  private readonly _errors: string[] = [];
   private readonly _messages: string[] = [];
 
   createSpinner(): ProgressSpinner {
@@ -13,6 +14,9 @@ export class ProgressReporterFake implements ProgressReporter {
           this._messages.push(message);
         }
       },
+      error: (message: string) => {
+        this._errors.push(message);
+      },
     };
   }
 
@@ -22,5 +26,9 @@ export class ProgressReporterFake implements ProgressReporter {
 
   messages(): readonly string[] {
     return this._messages;
+  }
+
+  errors(): readonly string[] {
+    return this._errors;
   }
 }
