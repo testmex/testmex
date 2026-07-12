@@ -3,7 +3,7 @@ import { fileTags as coreFileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
 
 const replaceApiPattern =
-  /\bfit\s*(?:\(|\.)|(?:it|test)\.(?:only|skip)\.failing\b|(?:it|test)\.failing\b|\bxit\s*\(|\bxdescribe\s*\(|\bxtest\s*\(|\bfdescribe\s*\(/;
+  /\b[xf](?:describe|it|test)(?:\.|\s*\()|(?:it|test)(?:\.(?:only|skip))?\.failing\b/;
 
 export const replaceApiHeuristic = defineFileContentHeuristic({
   name: 'replace-api',
