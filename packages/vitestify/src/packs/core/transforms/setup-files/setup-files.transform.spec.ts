@@ -39,6 +39,7 @@ describe('setup-files', () => {
         },
       ],
       tags: ['code'],
+      findings: [],
     });
   });
 

@@ -1,4 +1,4 @@
-import type { FindingType, HeuristicResult } from '../models/finding';
+import type { FindingType } from '../models/finding';
 import { defineHeuristic, type Heuristic } from '../models/heuristic';
 import type { FileInfo } from './workspace';
 
