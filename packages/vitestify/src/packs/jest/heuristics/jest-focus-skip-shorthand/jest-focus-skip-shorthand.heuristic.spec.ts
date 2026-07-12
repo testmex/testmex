@@ -27,11 +27,10 @@ describe('jestFocusSkipShorthandHeuristic', () => {
     });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toEqual([
+    expect(workspace.files).toMatchObject([
       {
-        type: findingTypes.jestFocusSkipShorthand,
-        projects: [{ name: 'my-app', path: 'apps/my-app' }],
-        filePath: 'apps/my-app/src/testing/utils.ts',
+        path: 'apps/my-app/src/testing/utils.ts',
+        findings: [findingTypes.jestFocusSkipShorthand],
       },
     ]);
   });

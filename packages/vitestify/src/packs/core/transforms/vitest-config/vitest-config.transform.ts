@@ -40,13 +40,13 @@ const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
 export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
   apply: async (workspace, { onProgress } = {}) => {
-    const { commands, findings, tree } = workspace;
+    const { commands, files, tree } = workspace;
     const devDependencies = new Set<string>(['vite-tsconfig-paths', 'vitest']);
     let transformedCount = 0;
 
     for (const project of await _collectProjectsToTransform(workspace)) {
       const context: VitestConfigTransformContext = {
-        findings,
+        files,
         jestConfigPath: project.jestConfigPath,
         moduleNameMappings: [],
         projectPath: project.path,
@@ -84,7 +84,7 @@ export const vitestConfigTransform = defineTransform({
 });
 
 interface VitestConfigTransformContext {
-  findings: readonly Finding[];
+  files: FileInfoWithProjects[];
   projectPath: RelativePath;
   jestConfigPath: RelativePath | null;
   moduleNameMappings: JestModuleNameMapping[];
@@ -356,20 +356,20 @@ function _formatModuleNameMapperReplacement({
 }
 
 function _analyzeDomUsage(context: VitestConfigTransformContext): void {
-  context.usesJsdom = context.findings.some(
-    (finding) =>
-      finding.type === findingTypes.dom &&
-      finding.projects.some((project) => project.path === context.projectPath),
+  context.usesJsdom = context.files.some(
+    (file) =>
+      file.findings.includes(findingTypes.dom) &&
+      file.projects.some((project) => project.path === context.projectPath),
   );
 }
 
 function _maybeAppendJestDomVitestSetup(
   context: VitestConfigTransformContext,
 ): void {
-  const usesTestingLibraryJestDom = context.findings.some(
-    (finding) =>
-      finding.type === findingTypes.testingLibraryJestDom &&
-      finding.projects.some((project) => project.path === context.projectPath),
+  const usesTestingLibraryJestDom = context.files.some(
+    (file) =>
+      file.findings.includes(findingTypes.testingLibraryJestDom) &&
+      file.projects.some((project) => project.path === context.projectPath),
   );
   if (usesTestingLibraryJestDom) {
     context.setupFiles = [
@@ -380,28 +380,28 @@ function _maybeAppendJestDomVitestSetup(
 }
 
 function _analyzeAngularUsage(context: VitestConfigTransformContext) {
-  context.usesAngular = context.findings.some(
-    (finding) =>
-      finding.type === findingTypes.angular &&
-      finding.projects.some((project) => project.path === context.projectPath),
+  context.usesAngular = context.files.some(
+    (file) =>
+      file.findings.includes(findingTypes.angular) &&
+      file.projects.some((project) => project.path === context.projectPath),
   );
 }
 
 function _analyzeReactUsage(context: VitestConfigTransformContext) {
-  context.usesReact = context.findings.some(
-    (finding) =>
-      finding.type === findingTypes.react &&
-      finding.projects.some((project) => project.path === context.projectPath),
+  context.usesReact = context.files.some(
+    (file) =>
+      file.findings.includes(findingTypes.react) &&
+      file.projects.some((project) => project.path === context.projectPath),
   );
 }
 
 function _analyzeTestingLibraryReactUsage(
   context: VitestConfigTransformContext,
 ): void {
-  context.usesTestingLibraryReact = context.findings.some(
-    (finding) =>
-      finding.type === findingTypes.testingLibraryReact &&
-      finding.projects.some((project) => project.path === context.projectPath),
+  context.usesTestingLibraryReact = context.files.some(
+    (file) =>
+      file.findings.includes(findingTypes.testingLibraryReact) &&
+      file.projects.some((project) => project.path === context.projectPath),
   );
 }
 

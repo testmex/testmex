@@ -24,7 +24,12 @@ describe('reactHeuristic', () => {
     const analyzer = new Analyzer({ heuristics: [reactHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toMatchObject([{ type: findingTypes.react }]);
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/src/app/app.tsx',
+        findings: [findingTypes.react],
+      },
+    ]);
   });
 
   it('returns no findings when react appears without quotes', async () => {
@@ -42,6 +47,11 @@ describe('reactHeuristic', () => {
     const analyzer = new Analyzer({ heuristics: [reactHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toEqual([]);
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/src/app/utils.ts',
+        findings: [],
+      },
+    ]);
   });
 });

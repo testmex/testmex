@@ -25,6 +25,11 @@ describe('jestSymbolHeuristic', () => {
     const analyzer = new Analyzer({ heuristics: [jestSymbolHeuristic] });
     await analyzer.analyze(workspace);
 
-    expect(workspace.findings).toMatchObject([{ type: findingTypes.jestSymbol }]);
+    expect(workspace.files).toMatchObject([
+      {
+        path: 'apps/my-app/src/testing/utils.ts',
+        findings: [findingTypes.jestSymbol],
+      },
+    ]);
   });
 });

@@ -213,6 +213,7 @@ describe(WorkspaceState, () => {
       {
         path: 'apps/my-app/src/app.spec.ts',
         tags: ['test'],
+        findings: [],
         projects: [],
       },
     ]);
@@ -230,6 +231,7 @@ describe(WorkspaceState, () => {
       {
         path: 'apps/my-app/src/app.spec.ts',
         tags: ['test'],
+        findings: [],
         projects: [],
       },
     ]);
@@ -251,54 +253,111 @@ describe(WorkspaceState, () => {
     ]);
   });
 
-  it.todo('stores findings on file info', () => {
-    // Create WorkspaceState
-    // Call applyHeuristicResults({ findings: [{ type, filePath }] })
-    // Assert getFiles() includes the file with findings: [type]
+  it('stores findings on file info', () => {
+    const state = new WorkspaceState();
+    const path = relativePath('apps/my-app/src/app.spec.ts');
+    const type = findingType('jest-symbol');
+
+    state.applyHeuristicResults({
+      findings: [{ type, filePath: path }],
+    });
+
+    expect(state.getFiles()).toMatchObject([
+      {
+        path: 'apps/my-app/src/app.spec.ts',
+        findings: [findingType('jest-symbol')],
+      },
+    ]);
   });
 
-  it.todo('dedupes finding types with the same type on the same file', () => {
-    // Apply the same finding type twice for one file
-    // Assert findings contains the type only once
+  it('dedupes finding types with the same type on the same file', () => {
+    const state = new WorkspaceState();
+    const path = relativePath('apps/my-app/src/app.spec.ts');
+    const type = findingType('jest-symbol');
+
+    state.applyHeuristicResults({
+      findings: [
+        { type, filePath: path },
+        { type, filePath: path },
+      ],
+    });
+
+    expect(state.getFiles()).toMatchObject([
+      {
+        path: 'apps/my-app/src/app.spec.ts',
+        findings: [findingType('jest-symbol')],
+      },
+    ]);
   });
 
-  it.todo('merges multiple types from one heuristic result', () => {
-    // Apply one result with multiple types for the same file
-    // Assert all types are stored on the file
+  it('merges multiple types from one heuristic result', () => {
+    const state = new WorkspaceState();
+    const path = relativePath('apps/my-app/jest.setup.ts');
+
+    state.applyHeuristicResults({
+      findings: [
+        {
+          type: findingType('testing-library-jest-dom'),
+          filePath: path,
+        },
+        {
+          type: findingType('testing-library-react'),
+          filePath: path,
+        },
+      ],
+    });
+
+    expect(state.getFiles()).toMatchObject([
+      {
+        path: 'apps/my-app/jest.setup.ts',
+        findings: [
+          findingType('testing-library-jest-dom'),
+          findingType('testing-library-react'),
+        ],
+      },
+    ]);
   });
 
-  it.todo('keeps findings after rename', () => {
-    // Apply findings, rename the file
-    // Assert findings remain on the renamed file entity
-  });
-
-  it.todo('removes findings after delete', () => {
-    // Apply findings, delete the file
-    // Assert the file entity (and findings) are gone
-  });
-
-  it('updates finding paths after rename', () => {
+  it('keeps findings after rename', () => {
     const state = new WorkspaceState();
     const originalPath = relativePath('apps/my-app/src/app.spec.ts');
     const newPath = relativePath('apps/my-app/src/app.jest.cts');
 
-    state.addFindings([
-      {
-        type: findingType('jest-symbol'),
-        projects: [],
-        filePath: originalPath,
-      },
-    ]);
+    state.applyHeuristicResults({
+      findings: [
+        {
+          type: findingType('jest-symbol'),
+          filePath: originalPath,
+        },
+      ],
+    });
 
     state.rename(originalPath, newPath);
 
-    expect(state.getFindings()).toEqual([
+    expect(state.getFiles()).toMatchObject([
       {
-        type: findingType('jest-symbol'),
-        projects: [],
-        filePath: 'apps/my-app/src/app.jest.cts',
+        path: 'apps/my-app/src/app.jest.cts',
+        findings: [findingType('jest-symbol')],
       },
     ]);
+  });
+
+  it('removes findings after delete', () => {
+    const state = new WorkspaceState();
+    const path = relativePath('apps/my-app/main.ts');
+
+    state.applyHeuristicResults({
+      findings: [
+        {
+          type: findingType('code'),
+          filePath: path,
+        },
+      ],
+    });
+
+    state.delete(path);
+
+    expect(state.getFiles()).toEqual([]);
   });
 
   it('recomputes projects after rename', () => {
@@ -319,23 +378,6 @@ describe(WorkspaceState, () => {
         projects: [{ name: 'app-b', path: 'apps/app-b' }],
       },
     ]);
-  });
-
-  it('removes findings after delete', () => {
-    const state = new WorkspaceState();
-    const path = relativePath('apps/my-app/main.ts');
-
-    state.addFindings([
-      {
-        type: findingType('code'),
-        projects: [],
-        filePath: path,
-      },
-    ]);
-
-    state.delete(path);
-
-    expect(state.getFindings()).toEqual([]);
   });
 
   it('invalidates cached files after tag()', () => {
