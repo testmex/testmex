@@ -1,4 +1,4 @@
-import type { Finding } from '../models/finding';
+import type { HeuristicResult } from '../models/finding';
 import type { RelativePath } from '../models/relative-path';
 import {
   type FileInfo,
@@ -49,10 +49,6 @@ export class Workspace {
     return this._state.getFiles();
   }
 
-  get findings(): readonly Finding[] {
-    return this._state.getFindings();
-  }
-
   get packageManager(): PackageManager {
     return this._state.getPackageManager();
   }
@@ -73,8 +69,8 @@ export class Workspace {
     return this._state.getProjectFiles(nameOrPath);
   }
 
-  addFindings(findings: Finding[]): void {
-    this._state.addFindings(findings);
+  applyHeuristicResults(result: HeuristicResult): void {
+    this._state.applyHeuristicResults(result);
   }
 
   applyEnrichment(enrichment: WorkspaceEnrichment): void {
@@ -101,7 +97,7 @@ export class Workspace {
 export interface ReadonlyWorkspace
   extends Pick<
     Workspace,
-    'files' | 'findings' | 'getProjectFiles' | 'packageManager' | 'projects'
+    'files' | 'getProjectFiles' | 'packageManager' | 'projects'
   > {
   readonly tree: ReadonlyTree;
 }
@@ -111,7 +107,6 @@ export interface WritableWorkspace
     Workspace,
     | 'commands'
     | 'files'
-    | 'findings'
     | 'packageManager'
     | 'projects'
     | 'getProjectFiles'

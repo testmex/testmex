@@ -24,7 +24,7 @@ export class Analyzer {
 
     for (const [index, heuristic] of this._heuristics.entries()) {
       spinner.message(`Analyzing [${index + 1}/${total}] ${heuristic.name}`);
-      workspace.addFindings(await heuristic.inspect(workspace.asReadonly()));
+      workspace.applyHeuristicResults(await heuristic.inspect(workspace.asReadonly()));
     }
 
     spinner.done(`Analyzed ${total} heuristics`);
