@@ -44,7 +44,7 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
           transformedCount++;
         }
 
-        /* Give the opportunity to `clack` to intercept CTRL+C. */
+        /* Give a run opportunity to things like `clack` intercepting CTRL+C. */
         await yieldToEventLoop();
       }
 

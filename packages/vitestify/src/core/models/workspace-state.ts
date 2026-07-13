@@ -1,4 +1,3 @@
-import { relative } from 'node:path/posix';
 import { Entities } from '../utils/entities';
 import type { FindingType, HeuristicResult } from './finding';
 import { relativePath, type RelativePath } from './relative-path';
@@ -61,7 +60,7 @@ export class WorkspaceState {
     projects?: Project[];
   } = {}) {
     this._packageManager = packageManager;
-    this._projects = projects;
+    this._projects = this._deduplicateProjects(projects);
   }
 
   getPackageManager(): PackageManager {
@@ -112,7 +111,10 @@ export class WorkspaceState {
     }
 
     if (enrichment.projects !== undefined) {
-      this._projects = [...this._projects, ...enrichment.projects];
+      this._projects = this._deduplicateProjects([
+        ...this._projects,
+        ...enrichment.projects,
+      ]);
       /* We invalidate instead of recomputing because we will generally
        * receive multiple enrichments during the scanning phase
        * before receiving the getFiles calls during the transform phase. */
@@ -143,15 +145,22 @@ export class WorkspaceState {
   }
 
   private _findProjectsForFile(file: FileInfo): Project[] {
-    const matches = this._projects.filter((project) => {
-      const pathRelativeToProject = relative(project.path, file.path);
+    return this._projects.filter((project) =>
+      this._fileBelongsToProject(file.path, project.path),
+    );
+  }
 
-      return (
-        pathRelativeToProject === '' || !pathRelativeToProject.startsWith('..')
-      );
-    });
+  private _fileBelongsToProject(
+    filePath: RelativePath,
+    projectPath: RelativePath,
+  ): boolean {
+    if (projectPath === '.') {
+      return true;
+    }
 
-    return this._deduplicateProjects(matches);
+    return (
+      filePath === projectPath || filePath.startsWith(`${projectPath}/`)
+    );
   }
 
   private _deduplicateProjects(projects: Project[]): Project[] {

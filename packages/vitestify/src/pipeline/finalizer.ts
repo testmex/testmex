@@ -3,11 +3,8 @@ import type { CommandRunner } from '../core/ports/command-runner';
 import { NullProgressReporter } from '../core/ports/null-progress-reporter';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
 
-const COMMAND_MESSAGE_PREFIX = {
-  running: 'Running command',
-  success: 'Command success',
-  error: 'Command failed',
-} as const;
+const body = (phase: string, detail?: string) =>
+  detail === undefined ? phase : `${phase} · ${detail}`;
 
 export class Finalizer {
   private readonly _commandRunner: CommandRunner;
@@ -26,30 +23,25 @@ export class Finalizer {
 
   async finalize(workspace: Workspace): Promise<void> {
     const commands = workspace.commands.all();
+    const stepCount = commands.length;
+
     for (const [index, command] of commands.entries()) {
-      const step = index + 1;
-      const total = commands.length;
       const commandString = command.join(' ');
-      const spinner = this._progressReporter.createSpinner();
+      const progressStep = this._progressReporter.createStep({
+        name: `command: ${commandString}`,
+        stepNumber: index + 1,
+        stepCount,
+      });
 
-      const formatCommandMessage = (
-        phase: keyof typeof COMMAND_MESSAGE_PREFIX,
-        message?: string,
-      ) => {
-        const prefix = COMMAND_MESSAGE_PREFIX[phase];
-        const line = `${prefix} [${step}/${total}] ${commandString}`;
-        return message === undefined ? line : `${line} · ${message}`;
-      };
-
-      spinner.message(formatCommandMessage('running'));
+      progressStep.message('running');
 
       try {
         await this._commandRunner.run(command);
-        spinner.done(formatCommandMessage('success'));
+        progressStep.done('succeeded');
       } catch (error) {
-        spinner.error(
-          formatCommandMessage(
-            'error',
+        progressStep.error(
+          body(
+            'failed',
             error instanceof Error ? error.message : String(error),
           ),
         );

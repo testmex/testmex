@@ -4,7 +4,7 @@ import type { Pack } from '../core/models/pack';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
-import { ClackProgressReporter } from '../infra/clack-progress-reporter';
+import { TerminalProgressReporter } from '../infra/terminal-progress-reporter';
 import { FileSystemImpl } from '../infra/file-system.impl';
 import angularCliPack from '../packs/angular-cli';
 import corePack from '../packs/core';
@@ -35,7 +35,7 @@ export class Vitestify {
     commandRunner = new CommandRunnerPooled({ maxConcurrent: 10 }),
     fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
     progressReporter = new ThrottledProgressReporter(
-      new ClackProgressReporter(),
+      new TerminalProgressReporter(),
     ),
   }: {
     commandRunner?: CommandRunner;

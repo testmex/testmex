@@ -31,37 +31,34 @@ export class Scanner {
 
     const workspace = new Workspace({ tree });
 
-    const total = enrichers.length;
+    const stepCount = enrichers.length;
 
     for (const [index, enricher] of enrichers.entries()) {
-      const step = index + 1;
-      const spinner = this._progressReporter.createSpinner();
+      const progressStep = this._progressReporter.createStep({
+        name: enricher.name,
+        stepNumber: index + 1,
+        stepCount,
+      });
       let lastMessage: string | undefined;
 
-      const formatEnricherMessage = (
-        phase: 'scanning' | 'scanned',
-        message?: string,
-      ) => {
-        const prefix = phase === 'scanning' ? 'Scanning' : 'Scanned ';
-        const line = `${prefix} [${step}/${total}] ${enricher.name}`;
-        return message === undefined ? line : `${line} · ${message}`;
-      };
-
-      spinner.message(formatEnricherMessage('scanning'));
+      progressStep.message('scanning');
 
       const result = await enricher.enrich({
         workspace: workspace.asReadonly(),
         onProgress: (message) => {
           lastMessage = message;
-          spinner.message(formatEnricherMessage('scanning', message));
+          progressStep.message(_formatStepMessage('scanning', message));
         },
       });
 
       workspace.applyEnrichment(result);
 
-      spinner.done(formatEnricherMessage('scanned', lastMessage));
+      progressStep.done(_formatStepMessage('scanned', lastMessage));
     }
 
     return workspace;
   }
 }
+
+const _formatStepMessage = (phase: string, detail?: string) =>
+  detail === undefined ? phase : `${phase} · ${detail}`;

@@ -31,6 +31,17 @@ describe(WorkspaceState, () => {
     ]);
   });
 
+  it('does not match sibling project paths', () => {
+    const state = stateWithFiles(
+      [{ path: relativePath('libs/foo-bar/index.ts') }],
+      { projects: [{ path: relativePath('libs/foo') }] },
+    );
+
+    expect(state.getFiles()).toMatchObject([
+      { path: 'libs/foo-bar/index.ts', projects: [] },
+    ]);
+  });
+
   it('returns a file with multiple projects when it belongs to different paths', () => {
     const state = stateWithFiles(
       [{ path: relativePath('libs/frontend/a/index.ts') }],
@@ -420,6 +431,33 @@ describe(WorkspaceState, () => {
       { name: 'my-app', path: 'apps/my-app' },
     ]);
     expect(state.getPackageManager()).toBe('pnpm');
+  });
+
+  it('getFiles() completes within 50ms for 100 projects and 1000 files', () => {
+    const PROJECT_COUNT = 100;
+    const FILES_PER_PROJECT = 10;
+
+    const projects = Array.from({ length: PROJECT_COUNT }, (_, i) => ({
+      name: `project-${i}`,
+      path: relativePath(`apps/project-${i}`),
+    }));
+
+    const state = new WorkspaceState({ projects });
+
+    for (let i = 0; i < PROJECT_COUNT; i++) {
+      for (let j = 0; j < FILES_PER_PROJECT; j++) {
+        state.tag(
+          relativePath(`apps/project-${i}/src/file-${j}.ts`),
+          fileTag('code'),
+        );
+      }
+    }
+
+    const start = performance.now();
+    state.getFiles();
+    const durationMs = performance.now() - start;
+
+    expect(durationMs).toBeLessThan(50);
   });
 });
 

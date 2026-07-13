@@ -50,10 +50,10 @@ describe(Finalizer, () => {
     await finalizer.finalize(workspace);
 
     expect(progressReporter.messages()).toEqual([
-      'Running command [1/2] npm install vitest',
-      'Command success [1/2] npm install vitest',
-      'Running command [2/2] npx nx add @nx/vitest',
-      'Command success [2/2] npx nx add @nx/vitest',
+      '[1/2] command: npm install vitest · running',
+      '[1/2] command: npm install vitest · succeeded',
+      '[2/2] command: npx nx add @nx/vitest · running',
+      '[2/2] command: npx nx add @nx/vitest · succeeded',
     ]);
   });
 
@@ -74,7 +74,7 @@ describe(Finalizer, () => {
     await finalizer.finalize(workspace);
 
     expect(progressReporter.errors()).toEqual([
-      'Command failed [1/1] npm install vitest · install failed',
+      '[1/1] command: npm install vitest · failed · install failed',
     ]);
   });
 
@@ -102,13 +102,13 @@ describe(Finalizer, () => {
     ]);
     expect
       .soft(progressReporter.errors())
-      .toEqual(['Command failed [1/2] npm install vitest · install failed']);
+      .toEqual(['[1/2] command: npm install vitest · failed · install failed']);
     expect
       .soft(progressReporter.messages())
       .toEqual([
-        'Running command [1/2] npm install vitest',
-        'Running command [2/2] npx nx add @nx/vitest',
-        'Command success [2/2] npx nx add @nx/vitest',
+        '[1/2] command: npm install vitest · running',
+        '[2/2] command: npx nx add @nx/vitest · running',
+        '[2/2] command: npx nx add @nx/vitest · succeeded',
       ]);
   });
 });

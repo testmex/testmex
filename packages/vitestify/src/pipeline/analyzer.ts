@@ -19,14 +19,20 @@ export class Analyzer {
   }
 
   async analyze(workspace: Workspace): Promise<void> {
-    const total = this._heuristics.length;
-    const spinner = this._progressReporter.createSpinner();
+    const stepCount = this._heuristics.length;
 
     for (const [index, heuristic] of this._heuristics.entries()) {
-      spinner.message(`Analyzing [${index + 1}/${total}] ${heuristic.name}`);
-      workspace.applyHeuristicResults(await heuristic.inspect(workspace.asReadonly()));
-    }
+      const progressStep = this._progressReporter.createStep({
+        name: heuristic.name,
+        stepNumber: index + 1,
+        stepCount,
+      });
 
-    spinner.done(`Analyzed ${total} heuristics`);
+      progressStep.message('analyzing');
+      workspace.applyHeuristicResults(
+        await heuristic.inspect(workspace.asReadonly()),
+      );
+      progressStep.done('analyzed');
+    }
   }
 }

@@ -21,22 +21,26 @@ export function defineFileContentHeuristic({
   return defineHeuristic({
     name,
     inspect: async (workspace) => {
-      const findingsList = await Promise.all(
-        workspace.files
-          .filter((file) => predicate(file))
-          .map(async (file) => {
-            const content = await workspace.tree.maybeReadFile(file.path);
+      const findingsList = [];
 
-            if (content === null) {
-              return [];
-            }
+      for (const file of workspace.files) {
+        if (!predicate(file)) {
+          continue;
+        }
 
-            return inspect({ file, content }).map((type) => ({
-              type,
-              filePath: file.path,
-            }));
-          }),
-      );
+        const content = await workspace.tree.maybeReadFile(file.path);
+
+        if (content === null) {
+          continue;
+        }
+
+        findingsList.push(
+          ...inspect({ file, content }).map((type) => ({
+            type,
+            filePath: file.path,
+          })),
+        );
+      }
 
       return { findings: findingsList.flat() };
     },
