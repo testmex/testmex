@@ -1,65 +1,39 @@
 import type { FindingType } from '../models/finding';
 import { defineTransform, type Transform } from '../models/transform';
-import type { FileTag } from './workspace';
+import type { FileInfo, FileTag } from './workspace';
 import { yieldToEventLoop } from '../utils/yield-to-event-loop';
 
-interface DefineFileTransformBase {
+export interface DefineFileTransformArgs {
   name: string;
   apply: (content: string) => string;
+  fileTags?: FileTag[] | ((tags: FileTag[]) => boolean);
+  findingType?: FindingType;
 }
-
-export type DefineFileTransformArgs = DefineFileTransformBase &
-  (
-    | { findingType: FindingType }
-    | { fileTags?: FileTag[] | ((tags: FileTag[]) => boolean) }
-  );
 
 export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
     name: args.name,
     apply: async (workspace, { onProgress } = {}) => {
       const { tree } = workspace;
+      const hasFileTagsFilter = args.fileTags !== undefined;
+      const hasFindingFilter = args.findingType !== undefined;
 
-      const fileTags = 'fileTags' in args ? args.fileTags : undefined;
+      if (!hasFileTagsFilter && !hasFindingFilter) {
+        onProgress?.('0 file(s) transformed');
+        return;
+      }
 
-      const matchesFileTags = (tags: FileTag[]) =>
-        fileTags == null
-          ? true
-          : Array.isArray(fileTags)
-            ? fileTags.every((tag) => tags.includes(tag))
-            : fileTags(tags);
-
-      const taggedPaths =
-        fileTags !== undefined
-          ? workspace.files
-              .filter((file) => matchesFileTags(file.tags))
-              .map((file) => file.path)
-          : undefined;
-
-      const findingPaths =
-        'findingType' in args
-          ? workspace.files
-              .filter((file) => file.findings.includes(args.findingType))
-              .map((file) => file.path)
-          : undefined;
-
-      const paths =
-        taggedPaths !== undefined && findingPaths !== undefined
-          ? findingPaths.filter((path) => {
-              const file = workspace.files.find(
-                ({ path: filePath }) => filePath === path,
-              );
-
-              return file != null && matchesFileTags(file.tags);
-            })
-          : (taggedPaths ?? findingPaths ?? []);
       let transformedCount = 0;
 
-      for (const path of paths) {
-        const content = await tree.maybeReadFile(path);
+      for (const file of workspace.files) {
+        if (!_shouldTransform(file, args)) {
+          continue;
+        }
+
+        const content = await tree.maybeReadFile(file.path);
 
         if (content != null) {
-          await tree.write(path, args.apply(content));
+          await tree.write(file.path, args.apply(content));
           transformedCount++;
         }
 
@@ -70,4 +44,28 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
       onProgress?.(`${transformedCount} file(s) transformed`);
     },
   });
+}
+
+function _shouldTransform(
+  file: FileInfo,
+  { fileTags, findingType }: DefineFileTransformArgs,
+): boolean {
+  if (findingType !== undefined && !file.findings.includes(findingType)) {
+    return false;
+  }
+
+  if (fileTags !== undefined && !_matchesFileTags(file.tags, fileTags)) {
+    return false;
+  }
+
+  return fileTags !== undefined || findingType !== undefined;
+}
+
+function _matchesFileTags(
+  tags: FileTag[],
+  fileTags: FileTag[] | ((tags: FileTag[]) => boolean),
+): boolean {
+  return Array.isArray(fileTags)
+    ? fileTags.every((tag) => tags.includes(tag))
+    : fileTags(tags);
 }
