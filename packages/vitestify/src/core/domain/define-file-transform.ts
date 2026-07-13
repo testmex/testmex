@@ -8,20 +8,17 @@ interface DefineFileTransformBase {
   apply: (content: string) => string;
 }
 
-type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Omit<T, Keys> &
-  {
-    [Key in Keys]-?: Required<Pick<T, Key>> &
-      Partial<Pick<T, Exclude<Keys, Key>>>;
-  }[Keys];
-
 export type DefineFileTransformArgs = DefineFileTransformBase &
-  RequireAtLeastOne<
-    {
-      fileTags?: FileTag[] | ((tags: FileTag[]) => boolean);
-      findingType?: FindingType;
-    },
-    'fileTags' | 'findingType'
-  >;
+  (
+    | {
+        fileTags: FileTag[] | ((tags: FileTag[]) => boolean);
+        findingType?: FindingType;
+      }
+    | {
+        findingType: FindingType;
+        fileTags?: FileTag[] | ((tags: FileTag[]) => boolean);
+      }
+  );
 
 export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
