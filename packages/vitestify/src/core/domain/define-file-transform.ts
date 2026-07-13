@@ -1,6 +1,6 @@
 import type { FindingType } from '../models/finding';
 import { defineTransform, type Transform } from '../models/transform';
-import type { FileTag } from './workspace';
+import type { FileInfo, FileTag } from './workspace';
 import { yieldToEventLoop } from '../utils/yield-to-event-loop';
 
 interface DefineFileTransformBase {
@@ -8,10 +8,20 @@ interface DefineFileTransformBase {
   apply: (content: string) => string;
 }
 
+export type DefineFileTransformTags =
+  | FileTag[]
+  | ((tags: FileTag[]) => boolean);
+
 export type DefineFileTransformArgs = DefineFileTransformBase &
   (
-    | { findingType: FindingType }
-    | { fileTags?: FileTag[] | ((tags: FileTag[]) => boolean) }
+    | {
+        fileTags: DefineFileTransformTags;
+        findingType?: FindingType;
+      }
+    | {
+        findingType: FindingType;
+        fileTags?: DefineFileTransformTags;
+      }
   );
 
 export function defineFileTransform(args: DefineFileTransformArgs): Transform {
@@ -19,47 +29,17 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
     name: args.name,
     apply: async (workspace, { onProgress } = {}) => {
       const { tree } = workspace;
-
-      const fileTags = 'fileTags' in args ? args.fileTags : undefined;
-
-      const matchesFileTags = (tags: FileTag[]) =>
-        fileTags == null
-          ? true
-          : Array.isArray(fileTags)
-            ? fileTags.every((tag) => tags.includes(tag))
-            : fileTags(tags);
-
-      const taggedPaths =
-        fileTags !== undefined
-          ? workspace.files
-              .filter((file) => matchesFileTags(file.tags))
-              .map((file) => file.path)
-          : undefined;
-
-      const findingPaths =
-        'findingType' in args
-          ? workspace.files
-              .filter((file) => file.findings.includes(args.findingType))
-              .map((file) => file.path)
-          : undefined;
-
-      const paths =
-        taggedPaths !== undefined && findingPaths !== undefined
-          ? findingPaths.filter((path) => {
-              const file = workspace.files.find(
-                ({ path: filePath }) => filePath === path,
-              );
-
-              return file != null && matchesFileTags(file.tags);
-            })
-          : (taggedPaths ?? findingPaths ?? []);
       let transformedCount = 0;
 
-      for (const path of paths) {
-        const content = await tree.maybeReadFile(path);
+      for (const file of workspace.files) {
+        if (!_shouldTransform(file, args)) {
+          continue;
+        }
+
+        const content = await tree.maybeReadFile(file.path);
 
         if (content != null) {
-          await tree.write(path, args.apply(content));
+          await tree.write(file.path, args.apply(content));
           transformedCount++;
         }
 
@@ -71,3 +51,35 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
     },
   });
 }
+
+function _shouldTransform(
+  file: FileInfo,
+  { fileTags, findingType }: DefineFileTransformArgs,
+): boolean {
+  if (findingType !== undefined && !file.findings.includes(findingType)) {
+    return false;
+  }
+
+  if (fileTags !== undefined && !_matchesFileTags(file.tags, fileTags)) {
+    return false;
+  }
+
+  return true;
+}
+
+function _matchesFileTags(
+  tags: FileTag[],
+  fileTags: DefineFileTransformTags,
+): boolean {
+  return Array.isArray(fileTags)
+    ? fileTags.every((tag) => tags.includes(tag))
+    : fileTags(tags);
+}
+
+// @ts-expect-error requires fileTags or findingType
+const _invalidConfig: DefineFileTransformArgs = {
+  name: 'invalid',
+  apply: (content: string) => content,
+};
+
+void _invalidConfig;
