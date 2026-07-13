@@ -14,6 +14,8 @@ export const vitestImportsNeededHeuristic = defineFileContentHeuristic({
 
 function _isUsingJestGlobals(content: string): boolean {
   return JEST_GLOBALS.some((global) =>
-    new RegExp(`\\b${global}\\b`).test(content),
+    // Unicode-aware equivalent of `^\s*${global}\b`: JS `\b` only treats ASCII
+    // as word characters, so it matches `it` inside words such as `itération`.
+    new RegExp(`^\\s*${global}(?![\\p{L}\\p{N}_])`, 'mu').test(content),
   );
 }
