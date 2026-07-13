@@ -3,26 +3,31 @@ import { defineTransform, type Transform } from '../models/transform';
 import type { FileInfo, FileTag } from './workspace';
 import { yieldToEventLoop } from '../utils/yield-to-event-loop';
 
-export interface DefineFileTransformArgs {
+interface DefineFileTransformBase {
   name: string;
   apply: (content: string) => string;
-  fileTags?: FileTag[] | ((tags: FileTag[]) => boolean);
-  findingType?: FindingType;
 }
+
+type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Omit<T, Keys> &
+  {
+    [Key in Keys]-?: Required<Pick<T, Key>> &
+      Partial<Pick<T, Exclude<Keys, Key>>>;
+  }[Keys];
+
+export type DefineFileTransformArgs = DefineFileTransformBase &
+  RequireAtLeastOne<
+    {
+      fileTags?: FileTag[] | ((tags: FileTag[]) => boolean);
+      findingType?: FindingType;
+    },
+    'fileTags' | 'findingType'
+  >;
 
 export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
     name: args.name,
     apply: async (workspace, { onProgress } = {}) => {
       const { tree } = workspace;
-      const hasFileTagsFilter = args.fileTags !== undefined;
-      const hasFindingFilter = args.findingType !== undefined;
-
-      if (!hasFileTagsFilter && !hasFindingFilter) {
-        onProgress?.('0 file(s) transformed');
-        return;
-      }
-
       let transformedCount = 0;
 
       for (const file of workspace.files) {
@@ -58,7 +63,7 @@ function _shouldTransform(
     return false;
   }
 
-  return fileTags !== undefined || findingType !== undefined;
+  return true;
 }
 
 function _matchesFileTags(
@@ -69,3 +74,11 @@ function _matchesFileTags(
     ? fileTags.every((tag) => tags.includes(tag))
     : fileTags(tags);
 }
+
+// @ts-expect-error requires fileTags or findingType
+const _invalidConfig: DefineFileTransformArgs = {
+  name: 'invalid',
+  apply: (content: string) => content,
+};
+
+void _invalidConfig;
