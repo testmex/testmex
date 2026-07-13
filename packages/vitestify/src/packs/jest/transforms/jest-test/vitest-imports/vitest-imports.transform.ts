@@ -3,7 +3,7 @@ import { SgEditor } from '../../../../../infra/ast/sg-editor';
 import { ensureVitestSymbol } from '../../../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../../../identifiers';
 import { isTransformable } from '../../../utils';
-import { jestGlobals } from './jest-globals';
+import { JEST_GLOBALS } from './jest-globals';
 
 export const vitestImportsTransform = defineFileTransform({
   name: 'vitest-imports',
@@ -12,11 +12,11 @@ export const vitestImportsTransform = defineFileTransform({
   apply: (content) => {
     const editor = new SgEditor(content);
 
-    for (const identifierUsage of jestGlobals
-      .map((jestGlobal) => editor.root.find(jestGlobal))
-      .filter((node) => node != null)) {
+    for (const identifierUsage of JEST_GLOBALS.map((jestGlobal) =>
+      editor.root.find(jestGlobal),
+    ).filter((node) => node != null)) {
       const jestIdentifierText =
-        identifierUsage.text() as (typeof jestGlobals)[number];
+        identifierUsage.text() as (typeof JEST_GLOBALS)[number];
       ensureVitestSymbol({ editor, symbol: jestIdentifierText });
     }
 

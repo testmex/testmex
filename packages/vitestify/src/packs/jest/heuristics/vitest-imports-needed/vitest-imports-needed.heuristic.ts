@@ -1,7 +1,7 @@
 import { defineFileContentHeuristic } from '../../../../core/domain/define-file-content-heuristic';
 import { fileTags as coreFileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
-import { jestGlobals } from '../../transforms/jest-test/vitest-imports/jest-globals';
+import { JEST_GLOBALS } from '../../transforms/jest-test/vitest-imports/jest-globals';
 
 export const vitestImportsNeededHeuristic = defineFileContentHeuristic({
   name: 'vitest-imports-needed',
@@ -13,7 +13,7 @@ export const vitestImportsNeededHeuristic = defineFileContentHeuristic({
 });
 
 function _isUsingJestGlobals(content: string): boolean {
-  return jestGlobals.some((global) =>
+  return JEST_GLOBALS.some((global) =>
     new RegExp(`\\b${global}\\b`).test(content),
   );
 }

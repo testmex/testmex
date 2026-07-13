@@ -1,4 +1,4 @@
-export const jestGlobals = [
+export const JEST_GLOBALS = [
   'afterAll',
   'afterEach',
   'beforeAll',
