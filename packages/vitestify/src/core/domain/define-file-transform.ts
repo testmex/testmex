@@ -8,15 +8,19 @@ interface DefineFileTransformBase {
   apply: (content: string) => string;
 }
 
+export type DefineFileTransformTags =
+  | FileTag[]
+  | ((tags: FileTag[]) => boolean);
+
 export type DefineFileTransformArgs = DefineFileTransformBase &
   (
     | {
-        fileTags: FileTag[] | ((tags: FileTag[]) => boolean);
+        fileTags: DefineFileTransformTags;
         findingType?: FindingType;
       }
     | {
         findingType: FindingType;
-        fileTags?: FileTag[] | ((tags: FileTag[]) => boolean);
+        fileTags?: DefineFileTransformTags;
       }
   );
 
@@ -65,7 +69,7 @@ function _shouldTransform(
 
 function _matchesFileTags(
   tags: FileTag[],
-  fileTags: FileTag[] | ((tags: FileTag[]) => boolean),
+  fileTags: DefineFileTransformTags,
 ): boolean {
   return Array.isArray(fileTags)
     ? fileTags.every((tag) => tags.includes(tag))
