@@ -30,6 +30,7 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
     apply: async (workspace, { onProgress } = {}) => {
       const { tree } = workspace;
       let transformedCount = 0;
+      onProgress?.(`0 file(s) transformed`);
 
       for (const file of workspace.files) {
         if (!_shouldTransform(file, args)) {
