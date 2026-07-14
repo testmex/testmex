@@ -24,12 +24,13 @@
 
 ## Verifying transform (opt-in)
 
-When a transform defines verification, `Transformer` runs a full checkpoint cycle before moving on:
+When `apply()` returns a `TransformResult` with `verify`, `Transformer` runs a full checkpoint cycle before moving on:
 
 - [ ] `Transformer` calls `CommandFlusher` directly to run queued workspace commands (e.g. `pnpm install`) so verification can use real on-disk state.
-- [ ] Transform-specific `verify()` runs (e.g. jest-test transform runs converted tests).
+- [ ] `apply()` always returns `TransformResult` via `createTransformResult()`; transforms without verification omit `verify`.
+- [ ] `TransformResult.verify()` runs (e.g. jest-test transform runs converted tests).
 - [ ] On verify success: pipeline continues to the next transform.
-- [ ] On verify failure: transform-defined `rollback()` undoes only that transform's broken changes, then pipeline continues.
+- [ ] On verify failure: `VerifyResult.rollback()` undoes only that transform's broken changes when defined, then pipeline continues.
 
 ## End of run
 
@@ -45,23 +46,171 @@ When a transform defines verification, `Transformer` runs a full checkpoint cycl
 
 # Design
 
-<!-- Section 4 — to be filled -->
+`apply()` always returns a `TransformResult`.
+Transforms that opt into verification provide `verify` on the result; `verify()` always returns a `VerifyResult`.
+`VerifyResult.rollback()` undoes broken changes when defined.
+`Transformer` orchestrates the checkpoint cycle when `TransformResult.verify` is defined.
+Rename `Finalizer` → `CommandFlusher`; `Transformer` calls it directly after `Tree.commit()`.
+
+```typescript
+interface Transform {
+  apply(
+    workspace: WritableWorkspace,
+    options?: { onProgress?(detail: string): void },
+  ): Promise<TransformResult>;
+}
+
+interface TransformResult {
+  verify?(): Promise<VerifyResult>;
+}
+
+interface VerifyResult {
+  rollback?(): Promise<void>;
+}
+
+function createTransformResult(options?: {
+  verify?(): Promise<VerifyResult>;
+}): TransformResult;
+
+function createVerifyResult(options?: {
+  rollback?(): Promise<void>;
+}): VerifyResult;
+```
+
+- `apply()` returns `createTransformResult()` — no verification; staged changes stay in `Tree`; no checkpoint.
+- `apply()` returns `createTransformResult({ verify })` — `Transformer` runs commit + flush + `verify()` after `apply()`.
+- `verify()` returns `createVerifyResult()` — verification passed.
+- `verify()` returns `createVerifyResult({ rollback })` — verification failed; `Transformer` calls `rollback()`.
 
 ## Diagram
 
-<!-- Section 4a — to be filled -->
+```mermaid
+flowchart TD
+  vitestify["Vitestify"]
+  transformer["Transformer"]
+  transform["Transform"]
+  transformResult(["TransformResult"])
+  verifyResult(["VerifyResult"])
+  tree["Tree"]
+  commandFlusher(["CommandFlusher"])
+  commandRunner(["CommandRunner"])
+
+  vitestify -->|"transform({workspace: Workspace}): Promise<void>"| transformer
+  transformer -->|"apply({workspace: WritableWorkspace}): Promise<TransformResult>"| transform
+  transform --> transformResult
+  transformer -->|"commit(): Promise<void>"| tree
+  transformer -->|"flush({workspace: Workspace}): Promise<void>"| commandFlusher
+  commandFlusher -->|"run({command: Command}): Promise<string>"| commandRunner
+  transformer -->|"verify(): Promise<VerifyResult>"| transformResult
+  transformer -->|"rollback?(): Promise<void>"| verifyResult
+```
+
+### Checkpoint cycle (verifying transform)
+
+```mermaid
+flowchart LR
+  apply["apply() → TransformResult"] --> commit["Tree.commit()"]
+  commit --> flush["CommandFlusher.flush()"]
+  flush --> verify["result.verify()"]
+  verify --> verifyResult["VerifyResult"]
+  verifyResult -->|no rollback| next["next transform"]
+  verifyResult -->|rollback defined| rollback["result.rollback()"]
+  rollback --> next
+```
 
 ## Implementation Details
 
-<!-- Section 4b — to be filled -->
+- [ ] Change `Transform.apply()` return type to `Promise<TransformResult>`.
+- [ ] Add `createTransformResult()` and `createVerifyResult()` factories.
+- [ ] `createTransformResult()` — no `verify`; for transforms without verification.
+- [ ] `createTransformResult({ verify })` — for transforms that opt into verification.
+- [ ] `createVerifyResult()` — no `rollback`; verification passed.
+- [ ] `createVerifyResult({ rollback })` — verification failed; `rollback` encapsulates per-transform undo logic (e.g. jest-test closes over `failedFiles`).
+- [ ] `Transformer` runs checkpoint cycle when `result.verify !== undefined`.
+- [ ] For verifying transforms: after `apply()`, call `tree.commit()`, then `commandFlusher.flush(workspace)`, then `result.verify()`, then `verifyResult.rollback()` when `rollback` is defined.
+- [ ] For non-verifying transforms: `apply()` returns `createTransformResult()`; staged changes stay in `Tree` until the next checkpoint or end-of-run commit.
+- [ ] Rename `Finalizer` → `CommandFlusher`; move from end-of-pipeline-only to injected dependency on `Transformer`.
+- [ ] Add `CommandQueue.drain(): Command[]` (or equivalent) so `CommandFlusher.flush()` runs only commands queued since the last flush.
+- [ ] Remove `Vitestify`'s end-of-pipeline `finalizer.finalize()` — command flushing is owned by `Transformer` checkpoints and a final flush at end of run.
+- [ ] End of run: `tree.commit()` for any remaining staged changes, then `commandFlusher.flush()` for any remaining queued commands.
+- [ ] `rollback()` runs after disk is up to date — it may stage reversions via `Tree` and call `tree.commit()` again.
+- [ ] jest-test `apply()` returns `createTransformResult({ verify })` closing over transformed files and their original content.
+- [ ] jest-test `verify()` runs Vitest via `CommandRunner`; on success returns `createVerifyResult()`; on failure returns `createVerifyResult({ rollback })`.
+- [ ] Transform groups (`defineTransformGroup`) compose child `apply()` calls; only the group wrapper returns a result with `verify` if the group opts in.
 
 # Testing Strategy
 
-<!-- Section 5 — to be filled -->
+## Transformer
+
+### Runs checkpoint cycle for verifying transform
+
+- Arrange workspace with a fake transform whose `apply()` returns a `TransformResult` with `verify` and queues a command.
+- Spy on `tree.commit()`, `commandFlusher.flush()`, `result.verify()`, `verifyResult.rollback()`.
+- Run `Transformer.transform(workspace)`.
+- Assert order: `apply` → `commit` → `flush` → `verify`.
+- Assert `rollback` is not called when `verify()` returns `createVerifyResult()`.
+
+### Rolls back on verify failure
+
+- Arrange `TransformResult` whose `verify()` returns `createVerifyResult({ rollback })` with a spy `rollback`.
+- Run `Transformer.transform(workspace)`.
+- Assert `verifyResult.rollback()` is called.
+- Assert pipeline continues to the next transform.
+
+### Skips checkpoint when result has no verify
+
+- Arrange two transforms whose `apply()` both return `createTransformResult()`.
+- Run `Transformer.transform(workspace)`.
+- Assert `tree.commit()` is not called until end of run.
+
+## CommandFlusher
+
+### Drains queued commands on flush
+
+- Arrange workspace with 2 queued commands.
+- Run `commandFlusher.flush(workspace)`.
+- Assert both commands executed via `CommandRunner`.
+- Assert command queue is empty after flush.
+
+### Continues after command failure
+
+- Arrange workspace with 2 commands; first fails, second succeeds.
+- Run `commandFlusher.flush(workspace)`.
+- Assert both commands were attempted; second still runs.
+
+## jest-test transform verify/rollback
+
+### Verify returns VerifyResult with rollback on failure
+
+- Arrange workspace with 2 converted spec files; fake Vitest output reports 1 failure.
+- Run `apply()`, then `result.verify()` on returned `TransformResult`.
+- Assert `verify()` returns `createVerifyResult({ rollback })`.
+
+### Rollback reverts only failed files
+
+- Arrange `VerifyResult` from jest-test verify with one failing file renamed `.jest.ts` → `.spec.ts`.
+- Call `result.rollback()`.
+- Assert failed file is renamed back to `.jest.ts` with original Jest content restored.
+- Assert passing file remains `.spec.ts` with Vitest content.
 
 # PR Plan
 
-<!-- Section 6 — to be filled -->
+```mermaid
+flowchart LR
+  pr1["PR#1 — TransformResult + VerifyResult types"]
+  pr2["PR#2 — CommandFlusher + queue drain"]
+  pr3["PR#3 — Transformer checkpoint cycle"]
+  pr4["PR#4 — jest-test verify/rollback"]
+
+  pr1 --> pr3
+  pr2 --> pr3
+  pr3 --> pr4
+```
+
+- [ ] PR#1 — Add `TransformResult`, `VerifyResult`, `createTransformResult`, `createVerifyResult`; change `Transform.apply()` to return `Promise<TransformResult>`.
+- [ ] PR#2 — Rename `Finalizer` → `CommandFlusher`; add `CommandQueue.drain()`; wire into `Transformer` constructor.
+- [ ] PR#3 — Implement checkpoint cycle in `Transformer`; remove end-of-pipeline finalize from `Vitestify`.
+- [ ] PR#4 — jest-test `apply()` returns `TransformResult` with `verify`; implement Vitest run and per-file rollback.
 
 # Alternatives Considered
 
