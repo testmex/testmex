@@ -142,26 +142,49 @@ flowchart LR
 
 ## Transformer
 
-### Runs checkpoint cycle for verifying transform
+### Non-verifying transform does not flush before the next transform runs
 
-- Arrange workspace with a fake transform whose `apply()` returns a `TransformResult` with `verify` and queues a command.
-- Spy on `tree.commit()`, `commandFlusher.flush()`, `result.verify()`, `verifyResult.rollback()`.
+- Arrange transform A (no `verify`) that stages a change to file A.
+- Arrange transform B (no `verify`), inlined in the test: its `apply()` reads file A from the filesystem and stores the result in a variable before staging its own change.
 - Run `Transformer.transform(workspace)`.
-- Assert order: `apply` → `commit` → `flush` → `verify`.
-- Assert `rollback` is not called when `verify()` returns `createVerifyResult()`.
+- Assert the variable was never written (stays `undefined`) — B's `apply()` ran before any commit/flush occurred, so file A wasn't yet on disk to read.
 
-### Rolls back on verify failure
+### Pipeline continues to the next transform after a non-verifying transform
 
-- Arrange `TransformResult` whose `verify()` returns `createVerifyResult({ rollback })` with a spy `rollback`.
+- Arrange transform A (no `verify`) that stages a change to file A.
+- Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
 - Run `Transformer.transform(workspace)`.
-- Assert `verifyResult.rollback()` is called.
-- Assert pipeline continues to the next transform.
+- Assert the variable is `true` — B's `apply()` ran after A, and both files end up on disk with migrated content once the run finishes.
 
-### Skips checkpoint when result has no verify
+### Non-verifying transform's change is batched with the next checkpoint, not flushed early
 
-- Arrange two transforms whose `apply()` both return `createTransformResult()`.
+- Arrange transform A (no `verify`) that stages a change to file A, followed by transform B (`verify`) that stages a change to file B.
+- B's `verify()` reads both file A and file B from the filesystem.
 - Run `Transformer.transform(workspace)`.
-- Assert `tree.commit()` is not called until end of run.
+- Assert `verify()` observes both file A and file B already on disk with their migrated content — A's staged change was carried forward and flushed together with B's checkpoint, rather than being flushed separately right after A ran.
+
+### Transform with verify succeeds when file is on disk
+
+- Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
+- `verify()` reads the file from the filesystem and returns `createVerifyResult()` if the expected content is there, otherwise `createVerifyResult({ rollback })`.
+- Run `Transformer.transform(workspace)`.
+- Assert the file is present on the real filesystem with the migrated content (proves commit + flush ran before `verify()`).
+- Assert the file still has the migrated content after the run (no rollback triggered).
+
+### Transform with verify rolls back by renaming the file on disk
+
+- Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
+- `verify()` reads the file from the filesystem, determines it failed, and returns `createVerifyResult({ rollback })` where `rollback()` renames the file on disk (e.g. `.spec.ts` → `.jest.ts`) and restores the original content.
+- Run `Transformer.transform(workspace)`.
+- Assert the file no longer exists at its migrated path.
+- Assert the renamed file exists on disk with the original (pre-migration) content.
+
+### Pipeline continues to the next transform after a rollback
+
+- Arrange transform A whose `apply()` stages a file change and returns `createTransformResult({ verify })`; `verify()` fails and returns `createVerifyResult({ rollback })`.
+- Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
+- Run `Transformer.transform(workspace)`.
+- Assert the variable is `true` — B's `apply()` still ran after A's rollback, and file B ends up on disk with migrated content once the run finishes.
 
 ## CommandFlusher
 
@@ -188,9 +211,9 @@ flowchart LR
 
 ### Rollback reverts only failed files
 
-- Arrange `VerifyResult` from jest-test verify with one failing file renamed `.jest.ts` → `.spec.ts`.
+- Arrange `VerifyResult` from jest-test verify with one failing file renamed `.jest.cts` → `.spec.ts`.
 - Call `result.rollback()`.
-- Assert failed file is renamed back to `.jest.ts` with original Jest content restored.
+- Assert failed file is renamed back to `.jest.cts` with original Jest content restored.
 - Assert passing file remains `.spec.ts` with Vitest content.
 
 # PR Plan
