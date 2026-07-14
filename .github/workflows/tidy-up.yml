@@ -26,10 +26,10 @@ jobs:
       - name: Trigger Cursor webhook
         if: steps.tidyup.outputs.found == 'true'
         env:
-          CURSOR_WEBHOOK_TOKEN: ${{ secrets.CURSOR_AUTOMATION_WEBHOOK_TOKEN }}
+          CURSOR_TOKEN: ${{ secrets.CURSOR_AUTOMATION_WEBHOOK_TIDY_UP_TOKEN }}
         run: |
           curl -sf -X POST \
             "https://api2.cursor.sh/automations/webhook/4a8a5535-75ee-11f1-a7d1-d6b4613131ce" \
-            -H "Authorization: Bearer ${CURSOR_WEBHOOK_TOKEN}" \
+            -H "Authorization: Bearer ${CURSOR_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "$(jq -n --arg branch "${{ github.ref_name }}" '{branchName: $branch}')"
