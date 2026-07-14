@@ -7,7 +7,13 @@
 
 # Non-Goals
 
-<!-- Section 2 — to be filled -->
+- Requiring verification on every transform — only transforms that opt in define a verify step.
+- Global or workspace-wide rollback — each transform rolls back only its own changes on verification failure.
+- Git-based undo (reset, revert, stash) — rollback stays within vitestify's in-memory `Tree` / transform logic.
+- Auto-retry or self-healing — a failed verification does not re-run or patch the transform automatically.
+- Interactive prompts — no mid-run user input to choose what to rollback.
+- Dry-run verification — verification runs after apply, not as a separate preview-without-changes mode.
+- Report-only mode — verification failure always triggers rollback when the transform defines one; no verify-without-rollback path.
 
 # Desired Behavior
 
