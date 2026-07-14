@@ -251,7 +251,12 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 
 # Alternatives Considered
 
-<!-- Section 8 — to be filled -->
+- **Git-based rollback** (`git stash`/`reset`/`revert`) — rejected; couples vitestify to the target repo's git state (dirty tree, detached HEAD, no git at all) and can't scope to a single transform's changes without extra bookkeeping.
+- **Whole-`Tree` snapshot/restore per transform** — rejected; reverting the whole `Tree` on failure would also discard other transforms' already-staged changes batched into the same checkpoint, not just the failing transform's.
+- **Unconditional `rollback()` on every transform** (defined upfront on `Transform`/`TransformResult` regardless of outcome) — rejected in favor of `VerifyResult.rollback()`, returned only when verification fails; keeps non-verifying transforms free of rollback plumbing and makes "did this fail" explicit in the type.
+- **Global rollback of the entire migration on any verify failure** — rejected; defeats the goal of best-effort migration where passing files stay migrated and only failing ones fall back to Jest.
+- **Auto-retry the transform on verify failure** — rejected; could mask flaky failures or loop without making progress, and hides the failure from the user instead of surfacing a mixed Vitest/Jest result.
+- **Keep `Finalizer` end-of-pipeline-only, add a separate verify-only pass after** — rejected; would need duplicate command-running/commit logic to get real on-disk state mid-pipeline, instead of `Transformer` calling `CommandFlusher` directly as part of the checkpoint cycle.
 
 # Future Work
 
