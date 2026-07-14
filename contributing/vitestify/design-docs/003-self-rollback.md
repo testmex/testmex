@@ -17,7 +17,31 @@
 
 # Desired Behavior
 
-<!-- Section 3 — to be filled -->
+## Per-transform pipeline (default)
+
+- [ ] Transform without verification: `apply()` stages changes in `Tree`; no commit, no commands, no verify yet.
+- [ ] Pipeline continues to the next transform with staged changes still in memory.
+
+## Verifying transform (opt-in)
+
+When a transform defines verification, `Transformer` runs a full checkpoint cycle before moving on:
+
+- [ ] `Transformer` calls `CommandFlusher` directly to run queued workspace commands (e.g. `pnpm install`) so verification can use real on-disk state.
+- [ ] Transform-specific `verify()` runs (e.g. jest-test transform runs converted tests).
+- [ ] On verify success: pipeline continues to the next transform.
+- [ ] On verify failure: transform-defined `rollback()` undoes only that transform's broken changes, then pipeline continues.
+
+## End of run
+
+- [ ] After the last transform, any remaining staged changes are committed once (if not already flushed by a verifying transform).
+
+## Examples
+
+### jest-test transform group
+
+- [ ] After commit + `CommandFlusher`, verify runs Vitest against converted spec files.
+- [ ] On failure for individual files, rollback reverts only those files and renames them to `.jest.*` so Jest can still run them.
+- [ ] Passing files stay migrated; migration continues with a mix of Vitest and Jest tests.
 
 # Design
 
@@ -42,6 +66,13 @@
 # Alternatives Considered
 
 <!-- Section 8 — to be filled -->
+
+# Future Work
+
+## vitest-config transform verification
+
+- After commit + `CommandFlusher`, verify runs Vitest in a lightweight mode (config loads, no test execution).
+- On failure, rollback reverts vitest config / setup file changes staged by that transform.
 
 # Kitchen Sink
 
