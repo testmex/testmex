@@ -1,21 +1,21 @@
-import type { ProgressReporter, ProgressSpinner } from './progress-reporter';
+import type { ProgressReporter, Step, StepArgs } from './progress-reporter';
 
 export class ProgressReporterFake implements ProgressReporter {
   private readonly _errors: string[] = [];
   private readonly _messages: string[] = [];
 
-  createSpinner(): ProgressSpinner {
+  createStep(args: StepArgs): Step {
     return {
-      message: (message: string) => {
-        this._messages.push(message);
+      message: (body: string) => {
+        this._messages.push(_formatStepMessage(args, body));
       },
-      done: (message?: string) => {
-        if (message !== undefined) {
-          this._messages.push(message);
+      done: (body?: string) => {
+        if (body !== undefined) {
+          this._messages.push(_formatStepMessage(args, body));
         }
       },
-      error: (message: string) => {
-        this._errors.push(message);
+      error: (body: string) => {
+        this._errors.push(_formatStepMessage(args, body));
       },
     };
   }
@@ -31,4 +31,12 @@ export class ProgressReporterFake implements ProgressReporter {
   errors(): readonly string[] {
     return this._errors;
   }
+}
+
+function _formatStepMessage(args: StepArgs, body: string): string {
+  const prefix =
+    'stepNumber' in args
+      ? `[${args.stepNumber}/${args.stepCount}] ${args.name} · `
+      : `${args.name} · `;
+  return `${prefix}${body}`;
 }

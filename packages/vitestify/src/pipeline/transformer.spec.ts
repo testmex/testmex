@@ -35,12 +35,12 @@ describe(Transformer, () => {
     await transformer.transform(workspace);
 
     expect(progressReporter.messages()).toEqual([
-      'Transforming [1/2] jest-mock',
-      'Transforming [1/2] jest-mock · 2 file(s) transformed',
-      'Transformed  [1/2] jest-mock · 2 file(s) transformed',
-      'Transforming [2/2] jest-spy-on',
-      'Transforming [2/2] jest-spy-on · 0 file(s) transformed',
-      'Transformed  [2/2] jest-spy-on · 0 file(s) transformed',
+      '[1/2] jest-mock · transforming',
+      '[1/2] jest-mock · transforming · 2 file(s) transformed',
+      '[1/2] jest-mock · transformed · 2 file(s) transformed',
+      '[2/2] jest-spy-on · transforming',
+      '[2/2] jest-spy-on · transforming · 0 file(s) transformed',
+      '[2/2] jest-spy-on · transformed · 0 file(s) transformed',
     ]);
   });
 
@@ -65,7 +65,7 @@ describe(Transformer, () => {
     await transformer.transform(workspace);
 
     expect(progressReporter.errors()).toEqual([
-      'Transform failed [1/1] jest-mock · parse failed',
+      '[1/1] jest-mock · failed · parse failed',
     ]);
   });
 
@@ -97,14 +97,12 @@ describe(Transformer, () => {
 
     expect
       .soft(progressReporter.errors())
-      .toEqual(['Transform failed [1/2] jest-mock · parse failed']);
-    expect
-      .soft(progressReporter.messages())
-      .toEqual([
-        'Transforming [1/2] jest-mock',
-        'Transforming [2/2] jest-spy-on',
-        'Transforming [2/2] jest-spy-on · 1 file(s) transformed',
-        'Transformed  [2/2] jest-spy-on · 1 file(s) transformed',
-      ]);
+      .toEqual(['[1/2] jest-mock · failed · parse failed']);
+    expect.soft(progressReporter.messages()).toEqual([
+      '[1/2] jest-mock · transforming',
+      '[2/2] jest-spy-on · transforming',
+      '[2/2] jest-spy-on · transforming · 1 file(s) transformed',
+      '[2/2] jest-spy-on · transformed · 1 file(s) transformed',
+    ]);
   });
 });

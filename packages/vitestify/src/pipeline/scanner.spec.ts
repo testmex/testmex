@@ -95,13 +95,14 @@ describe(Scanner.name, () => {
 
     await scanner.scanWorkspace();
 
-    const codeMessages = progressReporter
-      .messages()
-      .filter((message) => message.includes('[6/7] test'));
-    expect(codeMessages).toEqual([
-      'Scanning [6/7] test',
-      'Scanning [6/7] test · 1 file(s) found',
-      'Scanned  [6/7] test · 1 file(s) found',
+    const messages = progressReporter.messages();
+    const testStart =
+      messages.indexOf('[6/7] test · scanning · 1 file(s) found') - 1;
+
+    expect(messages.slice(testStart, testStart + 3)).toEqual([
+      '[6/7] test · scanning',
+      '[6/7] test · scanning · 1 file(s) found',
+      '[6/7] test · scanned · 1 file(s) found',
     ]);
   });
 
@@ -115,16 +116,16 @@ describe(Scanner.name, () => {
 
     const doneMessages = progressReporter
       .messages()
-      .filter((message) => message.startsWith('Scanned'));
+      .filter((message) => message.includes(' · scanned'));
 
     expect(doneMessages).toEqual([
-      'Scanned  [1/7] angular-cli',
-      'Scanned  [2/7] nx · 1 project(s) detected',
-      'Scanned  [3/7] jest',
-      'Scanned  [4/7] code',
-      'Scanned  [5/7] package-manager · pnpm detected (good choice 😉)',
-      'Scanned  [6/7] test',
-      'Scanned  [7/7] vitest-config',
+      '[1/7] angular-cli · scanned',
+      '[2/7] nx · scanned · 1 project(s) detected',
+      '[3/7] jest · scanned',
+      '[4/7] code · scanned',
+      '[5/7] package-manager · scanned · pnpm detected (good choice 😉)',
+      '[6/7] test · scanned',
+      '[7/7] vitest-config · scanned',
     ]);
   });
 
@@ -136,15 +137,15 @@ describe(Scanner.name, () => {
 
     await scanner.scanWorkspace();
 
-    const nxMessages = progressReporter
-      .messages()
-      .filter((message) => message.includes('nx'));
+    const messages = progressReporter.messages();
+    const nxStart =
+      messages.indexOf('[2/7] nx · scanning · loading nx graph') - 1;
 
-    expect(nxMessages).toEqual([
-      'Scanning [2/7] nx',
-      'Scanning [2/7] nx · loading nx graph',
-      'Scanning [2/7] nx · 1 project(s) detected',
-      'Scanned  [2/7] nx · 1 project(s) detected',
+    expect(messages.slice(nxStart, nxStart + 4)).toEqual([
+      '[2/7] nx · scanning',
+      '[2/7] nx · scanning · loading nx graph',
+      '[2/7] nx · scanning · 1 project(s) detected',
+      '[2/7] nx · scanned · 1 project(s) detected',
     ]);
   });
 

@@ -1,11 +1,7 @@
-import type { ProgressReporter, ProgressSpinner } from './progress-reporter';
+import { NO_OP_STEP, type ProgressReporter } from './progress-reporter';
 
 export class NullProgressReporter implements ProgressReporter {
-  createSpinner(): ProgressSpinner {
-    return {
-      message: () => undefined,
-      done: () => undefined,
-      error: () => undefined,
-    };
+  createStep() {
+    return NO_OP_STEP;
   }
 }

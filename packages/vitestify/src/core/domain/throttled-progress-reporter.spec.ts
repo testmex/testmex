@@ -9,12 +9,16 @@ describe(ThrottledProgressReporter, () => {
     const inner = new ProgressReporterFake();
     const reporter = new ThrottledProgressReporter(inner, { duration: 100 });
 
-    const spinner = reporter.createSpinner();
-    spinner.message('1/5');
+    const progressStep = reporter.createStep({
+      name: 'test',
+      stepNumber: 1,
+      stepCount: 5,
+    });
+    progressStep.message('started');
     await vi.advanceTimersByTimeAsync(90);
-    spinner.message('2/5');
+    progressStep.message('pending');
 
-    expect(inner.message()).toBe('1/5');
+    expect(inner.message()).toBe('[1/5] test · started');
   });
 
   it('throttled progress reporter forwards pending message after interval elapses', async () => {
@@ -22,13 +26,17 @@ describe(ThrottledProgressReporter, () => {
     const inner = new ProgressReporterFake();
     const reporter = new ThrottledProgressReporter(inner, { duration: 100 });
 
-    const spinner = reporter.createSpinner();
-    spinner.message('1/5');
+    const progressStep = reporter.createStep({
+      name: 'test',
+      stepNumber: 1,
+      stepCount: 5,
+    });
+    progressStep.message('started');
     await vi.advanceTimersByTimeAsync(90);
-    spinner.message('2/5');
+    progressStep.message('pending');
     await vi.advanceTimersByTimeAsync(10);
 
-    expect(inner.message()).toBe('2/5');
+    expect(inner.message()).toBe('[1/5] test · pending');
   });
 
   it('throttled progress reporter flushes on done', () => {
@@ -36,10 +44,14 @@ describe(ThrottledProgressReporter, () => {
     const inner = new ProgressReporterFake();
     const reporter = new ThrottledProgressReporter(inner, { duration: 100 });
 
-    const spinner = reporter.createSpinner();
-    spinner.message('1/5');
-    spinner.done('5/5');
+    const progressStep = reporter.createStep({
+      name: 'test',
+      stepNumber: 1,
+      stepCount: 5,
+    });
+    progressStep.message('started');
+    progressStep.done('completed');
 
-    expect(inner.message()).toBe('5/5');
+    expect(inner.message()).toBe('[1/5] test · completed');
   });
 });

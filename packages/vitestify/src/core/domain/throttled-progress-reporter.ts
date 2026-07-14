@@ -1,8 +1,5 @@
 import { Subject, throttleTime } from 'rxjs';
-import type {
-  ProgressReporter,
-  ProgressSpinner,
-} from '../ports/progress-reporter';
+import type { ProgressReporter, Step, StepArgs } from '../ports/progress-reporter';
 
 export class ThrottledProgressReporter implements ProgressReporter {
   private readonly _duration: number;
@@ -14,8 +11,8 @@ export class ThrottledProgressReporter implements ProgressReporter {
     this._duration = options.duration ?? 100;
   }
 
-  createSpinner(): ProgressSpinner {
-    const innerSpinner = this._inner.createSpinner();
+  createStep(args: StepArgs): Step {
+    const innerProgressStep = this._inner.createStep(args);
     const messages$ = new Subject<string>();
 
     const subscription = messages$
@@ -25,21 +22,21 @@ export class ThrottledProgressReporter implements ProgressReporter {
           trailing: true,
         }),
       )
-      .subscribe((message) => {
-        innerSpinner.message(message);
+      .subscribe((body) => {
+        innerProgressStep.message(body);
       });
 
     return {
-      message: (message: string) => {
-        messages$.next(message);
+      message: (body: string) => {
+        messages$.next(body);
       },
-      done: (message?: string) => {
+      done: (body?: string) => {
         subscription.unsubscribe();
-        innerSpinner.done(message);
+        innerProgressStep.done(body);
       },
-      error: (message: string) => {
+      error: (body: string) => {
         subscription.unsubscribe();
-        innerSpinner.error(message);
+        innerProgressStep.error(body);
       },
     };
   }
