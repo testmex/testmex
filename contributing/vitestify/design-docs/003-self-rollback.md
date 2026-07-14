@@ -118,104 +118,6 @@ flowchart LR
   rollback --> next
 ```
 
-## Implementation Details
-
-- [ ] Change `Transform.apply()` return type to `Promise<TransformResult>`.
-- [ ] Add `createTransformResult()` and `createVerifyResult()` factories.
-- [ ] `createTransformResult()` — no `verify`; for transforms without verification.
-- [ ] `createTransformResult({ verify })` — for transforms that opt into verification.
-- [ ] `createVerifyResult()` — no `rollback`; verification passed.
-- [ ] `createVerifyResult({ rollback })` — verification failed; `rollback` encapsulates per-transform undo logic (e.g. jest-test closes over `failedFiles`).
-- [ ] `Transformer` runs checkpoint cycle when `result.verify !== undefined`.
-- [ ] For verifying transforms: after `apply()`, call `tree.commit()`, then `commandFlusher.flush(workspace)`, then `result.verify()`, then `verifyResult.rollback()` when `rollback` is defined.
-- [ ] For non-verifying transforms: `apply()` returns `createTransformResult()`; staged changes stay in `Tree` until the next checkpoint or end-of-run commit.
-- [ ] Rename `Finalizer` → `CommandFlusher`; move from end-of-pipeline-only to injected dependency on `Transformer`.
-- [ ] Add `CommandQueue.drain(): Command[]` (or equivalent) so `CommandFlusher.flush()` runs only commands queued since the last flush.
-- [ ] Remove `Vitestify`'s end-of-pipeline `finalizer.finalize()` — command flushing is owned by `Transformer` checkpoints and a final flush at end of run.
-- [ ] End of run: `tree.commit()` for any remaining staged changes, then `commandFlusher.flush()` for any remaining queued commands.
-- [ ] `rollback()` runs after disk is up to date — it may stage reversions via `Tree` and call `tree.commit()` again.
-- [ ] jest-test `apply()` returns `createTransformResult({ verify })` closing over transformed files and their original content.
-- [ ] jest-test `verify()` runs Vitest via `CommandRunner`; on success returns `createVerifyResult()`; on failure returns `createVerifyResult({ rollback })`.
-- [ ] Transform groups (`defineTransformGroup`) compose child `apply()` calls; only the group wrapper returns a result with `verify` if the group opts in.
-
-# Testing Strategy
-
-## Transformer
-
-### Non-verifying transform does not flush before the next transform runs
-
-- Arrange transform A (no `verify`) that stages a change to file A.
-- Arrange transform B (no `verify`), inlined in the test: its `apply()` reads file A from the filesystem and stores the result in a variable before staging its own change.
-- Run `Transformer.transform(workspace)`.
-- Assert the variable was never written (stays `undefined`) — B's `apply()` ran before any commit/flush occurred, so file A wasn't yet on disk to read.
-
-### Pipeline continues to the next transform after a non-verifying transform
-
-- Arrange transform A (no `verify`) that stages a change to file A.
-- Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
-- Run `Transformer.transform(workspace)`.
-- Assert the variable is `true` — B's `apply()` ran after A, and both files end up on disk with migrated content once the run finishes.
-
-### Non-verifying transform's change is batched with the next checkpoint, not flushed early
-
-- Arrange transform A (no `verify`) that stages a change to file A, followed by transform B (`verify`) that stages a change to file B.
-- B's `verify()` reads both file A and file B from the filesystem.
-- Run `Transformer.transform(workspace)`.
-- Assert `verify()` observes both file A and file B already on disk with their migrated content — A's staged change was carried forward and flushed together with B's checkpoint, rather than being flushed separately right after A ran.
-
-### Transform with verify succeeds when file is on disk
-
-- Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
-- `verify()` reads the file from the filesystem and returns `createVerifyResult()` if the expected content is there, otherwise `createVerifyResult({ rollback })`.
-- Run `Transformer.transform(workspace)`.
-- Assert the file is present on the real filesystem with the migrated content (proves commit + flush ran before `verify()`).
-- Assert the file still has the migrated content after the run (no rollback triggered).
-
-### Transform with verify rolls back by renaming the file on disk
-
-- Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
-- `verify()` reads the file from the filesystem, determines it failed, and returns `createVerifyResult({ rollback })` where `rollback()` renames the file on disk (e.g. `.spec.ts` → `.jest.ts`) and restores the original content.
-- Run `Transformer.transform(workspace)`.
-- Assert the file no longer exists at its migrated path.
-- Assert the renamed file exists on disk with the original (pre-migration) content.
-
-### Pipeline continues to the next transform after a rollback
-
-- Arrange transform A whose `apply()` stages a file change and returns `createTransformResult({ verify })`; `verify()` fails and returns `createVerifyResult({ rollback })`.
-- Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
-- Run `Transformer.transform(workspace)`.
-- Assert the variable is `true` — B's `apply()` still ran after A's rollback, and file B ends up on disk with migrated content once the run finishes.
-
-## CommandFlusher
-
-### Drains queued commands on flush
-
-- Arrange workspace with 2 queued commands.
-- Run `commandFlusher.flush(workspace)`.
-- Assert both commands executed via `CommandRunner`.
-- Assert command queue is empty after flush.
-
-### Continues after command failure
-
-- Arrange workspace with 2 commands; first fails, second succeeds.
-- Run `commandFlusher.flush(workspace)`.
-- Assert both commands were attempted; second still runs.
-
-## jest-test transform verify/rollback
-
-### Verify returns VerifyResult with rollback on failure
-
-- Arrange workspace with 2 converted spec files; fake Vitest output reports 1 failure.
-- Run `apply()`, then `result.verify()` on returned `TransformResult`.
-- Assert `verify()` returns `createVerifyResult({ rollback })`.
-
-### Rollback reverts only failed files
-
-- Arrange `VerifyResult` from jest-test verify with one failing file renamed `.jest.cts` → `.spec.ts`.
-- Call `result.rollback()`.
-- Assert failed file is renamed back to `.jest.cts` with original Jest content restored.
-- Assert passing file remains `.spec.ts` with Vitest content.
-
 # PR Plan
 
 ```mermaid
@@ -230,10 +132,122 @@ flowchart LR
   pr3 --> pr4
 ```
 
-- [ ] PR#1 — Add `TransformResult`, `VerifyResult`, `createTransformResult`, `createVerifyResult`; change `Transform.apply()` to return `Promise<TransformResult>`.
-- [ ] PR#2 — Rename `Finalizer` → `CommandFlusher`; add `CommandQueue.drain()`; wire into `Transformer` constructor.
-- [ ] PR#3 — Implement checkpoint cycle in `Transformer`; remove end-of-pipeline finalize from `Vitestify`.
-- [ ] PR#4 — jest-test `apply()` returns `TransformResult` with `verify`; implement Vitest run and per-file rollback.
+# 🚧 PR#1 — Add TransformResult, VerifyResult, createTransformResult, createVerifyResult; change Transform.apply() to return Promise\<TransformResult\>
+
+## Tasks
+
+- [ ] Change `Transform.apply()` return type to `Promise<TransformResult>`.
+- [ ] Add `createTransformResult()` and `createVerifyResult()` factories.
+- [ ] `createTransformResult()` — no `verify`; for transforms without verification.
+- [ ] `createTransformResult({ verify })` — for transforms that opt into verification.
+- [ ] `createVerifyResult()` — no `rollback`; verification passed.
+- [ ] `createVerifyResult({ rollback })` — verification failed; `rollback` encapsulates per-transform undo logic (e.g. jest-test closes over `failedFiles`).
+- [ ] Transform groups (`defineTransformGroup`) compose child `apply()` calls; only the group wrapper returns a result with `verify` if the group opts in.
+
+## Testing Strategy
+
+_None — pure type/factory addition, exercised indirectly by PR#3's Transformer tests._
+
+# 🚧 PR#2 — Rename Finalizer → CommandFlusher; add CommandQueue.drain(); wire into Transformer constructor
+
+## Tasks
+
+- [ ] Rename `Finalizer` → `CommandFlusher`; move from end-of-pipeline-only to injected dependency on `Transformer`.
+- [ ] Add `CommandQueue.drain(): Command[]` (or equivalent) so `CommandFlusher.flush()` runs only commands queued since the last flush.
+
+## Testing Strategy
+
+### 🚧 Drains queued commands on flush
+
+- Arrange workspace with 2 queued commands.
+- Run `commandFlusher.flush(workspace)`.
+- Assert both commands executed via `CommandRunner`.
+- Assert command queue is empty after flush.
+
+### 🚧 Continues after command failure
+
+- Arrange workspace with 2 commands; first fails, second succeeds.
+- Run `commandFlusher.flush(workspace)`.
+- Assert both commands were attempted; second still runs.
+
+# 🚧 PR#3 — Implement checkpoint cycle in Transformer; remove end-of-pipeline finalize from Vitestify
+
+## Tasks
+
+- [ ] `Transformer` runs checkpoint cycle when `result.verify !== undefined`.
+- [ ] For verifying transforms: after `apply()`, call `tree.commit()`, then `commandFlusher.flush(workspace)`, then `result.verify()`, then `verifyResult.rollback()` when `rollback` is defined.
+- [ ] For non-verifying transforms: `apply()` returns `createTransformResult()`; staged changes stay in `Tree` until the next checkpoint or end-of-run commit.
+- [ ] Remove `Vitestify`'s end-of-pipeline `finalizer.finalize()` — command flushing is owned by `Transformer` checkpoints and a final flush at end of run.
+- [ ] End of run: `tree.commit()` for any remaining staged changes, then `commandFlusher.flush()` for any remaining queued commands.
+- [ ] `rollback()` runs after disk is up to date — it may stage reversions via `Tree` and call `tree.commit()` again.
+
+## Testing Strategy
+
+### 🚧 Non-verifying transform does not flush before the next transform runs
+
+- Arrange transform A (no `verify`) that stages a change to file A.
+- Arrange transform B (no `verify`), inlined in the test: its `apply()` reads file A from the filesystem and stores the result in a variable before staging its own change.
+- Run `Transformer.transform(workspace)`.
+- Assert the variable was never written (stays `undefined`) — B's `apply()` ran before any commit/flush occurred, so file A wasn't yet on disk to read.
+
+### 🚧 Pipeline continues to the next transform after a non-verifying transform
+
+- Arrange transform A (no `verify`) that stages a change to file A.
+- Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
+- Run `Transformer.transform(workspace)`.
+- Assert the variable is `true` — B's `apply()` ran after A, and both files end up on disk with migrated content once the run finishes.
+
+### 🚧 Non-verifying transform's change is batched with the next checkpoint, not flushed early
+
+- Arrange transform A (no `verify`) that stages a change to file A, followed by transform B (`verify`) that stages a change to file B.
+- B's `verify()` reads both file A and file B from the filesystem.
+- Run `Transformer.transform(workspace)`.
+- Assert `verify()` observes both file A and file B already on disk with their migrated content — A's staged change was carried forward and flushed together with B's checkpoint, rather than being flushed separately right after A ran.
+
+### 🚧 Transform with verify succeeds when file is on disk
+
+- Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
+- `verify()` reads the file from the filesystem and returns `createVerifyResult()` if the expected content is there, otherwise `createVerifyResult({ rollback })`.
+- Run `Transformer.transform(workspace)`.
+- Assert the file is present on the real filesystem with the migrated content (proves commit + flush ran before `verify()`).
+- Assert the file still has the migrated content after the run (no rollback triggered).
+
+### 🚧 Transform with verify rolls back by renaming the file on disk
+
+- Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
+- `verify()` reads the file from the filesystem, determines it failed, and returns `createVerifyResult({ rollback })` where `rollback()` renames the file on disk (e.g. `.spec.ts` → `.jest.ts`) and restores the original content.
+- Run `Transformer.transform(workspace)`.
+- Assert the file no longer exists at its migrated path.
+- Assert the renamed file exists on disk with the original (pre-migration) content.
+
+### 🚧 Pipeline continues to the next transform after a rollback
+
+- Arrange transform A whose `apply()` stages a file change and returns `createTransformResult({ verify })`; `verify()` fails and returns `createVerifyResult({ rollback })`.
+- Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
+- Run `Transformer.transform(workspace)`.
+- Assert the variable is `true` — B's `apply()` still ran after A's rollback, and file B ends up on disk with migrated content once the run finishes.
+
+# 🚧 PR#4 — jest-test apply() returns TransformResult with verify; implement Vitest run and per-file rollback
+
+## Tasks
+
+- [ ] jest-test `apply()` returns `createTransformResult({ verify })` closing over transformed files and their original content.
+- [ ] jest-test `verify()` runs Vitest via `CommandRunner`; on success returns `createVerifyResult()`; on failure returns `createVerifyResult({ rollback })`.
+
+## Testing Strategy
+
+### 🚧 Verify returns VerifyResult with rollback on failure
+
+- Arrange workspace with 2 converted spec files; fake Vitest output reports 1 failure.
+- Run `apply()`, then `result.verify()` on returned `TransformResult`.
+- Assert `verify()` returns `createVerifyResult({ rollback })`.
+
+### 🚧 Rollback reverts only failed files
+
+- Arrange `VerifyResult` from jest-test verify with one failing file renamed `.jest.cts` → `.spec.ts`.
+- Call `result.rollback()`.
+- Assert failed file is renamed back to `.jest.cts` with original Jest content restored.
+- Assert passing file remains `.spec.ts` with Vitest content.
 
 # Alternatives Considered
 
