@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { relativePath } from '../core/models/relative-path';
 import { CommandRunnerFake } from '../core/ports/command-runner.fake';
 import { FileSystemFake } from '../core/ports/file-system.fake';
+import { VitestJsonReport } from '../packs/jest/transforms/jest-test/jest-test.transform';
 import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
 import { Vitestify } from './vitestify';
 
@@ -32,7 +33,24 @@ function setUp() {
 
   return {
     configureWorkspace: (mother: typeof nxWorkspaceMother) => {
-      commandRunner.configure(mother.buildCommands());
+      commandRunner.configure([
+        ...mother.buildCommands(),
+        // TODO: this needs an object mother
+        {
+          command: [
+            'npx',
+            'vitest',
+            'run',
+            '--reporter=json',
+            '--config',
+            'vitest.config.mts',
+          ],
+          cwd: relativePath('apps/my-app'),
+          output: JSON.stringify({
+            testResults: [],
+          } satisfies VitestJsonReport),
+        },
+      ]);
       fileSystem.configure(mother.buildFiles());
     },
     fileSystem,
