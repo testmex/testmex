@@ -296,8 +296,9 @@ describe(Transformer, () => {
     'transform with verify rolls back by renaming the file on disk',
     async () => {
       const fileSystem = new FileSystemFake();
+      const originalContent = 'original';
       fileSystem.configure({
-        [relativePath('a.spec.ts')]: 'original',
+        [relativePath('a.spec.ts')]: originalContent,
       });
       const commandFlusher = new CommandFlusher({
         commandRunner: new CommandRunnerFake(),
@@ -316,11 +317,11 @@ describe(Transformer, () => {
                 verify: async () => {
                   return createVerifyResult({
                     rollback: async () => {
-                      await fileSystem.writeFile(
+                      await workspace.tree.write(
                         relativePath('a.jest.ts'),
-                        'original',
+                        originalContent,
                       );
-                      await fileSystem.deleteFile(relativePath('a.spec.ts'));
+                      workspace.tree.delete(relativePath('a.spec.ts'));
                     },
                   });
                 },
@@ -340,7 +341,7 @@ describe(Transformer, () => {
         await fileSystem.maybeReadFile(relativePath('a.spec.ts')),
       ).toBeNull();
       expect(await fileSystem.maybeReadFile(relativePath('a.jest.ts'))).toBe(
-        'original',
+        originalContent,
       );
     },
   );
