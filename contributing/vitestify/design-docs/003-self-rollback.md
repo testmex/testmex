@@ -204,7 +204,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 - Run `Transformer.transform(workspace)`.
 - Assert `verify()` observes both file A and file B already on disk with their migrated content — A's staged change was carried forward and flushed together with B's checkpoint, rather than being flushed separately right after A ran.
 
-### 🚧 Transform with verify succeeds when file is on disk
+### ✅ Transform with verify succeeds when file is on disk
 
 - Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
 - `verify()` reads the file from the filesystem and returns `createVerifyResult()` if the expected content is there, otherwise `createVerifyResult({ rollback })`.

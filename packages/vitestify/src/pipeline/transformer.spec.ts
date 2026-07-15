@@ -247,7 +247,7 @@ describe(Transformer, () => {
     },
   );
 
-  it.todo(
+  it(
     'transform with verify succeeds when file is on disk',
     async () => {
       const fileSystem = new FileSystemFake();
