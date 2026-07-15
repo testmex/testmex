@@ -110,6 +110,41 @@ describe(Transformer, () => {
   });
 
   it(
+    'non-verifying transform does not flush before the next transform runs',
+    async () => {
+      const fileSystem = new FileSystemFake();
+      let contentReadByB: string | null = null;
+      const transformer = new Transformer({
+        transforms: [
+          defineTransform({
+            name: 'transform-a',
+            apply: async (workspace) => {
+              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
+            },
+          }),
+          defineTransform({
+            name: 'transform-b',
+            apply: async (workspace) => {
+              contentReadByB = await fileSystem.maybeReadFile(
+                relativePath('a.ts'),
+              );
+              await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
+            },
+          }),
+        ],
+      });
+      const workspace = new Workspace({
+        state: new WorkspaceState(),
+        tree: new Tree({ fileSystem }),
+      });
+
+      await transformer.transform(workspace);
+
+      expect(contentReadByB).toBeNull();
+    },
+  );
+
+  it(
     "non-verifying transform's change is batched with the next checkpoint, not flushed early",
     async () => {
       const fileSystem = new FileSystemFake();
