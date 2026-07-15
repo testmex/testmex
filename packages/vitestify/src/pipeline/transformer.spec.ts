@@ -108,4 +108,60 @@ describe(Transformer, () => {
       '[2/2] jest-spy-on · transformed · 1 file(s) transformed',
     ]);
   });
+
+  it.todo(
+    'non-verifying transform does not flush before the next transform runs',
+    () => {
+      // Arrange transform A (no `verify`) that stages a change to file A.
+      // Arrange transform B (no `verify`), inlined in the test: its `apply()` reads file A from the filesystem and stores the result in a variable before staging its own change.
+      // Run `Transformer.transform(workspace)`.
+      // Assert the variable was never written (stays `undefined`) — B's `apply()` ran before any commit/flush occurred, so file A wasn't yet on disk to read.
+    },
+  );
+
+  it.todo(
+    'pipeline continues to the next transform after a non-verifying transform',
+    () => {
+      // Arrange transform A (no `verify`) that stages a change to file A.
+      // Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
+      // Run `Transformer.transform(workspace)`.
+      // Assert the variable is `true` — B's `apply()` ran after A, and both files end up on disk with migrated content once the run finishes.
+    },
+  );
+
+  it.todo(
+    "non-verifying transform's change is batched with the next checkpoint, not flushed early",
+    () => {
+      // Arrange transform A (no `verify`) that stages a change to file A, followed by transform B (`verify`) that stages a change to file B.
+      // B's `verify()` reads both file A and file B from the filesystem.
+      // Run `Transformer.transform(workspace)`.
+      // Assert `verify()` observes both file A and file B already on disk with their migrated content — A's staged change was carried forward and flushed together with B's checkpoint, rather than being flushed separately right after A ran.
+    },
+  );
+
+  it.todo('transform with verify succeeds when file is on disk', () => {
+    // Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
+    // `verify()` reads the file from the filesystem and returns `createVerifyResult()` if the expected content is there, otherwise `createVerifyResult({ rollback })`.
+    // Run `Transformer.transform(workspace)`.
+    // Assert the file is present on the real filesystem with the migrated content (proves commit + flush ran before `verify()`).
+    // Assert the file still has the migrated content after the run (no rollback triggered).
+  });
+
+  it.todo(
+    'transform with verify rolls back by renaming the file on disk',
+    () => {
+      // Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
+      // `verify()` reads the file from the filesystem, determines it failed, and returns `createVerifyResult({ rollback })` where `rollback()` renames the file on disk (e.g. `.spec.ts` → `.jest.ts`) and restores the original content.
+      // Run `Transformer.transform(workspace)`.
+      // Assert the file no longer exists at its migrated path.
+      // Assert the renamed file exists on disk with the original (pre-migration) content.
+    },
+  );
+
+  it.todo('pipeline continues to the next transform after a rollback', () => {
+    // Arrange transform A whose `apply()` stages a file change and returns `createTransformResult({ verify })`; `verify()` fails and returns `createVerifyResult({ rollback })`.
+    // Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
+    // Run `Transformer.transform(workspace)`.
+    // Assert the variable is `true` — B's `apply()` still ran after A's rollback, and file B ends up on disk with migrated content once the run finishes.
+  });
 });
