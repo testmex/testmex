@@ -294,12 +294,54 @@ describe(Transformer, () => {
 
   it.todo(
     'transform with verify rolls back by renaming the file on disk',
-    () => {
-      // Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
-      // `verify()` reads the file from the filesystem, determines it failed, and returns `createVerifyResult({ rollback })` where `rollback()` renames the file on disk (e.g. `.spec.ts` → `.jest.ts`) and restores the original content.
-      // Run `Transformer.transform(workspace)`.
-      // Assert the file no longer exists at its migrated path.
-      // Assert the renamed file exists on disk with the original (pre-migration) content.
+    async () => {
+      const fileSystem = new FileSystemFake();
+      fileSystem.configure({
+        [relativePath('a.spec.ts')]: 'original',
+      });
+      const commandFlusher = new CommandFlusher({
+        commandRunner: new CommandRunnerFake(),
+      });
+      const transformer = new Transformer({
+        commandFlusher,
+        transforms: [
+          defineTransform({
+            name: 'transform-a',
+            apply: async (workspace) => {
+              await workspace.tree.write(
+                relativePath('a.spec.ts'),
+                'migrated',
+              );
+              return createTransformResult({
+                verify: async () => {
+                  return createVerifyResult({
+                    rollback: async () => {
+                      await fileSystem.writeFile(
+                        relativePath('a.jest.ts'),
+                        'original',
+                      );
+                      await fileSystem.deleteFile(relativePath('a.spec.ts'));
+                    },
+                  });
+                },
+              });
+            },
+          }),
+        ],
+      });
+      const workspace = new Workspace({
+        state: new WorkspaceState(),
+        tree: new Tree({ fileSystem }),
+      });
+
+      await transformer.transform(workspace);
+
+      expect(
+        await fileSystem.maybeReadFile(relativePath('a.spec.ts')),
+      ).toBeNull();
+      expect(await fileSystem.maybeReadFile(relativePath('a.jest.ts'))).toBe(
+        'original',
+      );
     },
   );
 
