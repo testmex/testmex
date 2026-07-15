@@ -6,7 +6,7 @@ import type { ProgressReporter } from '../core/ports/progress-reporter';
 const body = (phase: string, detail?: string) =>
   detail === undefined ? phase : `${phase} · ${detail}`;
 
-export class Finalizer {
+export class CommandFlusher {
   private readonly _commandRunner: CommandRunner;
   private readonly _progressReporter: ProgressReporter;
 
@@ -21,7 +21,7 @@ export class Finalizer {
     this._progressReporter = progressReporter;
   }
 
-  async finalize(workspace: Workspace): Promise<void> {
+  async flush(workspace: Workspace): Promise<void> {
     const commands = workspace.commands.all();
     const stepCount = commands.length;
 

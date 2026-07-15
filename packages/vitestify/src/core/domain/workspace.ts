@@ -136,4 +136,11 @@ export class CommandQueue {
   all(): readonly Command[] {
     return this._commands;
   }
+
+  /**
+   * @deprecated 🚧 work in progress
+   */
+  drain(): Command[] {
+    throw new Error(`🚧 work in progress`);
+  }
 }
