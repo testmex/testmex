@@ -7,7 +7,27 @@ export interface Transform {
     options?: {
       onProgress?(detail: string): void;
     },
-  ): Promise<void>;
+  ): Promise<TransformResult>;
+}
+
+export interface TransformResult {
+  verify?(): Promise<VerifyResult>;
+}
+
+export interface VerifyResult {
+  rollback?(): Promise<void>;
+}
+
+export function createTransformResult(options?: {
+  verify?(): Promise<VerifyResult>;
+}): TransformResult {
+  return { verify: options?.verify };
+}
+
+export function createVerifyResult(options?: {
+  rollback?(): Promise<void>;
+}): VerifyResult {
+  return { rollback: options?.rollback };
 }
 
 export function defineTransform(args: Transform): Transform {
@@ -31,6 +51,8 @@ export function defineTransformGroup(
           },
         });
       }
+
+      return createTransformResult();
     },
   });
 }

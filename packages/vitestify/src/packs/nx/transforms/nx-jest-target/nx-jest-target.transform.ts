@@ -1,5 +1,8 @@
 import { join } from 'node:path/posix';
-import { defineTransform } from '../../../../core/models/transform';
+import {
+  createTransformResult,
+  defineTransform,
+} from '../../../../core/models/transform';
 import { relativePath } from '../../../../core/models/relative-path';
 
 export const nxJestTargetTransform = defineTransform({
@@ -30,6 +33,8 @@ export const nxJestTargetTransform = defineTransform({
     }
 
     onProgress?.(`${transformedCount} file(s) transformed`);
+
+    return createTransformResult();
   },
 });
 

@@ -9,7 +9,10 @@ import {
   relativePath,
   type RelativePath,
 } from '../../../../core/models/relative-path';
-import { defineTransform } from '../../../../core/models/transform';
+import {
+  createTransformResult,
+  defineTransform,
+} from '../../../../core/models/transform';
 import { SgEditor } from '../../../../infra/ast/sg-editor';
 import { getAngularJestBuilderProjectRoots } from '../../angular-json';
 import { fileTags, findingTypes } from '../../identifiers';
@@ -81,6 +84,8 @@ export const vitestConfigTransform = defineTransform({
     }
 
     onProgress?.(`${transformedCount} file(s) transformed`);
+
+    return createTransformResult();
   },
 });
 

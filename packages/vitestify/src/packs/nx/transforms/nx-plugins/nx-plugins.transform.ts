@@ -1,5 +1,8 @@
 import { relativePath } from '../../../../core/models/relative-path';
-import { defineTransform } from '../../../../core/models/transform';
+import {
+  createTransformResult,
+  defineTransform,
+} from '../../../../core/models/transform';
 
 export const nxPluginsTransform = defineTransform({
   name: 'nx-plugins',
@@ -9,14 +12,14 @@ export const nxPluginsTransform = defineTransform({
     const nxJson = await tree.maybeReadJsonFile<NxJson>(nxJsonPath);
 
     if (nxJson == null) {
-      return;
+      return createTransformResult();
     }
 
     const plugins = (nxJson.plugins ?? []).map((entry) =>
       _maybeChangeJestPluginTarget(entry),
     );
     if (_hasVitestPlugin(plugins)) {
-      return;
+      return createTransformResult();
     }
 
     nxJson.plugins = [
@@ -36,6 +39,8 @@ export const nxPluginsTransform = defineTransform({
     commands.add(['npx', 'nx', 'add', '@nx/vitest']);
 
     onProgress?.('1 file(s) transformed');
+
+    return createTransformResult();
   },
 });
 

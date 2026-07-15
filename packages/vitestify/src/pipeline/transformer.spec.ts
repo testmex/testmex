@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
-import { defineTransform } from '../core/models/transform';
+import { createTransformResult, defineTransform } from '../core/models/transform';
 import { WorkspaceState } from '../core/models/workspace-state';
 import { FileSystemFake } from '../core/ports/file-system.fake';
 import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
@@ -17,12 +17,14 @@ describe(Transformer, () => {
           name: 'jest-mock',
           apply: async (_workspace, { onProgress } = {}) => {
             onProgress?.('2 file(s) transformed');
+            return createTransformResult();
           },
         }),
         defineTransform({
           name: 'jest-spy-on',
           apply: async (_workspace, { onProgress } = {}) => {
             onProgress?.('0 file(s) transformed');
+            return createTransformResult();
           },
         }),
       ],
@@ -84,6 +86,7 @@ describe(Transformer, () => {
           name: 'jest-spy-on',
           apply: async (_workspace, { onProgress } = {}) => {
             onProgress?.('1 file(s) transformed');
+            return createTransformResult();
           },
         }),
       ],

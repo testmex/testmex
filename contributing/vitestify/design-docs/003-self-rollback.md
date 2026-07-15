@@ -132,17 +132,17 @@ flowchart LR
   pr3 --> pr4
 ```
 
-# 🚧 PR#1 — Add TransformResult, VerifyResult, createTransformResult, createVerifyResult; change Transform.apply() to return Promise\<TransformResult\>
+# ✅ PR#1 — Add TransformResult, VerifyResult, createTransformResult, createVerifyResult; change Transform.apply() to return Promise\<TransformResult\>
 
 ## Tasks
 
-- [ ] Change `Transform.apply()` return type to `Promise<TransformResult>`.
-- [ ] Add `createTransformResult()` and `createVerifyResult()` factories.
-- [ ] `createTransformResult()` — no `verify`; for transforms without verification.
-- [ ] `createTransformResult({ verify })` — for transforms that opt into verification.
-- [ ] `createVerifyResult()` — no `rollback`; verification passed.
-- [ ] `createVerifyResult({ rollback })` — verification failed; `rollback` encapsulates per-transform undo logic (e.g. jest-test closes over `failedFiles`).
-- [ ] Transform groups (`defineTransformGroup`) compose child `apply()` calls; only the group wrapper returns a result with `verify` if the group opts in.
+- [x] Change `Transform.apply()` return type to `Promise<TransformResult>`.
+- [x] Add `createTransformResult()` and `createVerifyResult()` factories.
+- [x] `createTransformResult()` — no `verify`; for transforms without verification.
+- [x] `createTransformResult({ verify })` — for transforms that opt into verification.
+- [x] `createVerifyResult()` — no `rollback`; verification passed.
+- [x] `createVerifyResult({ rollback })` — verification failed; `rollback` encapsulates per-transform undo logic (e.g. jest-test closes over `failedFiles`).
+- [x] Transform groups (`defineTransformGroup`) compose child `apply()` calls; only the group wrapper returns a result with `verify` if the group opts in.
 
 ## Testing Strategy
 

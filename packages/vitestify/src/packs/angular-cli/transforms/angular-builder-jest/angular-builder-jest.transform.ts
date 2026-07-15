@@ -1,4 +1,7 @@
-import { defineTransform } from '../../../../core/models/transform';
+import {
+  createTransformResult,
+  defineTransform,
+} from '../../../../core/models/transform';
 import {
   ANGULAR_BUILDERS_JEST_BUILDER,
   ANGULAR_JSON_PATH,
@@ -15,7 +18,7 @@ export const angularBuilderJestTransform = defineTransform({
       await tree.maybeReadJsonFile<AngularJson>(ANGULAR_JSON_PATH);
 
     if (originalAngularJson == null) {
-      return;
+      return createTransformResult();
     }
 
     const devDependencies = new Set<string>();
@@ -54,7 +57,8 @@ export const angularBuilderJestTransform = defineTransform({
     if (angularJson !== originalAngularJson) {
       await tree.write(ANGULAR_JSON_PATH, JSON.stringify(angularJson, null, 2));
       onProgress?.('1 file(s) transformed');
-      return;
     }
+
+    return createTransformResult();
   },
 });

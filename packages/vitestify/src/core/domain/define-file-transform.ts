@@ -1,5 +1,9 @@
 import type { FindingType } from '../models/finding';
-import { defineTransform, type Transform } from '../models/transform';
+import {
+  createTransformResult,
+  defineTransform,
+  type Transform,
+} from '../models/transform';
 import type { FileInfo, FileTag } from './workspace';
 import { yieldToEventLoop } from '../utils/yield-to-event-loop';
 
@@ -49,6 +53,8 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
       }
 
       onProgress?.(`${transformedCount} file(s) transformed`);
+
+      return createTransformResult();
     },
   });
 }
