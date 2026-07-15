@@ -6,6 +6,7 @@ export type CommandResponse = readonly [command: Command, output: string];
 
 export interface CommandRunOptions {
   cwd?: RelativePath;
+  ignoreExitCode?: boolean;
 }
 
 export interface CommandRunner {

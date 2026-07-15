@@ -130,7 +130,10 @@ async function _runVitest(
       '--config',
       basename(configPath),
     ],
-    { cwd: relativePath(dirname(configPath)) },
+    {
+      cwd: relativePath(dirname(configPath)),
+      ignoreExitCode: true,
+    },
   );
   return JSON.parse(output);
 }
