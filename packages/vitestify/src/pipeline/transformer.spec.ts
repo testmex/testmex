@@ -345,10 +345,52 @@ describe(Transformer, () => {
     },
   );
 
-  it.todo('pipeline continues to the next transform after a rollback', () => {
-    // Arrange transform A whose `apply()` stages a file change and returns `createTransformResult({ verify })`; `verify()` fails and returns `createVerifyResult({ rollback })`.
-    // Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
-    // Run `Transformer.transform(workspace)`.
-    // Assert the variable is `true` — B's `apply()` still ran after A's rollback, and file B ends up on disk with migrated content once the run finishes.
-  });
+  it.todo(
+    'pipeline continues to the next transform after a rollback',
+    async () => {
+      const fileSystem = new FileSystemFake();
+      const commandFlusher = new CommandFlusher({
+        commandRunner: new CommandRunnerFake(),
+      });
+      let bApplied = false;
+      const transformer = new Transformer({
+        commandFlusher,
+        transforms: [
+          defineTransform({
+            name: 'transform-a',
+            apply: async (workspace) => {
+              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
+              return createTransformResult({
+                verify: async () =>
+                  createVerifyResult({
+                    rollback: async () => {
+                      await fileSystem.deleteFile(relativePath('a.ts'));
+                    },
+                  }),
+              });
+            },
+          }),
+          defineTransform({
+            name: 'transform-b',
+            apply: async (workspace) => {
+              bApplied = true;
+              await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
+              return createTransformResult();
+            },
+          }),
+        ],
+      });
+      const workspace = new Workspace({
+        state: new WorkspaceState(),
+        tree: new Tree({ fileSystem }),
+      });
+
+      await transformer.transform(workspace);
+
+      expect(bApplied).toBe(true);
+      expect(await fileSystem.maybeReadFile(relativePath('b.ts'))).toBe(
+        'b-migrated',
+      );
+    },
+  );
 });
