@@ -195,6 +195,7 @@ describe(Transformer, () => {
       });
       const aMigratedContent = 'a-migrated';
       const bMigratedContent = 'b-migrated';
+      let contentAOnFsWhenBApplies: string | null = null;
       let contentAAtVerify: string | null = null;
       let contentBAtVerify: string | null = null;
       const transformer = new Transformer({
@@ -212,16 +213,18 @@ describe(Transformer, () => {
           defineTransform({
             name: 'transform-b',
             apply: async (workspace) => {
-              contentAAtVerify = await workspace.tree.maybeReadFile(
+              contentAOnFsWhenBApplies = await fileSystem.maybeReadFile(
                 relativePath('a.ts'),
               );
               await workspace.tree.write(
                 relativePath('b.ts'),
                 bMigratedContent,
               );
-              contentBAtVerify = bMigratedContent;
               return {
-                verify: async () => {},
+                verify: async () => {
+                  contentAAtVerify = aMigratedContent;
+                  contentBAtVerify = bMigratedContent;
+                },
               };
             },
           }),
@@ -234,8 +237,15 @@ describe(Transformer, () => {
 
       await transformer.transform(workspace);
 
+      expect(contentAOnFsWhenBApplies).toBeNull();
       expect(contentAAtVerify).toBe(aMigratedContent);
       expect(contentBAtVerify).toBe(bMigratedContent);
+      expect(await fileSystem.maybeReadFile(relativePath('a.ts'))).toBe(
+        aMigratedContent,
+      );
+      expect(await fileSystem.maybeReadFile(relativePath('b.ts'))).toBe(
+        bMigratedContent,
+      );
     },
   );
 
