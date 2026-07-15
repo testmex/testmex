@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type {
-  Command,
-  CommandRunner,
-  CommandRunOptions,
-} from '../ports/command-runner';
+import type { CommandRunner } from '../ports/command-runner';
 import { CommandRunnerPooled } from './command-runner-pooled';
 
 describe(CommandRunnerPooled, () => {

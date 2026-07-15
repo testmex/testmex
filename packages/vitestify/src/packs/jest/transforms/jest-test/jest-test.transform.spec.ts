@@ -1,4 +1,3 @@
-import { dirname } from 'node:path/posix';
 import { describe, expect, it } from 'vitest';
 import { relativePath } from '../../../../core/models/relative-path';
 import {
