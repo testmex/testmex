@@ -345,7 +345,7 @@ describe(Transformer, () => {
     },
   );
 
-  it.todo(
+  it(
     'pipeline continues to the next transform after a rollback',
     async () => {
       const fileSystem = new FileSystemFake();

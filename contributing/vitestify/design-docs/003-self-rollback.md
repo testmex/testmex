@@ -170,15 +170,15 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 - Run `commandFlusher.flush(workspace)`.
 - Assert both commands were attempted; second still runs.
 
-# 🚧 PR#3 — Implement checkpoint cycle in Transformer; remove end-of-pipeline finalize from Vitestify
+# ✅ PR#3 — Implement checkpoint cycle in Transformer; remove end-of-pipeline finalize from Vitestify
 
 ## Tasks
 
 - [x] `Transformer` runs checkpoint cycle when `result.verify !== undefined`.
 - [x] For verifying transforms: after `apply()`, call `tree.commit()`, then `commandFlusher.flush(workspace)`, then `result.verify()`, then `verifyResult.rollback()` when `rollback` is defined.
 - [x] For non-verifying transforms: `apply()` returns `createTransformResult()`; staged changes stay in `Tree` until the next checkpoint or end-of-run commit.
-- [ ] Remove `Vitestify`'s end-of-pipeline `finalizer.finalize()` — command flushing is owned by `Transformer` checkpoints and a final flush at end of run.
-- [ ] End of run: `tree.commit()` for any remaining staged changes, then `commandFlusher.flush()` for any remaining queued commands.
+- [x] Remove `Vitestify`'s end-of-pipeline `finalizer.finalize()` — command flushing is owned by `Transformer` checkpoints and a final flush at end of run.
+- [x] End of run: `tree.commit()` for any remaining staged changes, then `commandFlusher.flush()` for any remaining queued commands.
 - [x] `rollback()` runs after disk is up to date — it may stage reversions via `Tree` and call `tree.commit()` again.
 
 ## Testing Strategy
@@ -220,7 +220,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 - Assert the file no longer exists at its migrated path.
 - Assert the renamed file exists on disk with the original (pre-migration) content.
 
-### 🚧 Pipeline continues to the next transform after a rollback
+### ✅ Pipeline continues to the next transform after a rollback
 
 - Arrange transform A whose `apply()` stages a file change and returns `createTransformResult({ verify })`; `verify()` fails and returns `createVerifyResult({ rollback })`.
 - Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.

@@ -64,6 +64,5 @@ export class Vitestify {
     const workspace = await this._scanner.scanWorkspace();
     await this._analyzer.analyze(workspace);
     await this._transformer.transform(workspace);
-    await this._commandFlusher.flush(workspace);
   }
 }

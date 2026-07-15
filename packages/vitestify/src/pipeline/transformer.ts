@@ -64,6 +64,7 @@ export class Transformer {
     }
 
     await workspace.tree.commit();
+    await this._commandFlusher?.flush(workspace);
   }
 }
 
