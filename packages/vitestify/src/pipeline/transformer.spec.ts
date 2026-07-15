@@ -321,7 +321,7 @@ describe(Transformer, () => {
                         relativePath('a.jest.ts'),
                         originalContent,
                       );
-                      workspace.tree.delete(relativePath('a.spec.ts'));
+                      workspace.delete(relativePath('a.spec.ts'));
                     },
                   });
                 },
