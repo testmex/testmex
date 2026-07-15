@@ -46,7 +46,7 @@ export class Vitestify {
     });
     this._scanner = new Scanner({
       commandRunner,
-      enricherFactories: this._packs.flatMap((pack) => pack.enricherFactories),
+      enrichers: this._packs.flatMap((pack) => pack.enrichers),
       fileSystem,
       progressReporter,
     });

@@ -27,10 +27,10 @@ export type DefineFileTransformArgs = DefineFileTransformBase &
 export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
     name: args.name,
-    apply: async (workspace, { onProgress } = {}) => {
+    apply: async (workspace, ctx) => {
       const { tree } = workspace;
       let transformedCount = 0;
-      onProgress?.(`0 file(s) transformed`);
+      ctx.onProgress?.(`0 file(s) transformed`);
 
       for (const file of workspace.files) {
         if (!_shouldTransform(file, args)) {
@@ -48,7 +48,7 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
         await yieldToEventLoop();
       }
 
-      onProgress?.(`${transformedCount} file(s) transformed`);
+      ctx.onProgress?.(`${transformedCount} file(s) transformed`);
     },
   });
 }

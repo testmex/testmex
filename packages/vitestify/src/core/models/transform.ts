@@ -1,14 +1,11 @@
 import type { WritableWorkspace } from '../domain/workspace';
-import type { CommandRunner } from '../ports/command-runner';
+import type { PipelineContext } from './pipeline-context';
 
 export interface Transform {
   name: string;
   apply(
     workspace: WritableWorkspace,
-    options?: {
-      commandRunner?: CommandRunner;
-      onProgress?(detail: string): void;
-    },
+    context: PipelineContext,
   ): Promise<void | TransformResult>;
 }
 
@@ -30,15 +27,17 @@ export function defineTransformGroup(
 ): Transform {
   return defineTransform({
     name,
-    apply: async (workspace, { commandRunner, onProgress } = {}) => {
+    apply: async (workspace, ctx) => {
       for (const [index, transform] of transforms.entries()) {
         const step = index + 1;
         const total = transforms.length;
 
         await transform.apply(workspace, {
-          commandRunner,
+          ...ctx,
           onProgress: (detail) => {
-            onProgress?.(`[${step}/${total}] ${transform.name} · ${detail}`);
+            ctx.onProgress?.(
+              `[${step}/${total}] ${transform.name} · ${detail}`,
+            );
           },
         });
       }

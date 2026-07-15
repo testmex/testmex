@@ -197,8 +197,8 @@ function setUp({
     },
     scanner: new Scanner({
       commandRunner,
-      enricherFactories: [angularCliPack, nxPack, jestPack, corePack].flatMap(
-        (pack) => pack.enricherFactories,
+      enrichers: [angularCliPack, nxPack, jestPack, corePack].flatMap(
+        (pack) => pack.enrichers,
       ),
       fileSystem,
       progressReporter,

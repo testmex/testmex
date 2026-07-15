@@ -4,6 +4,6 @@ import { angularBuilderJestTransform } from './transforms/angular-builder-jest/a
 
 export default definePack({
   name: 'angular-cli',
-  enricherFactories: [() => new AngularCliEnricher()],
+  enrichers: [new AngularCliEnricher()],
   transforms: [angularBuilderJestTransform],
 });

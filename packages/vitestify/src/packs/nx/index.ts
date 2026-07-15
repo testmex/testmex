@@ -7,7 +7,7 @@ import { nxPluginsTransform } from './transforms/nx-plugins/nx-plugins.transform
 
 export default definePack({
   name: 'nx',
-  enricherFactories: [(args) => new NxEnricher(args)],
+  enrichers: [new NxEnricher()],
   transforms: [
     nxJestTargetTransform,
     nxPluginsTransform,

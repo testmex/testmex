@@ -14,11 +14,11 @@ import { vitestConfigTransform } from './transforms/vitest-config/vitest-config.
 
 export default definePack({
   name: 'core',
-  enricherFactories: [
-    () => new CodeEnricher(),
-    () => new PackageManagerEnricher(),
-    () => new TestEnricher(),
-    () => new VitestConfigEnricher(),
+  enrichers: [
+    new CodeEnricher(),
+    new PackageManagerEnricher(),
+    new TestEnricher(),
+    new VitestConfigEnricher(),
   ],
   heuristics: [
     angularHeuristic,

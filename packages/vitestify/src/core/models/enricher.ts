@@ -1,24 +1,12 @@
-import type { CommandRunner } from '../ports/command-runner';
 import type { ReadonlyWorkspace } from '../domain/workspace';
+import type { PipelineContext } from './pipeline-context';
 import type { WorkspaceEnrichment } from './workspace-state';
 
-export interface EnricherOptions {
+export interface EnricherOptions extends PipelineContext {
   workspace: ReadonlyWorkspace;
-  onProgress?(detail: string): void;
 }
 
 export interface Enricher {
   name: string;
   enrich(options: EnricherOptions): Promise<WorkspaceEnrichment>;
-}
-
-export interface EnricherFactoryArgs {
-  commandRunner: CommandRunner;
-}
-
-export type EnricherFactory = (args: EnricherFactoryArgs) => Enricher;
-
-export interface DefineEnricherArgs {
-  name: string;
-  enrich: (options: EnricherOptions) => Promise<WorkspaceEnrichment>;
 }

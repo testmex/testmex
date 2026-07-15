@@ -17,13 +17,13 @@ describe(Transformer, () => {
       transforms: [
         defineTransform({
           name: 'jest-mock',
-          apply: async (_workspace, { onProgress } = {}) => {
+          apply: async (_workspace, { onProgress }) => {
             onProgress?.('2 file(s) transformed');
           },
         }),
         defineTransform({
           name: 'jest-spy-on',
-          apply: async (_workspace, { onProgress } = {}) => {
+          apply: async (_workspace, { onProgress }) => {
             onProgress?.('0 file(s) transformed');
           },
         }),
@@ -72,7 +72,7 @@ describe(Transformer, () => {
         }),
         defineTransform({
           name: 'jest-spy-on',
-          apply: async (_workspace, { onProgress } = {}) => {
+          apply: async (_workspace, { onProgress }) => {
             onProgress?.('1 file(s) transformed');
           },
         }),

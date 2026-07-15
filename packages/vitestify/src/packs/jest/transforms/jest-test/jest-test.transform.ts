@@ -5,7 +5,7 @@ import {
   defineTransformGroup,
   type VerifyResult,
 } from '../../../../core/models/transform';
-import type { CommandRunner } from '../../../../core/ports/command-runner';
+import type { PipelineContext } from '../../../../core/models/pipeline-context';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
 import { renameSpecToJestFile } from '../rename-spec-to-jest/rename-spec-to-jest.transform';
@@ -38,15 +38,15 @@ const _jestTestGroup = defineTransformGroup('jest-test', [
 
 export const jestTestTransform = defineTransform({
   name: 'jest-test',
-  apply: async (workspace, options) => {
+  apply: async (workspace, context) => {
     const originalContents = await _captureOriginalContents(workspace);
 
-    await _jestTestGroup.apply(workspace, options);
+    await _jestTestGroup.apply(workspace, context);
 
     return {
       verify: () =>
         _verify({
-          commandRunner: options?.commandRunner,
+          commandRunner: context.commandRunner,
           originalContents,
           workspace,
         }),
@@ -79,11 +79,11 @@ async function _verify({
   originalContents,
   workspace,
 }: {
-  commandRunner: CommandRunner | undefined;
+  commandRunner: PipelineContext['commandRunner'];
   originalContents: ReadonlyMap<RelativePath, string>;
   workspace: WritableWorkspace;
 }): Promise<void | VerifyResult> {
-  if (commandRunner === undefined || originalContents.size === 0) {
+  if (originalContents.size === 0) {
     return;
   }
 

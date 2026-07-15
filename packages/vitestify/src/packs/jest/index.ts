@@ -10,7 +10,7 @@ import { renameSpecToJestTransform } from './transforms/rename-spec-to-jest/rena
 
 export default definePack({
   name: 'jest',
-  enricherFactories: [() => new JestEnricher()],
+  enrichers: [new JestEnricher()],
   heuristics: [
     jestSymbolHeuristic,
     jestFocusSkipShorthandHeuristic,
