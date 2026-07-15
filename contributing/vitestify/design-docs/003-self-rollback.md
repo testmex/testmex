@@ -19,30 +19,30 @@
 
 ## Per-transform pipeline (default)
 
-- [ ] Transform without verification: `apply()` stages changes in `Tree` and returns void (`return;`); no commit, no commands, no verify yet.
-- [ ] Pipeline continues to the next transform with staged changes still in memory.
+- [x] Transform without verification: `apply()` stages changes in `Tree` and returns void (`return;`); no commit, no commands, no verify yet.
+- [x] Pipeline continues to the next transform with staged changes still in memory.
 
 ## Verifying transform (opt-in)
 
 When `apply()` returns a `TransformResult`, `Transformer` runs a full checkpoint cycle before moving on:
 
-- [ ] `Transformer` calls `CommandFlusher` directly to run queued workspace commands (e.g. `pnpm install`) so verification can use real on-disk state.
-- [ ] Transforms without verification return void from `apply()`; transforms that opt in return `{ verify }`.
-- [ ] `TransformResult.verify()` runs (e.g. jest-test transform runs converted tests).
-- [ ] On verify success: `verify()` returns void (`return;`); pipeline continues to the next transform.
-- [ ] On verify failure: `verify()` returns `{ rollback }`; `Transformer` calls `rollback()` to undo only that transform's broken changes, then pipeline continues.
+- [x] `Transformer` calls `CommandFlusher` directly to run queued workspace commands (e.g. `pnpm install`) so verification can use real on-disk state.
+- [x] Transforms without verification return void from `apply()`; transforms that opt in return `{ verify }`.
+- [x] `TransformResult.verify()` runs (e.g. jest-test transform runs converted tests).
+- [x] On verify success: `verify()` returns void (`return;`); pipeline continues to the next transform.
+- [x] On verify failure: `verify()` returns `{ rollback }`; `Transformer` calls `rollback()` to undo only that transform's broken changes, then pipeline continues.
 
 ## End of run
 
-- [ ] After the last transform, any remaining staged changes are committed once (if not already flushed by a verifying transform).
+- [x] After the last transform, any remaining staged changes are committed once (if not already flushed by a verifying transform).
 
 ## Examples
 
 ### jest-test transform group
 
-- [ ] After commit + `CommandFlusher`, verify runs Vitest against converted spec files.
-- [ ] On failure for individual files, rollback reverts only those files and renames them to `.jest.*` so Jest can still run them.
-- [ ] Passing files stay migrated; migration continues with a mix of Vitest and Jest tests.
+- [x] After commit + `CommandFlusher`, verify runs Vitest against converted spec files.
+- [x] On failure for individual files, rollback reverts only those files and renames them to `.jest.*` so Jest can still run them.
+- [x] Passing files stay migrated; migration continues with a mix of Vitest and Jest tests.
 
 # Design
 
