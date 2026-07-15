@@ -32,10 +32,27 @@ describe(CommandFlusher, () => {
     expect(workspace.commands.all()).toEqual([]);
   });
 
-  it.todo('continues after command failure', () => {
-    // Arrange workspace with 2 commands; first fails, second succeeds.
-    // Run `commandFlusher.flush(workspace)`.
-    // Assert both commands were attempted; second still runs.
+  it.todo('continues after command failure', async () => {
+    const commandRunner = new CommandRunnerFake();
+    commandRunner.configure({
+      'npm install vitest': { error: new Error('install failed') },
+      'npx nx add @nx/vitest': { output: '' },
+    });
+    const commandFlusher = new CommandFlusher({ commandRunner });
+    const workspace = new Workspace({
+      state: new WorkspaceState(),
+      tree: new Tree({ fileSystem: new FileSystemFake() }),
+    });
+
+    workspace.commands.add(['npm', 'install', 'vitest']);
+    workspace.commands.add(['npx', 'nx', 'add', '@nx/vitest']);
+
+    await commandFlusher.flush(workspace);
+
+    expect(commandRunner.executedCommands()).toEqual([
+      ['npm', 'install', 'vitest'],
+      ['npx', 'nx', 'add', '@nx/vitest'],
+    ]);
   });
 
   it('flusher reports command string during run', async () => {
