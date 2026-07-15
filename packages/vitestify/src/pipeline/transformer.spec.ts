@@ -292,7 +292,7 @@ describe(Transformer, () => {
     },
   );
 
-  it.todo(
+  it(
     'transform with verify rolls back by renaming the file on disk',
     async () => {
       const fileSystem = new FileSystemFake();

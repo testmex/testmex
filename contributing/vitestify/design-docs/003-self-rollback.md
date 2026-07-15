@@ -175,11 +175,11 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 ## Tasks
 
 - [x] `Transformer` runs checkpoint cycle when `result.verify !== undefined`.
-- [ ] For verifying transforms: after `apply()`, call `tree.commit()`, then `commandFlusher.flush(workspace)`, then `result.verify()`, then `verifyResult.rollback()` when `rollback` is defined.
+- [x] For verifying transforms: after `apply()`, call `tree.commit()`, then `commandFlusher.flush(workspace)`, then `result.verify()`, then `verifyResult.rollback()` when `rollback` is defined.
 - [x] For non-verifying transforms: `apply()` returns `createTransformResult()`; staged changes stay in `Tree` until the next checkpoint or end-of-run commit.
 - [ ] Remove `Vitestify`'s end-of-pipeline `finalizer.finalize()` — command flushing is owned by `Transformer` checkpoints and a final flush at end of run.
 - [ ] End of run: `tree.commit()` for any remaining staged changes, then `commandFlusher.flush()` for any remaining queued commands.
-- [ ] `rollback()` runs after disk is up to date — it may stage reversions via `Tree` and call `tree.commit()` again.
+- [x] `rollback()` runs after disk is up to date — it may stage reversions via `Tree` and call `tree.commit()` again.
 
 ## Testing Strategy
 
@@ -212,7 +212,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 - Assert the file is present on the real filesystem with the migrated content (proves commit + flush ran before `verify()`).
 - Assert the file still has the migrated content after the run (no rollback triggered).
 
-### 🚧 Transform with verify rolls back by renaming the file on disk
+### ✅ Transform with verify rolls back by renaming the file on disk
 
 - Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
 - `verify()` reads the file from the filesystem, determines it failed, and returns `createVerifyResult({ rollback })` where `rollback()` renames the file on disk (e.g. `.spec.ts` → `.jest.ts`) and restores the original content.
