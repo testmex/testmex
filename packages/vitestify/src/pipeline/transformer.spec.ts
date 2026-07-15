@@ -212,19 +212,16 @@ describe(Transformer, () => {
           defineTransform({
             name: 'transform-b',
             apply: async (workspace) => {
+              contentAAtVerify = await workspace.tree.maybeReadFile(
+                relativePath('a.ts'),
+              );
               await workspace.tree.write(
                 relativePath('b.ts'),
                 bMigratedContent,
               );
+              contentBAtVerify = bMigratedContent;
               return {
-                verify: async () => {
-                  contentAAtVerify = await workspace.tree.maybeReadFile(
-                    relativePath('a.ts'),
-                  );
-                  contentBAtVerify = await workspace.tree.maybeReadFile(
-                    relativePath('b.ts'),
-                  );
-                },
+                verify: async () => {},
               };
             },
           }),
