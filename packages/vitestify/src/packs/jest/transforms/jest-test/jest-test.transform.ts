@@ -1,30 +1,29 @@
 import { basename, dirname } from 'node:path/posix';
-import type { WritableWorkspace } from '../../../../core/domain/workspace';
 import {
   relativePath,
   type RelativePath,
 } from '../../../../core/models/relative-path';
+import type { TransformOptions } from '../../../../core/models/transform';
 import {
   defineTransform,
   defineTransformGroup,
   type VerifyResult,
 } from '../../../../core/models/transform';
-import type { TransformOptions } from '../../../../core/models/transform';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
 import { renameSpecToJestFile } from '../rename-spec-to-jest/rename-spec-to-jest.transform';
+import { jestFocusSkipShorthandTransform } from './jest-focus-skip-shorthand/jest-focus-skip-shorthand.transform';
 import { jestGlobalsImportTransform } from './jest-globals-import/jest-globals-import.transform';
 import { jestMockTransform } from './jest-mock/jest-mock.transform';
 import { jestSetMockTransform } from './jest-set-mock/jest-set-mock.transform';
 import { jestSetTimeoutTransform } from './jest-set-timeout/jest-set-timeout.transform';
 import { jestTypesTransform } from './jest-types/jest-types.transform';
 import { jestViTransform } from './jest-vi/jest-vi.transform';
-import { jestFocusSkipShorthandTransform } from './jest-focus-skip-shorthand/jest-focus-skip-shorthand.transform';
-import { snapTransform } from './snap/snap.transform';
 import {
   renameJestToSpecFile,
   renameJestToSpecTransform,
 } from './rename-jest-to-spec/rename-jest-to-spec.transform';
+import { snapTransform } from './snap/snap.transform';
 import { vitestImportsTransform } from './vitest-imports/vitest-imports.transform';
 
 const _jestTestGroup = defineTransformGroup('jest-test', [
@@ -42,25 +41,20 @@ const _jestTestGroup = defineTransformGroup('jest-test', [
 
 export const jestTestTransform = defineTransform({
   name: 'jest-test',
-  apply: async ({ workspace, commandRunner, onProgress }) => {
-    const originalContents = await _captureOriginalContents(workspace);
+  apply: async (options) => {
+    const originalContents = await _captureOriginalContents(options);
 
-    await _jestTestGroup.apply({ workspace, commandRunner, onProgress });
+    await _jestTestGroup.apply(options);
 
     return {
-      verify: () =>
-        _verify({
-          commandRunner,
-          originalContents,
-          workspace,
-        }),
+      verify: () => _verify({ ...options, originalContents }),
     };
   },
 });
 
-async function _captureOriginalContents(
-  workspace: WritableWorkspace,
-): Promise<Map<RelativePath, string>> {
+async function _captureOriginalContents({
+  workspace,
+}: TransformOptions): Promise<Map<RelativePath, string>> {
   const jestTestPaths = workspace.files
     .filter((file) => file.findings.includes(findingTypes.jestSymbol))
     .map((file) => file.path);
@@ -78,15 +72,12 @@ async function _captureOriginalContents(
   return originalContents;
 }
 
-async function _verify({
-  commandRunner,
-  originalContents,
-  workspace,
-}: {
-  commandRunner: TransformOptions['commandRunner'];
-  originalContents: ReadonlyMap<RelativePath, string>;
-  workspace: WritableWorkspace;
-}): Promise<void | VerifyResult> {
+async function _verify(
+  options: TransformOptions & {
+    originalContents: ReadonlyMap<RelativePath, string>;
+  },
+): Promise<void | VerifyResult> {
+  const { originalContents, workspace } = options;
   if (originalContents.size === 0) {
     return;
   }
@@ -103,18 +94,7 @@ async function _verify({
   const failedPaths: RelativePath[] = [];
 
   for (const configPath of vitestConfigPaths) {
-    const output = await commandRunner.run(
-      [
-        'npx',
-        'vitest',
-        'run',
-        '--reporter=json',
-        '--config',
-        basename(configPath),
-      ],
-      { cwd: relativePath(dirname(configPath)) },
-    );
-    const report = JSON.parse(output) as VitestJsonReport;
+    const report = await _runVitest(configPath, options);
 
     for (const path of migratedPaths) {
       if (
@@ -134,19 +114,34 @@ async function _verify({
     return;
   }
 
-  return {
-    rollback: () => _rollback({ failedPaths, originalContents, workspace }),
-  };
+  return { rollback: () => _rollback({ ...options, failedPaths }) };
+}
+
+async function _runVitest(
+  configPath: RelativePath,
+  { commandRunner }: TransformOptions,
+): Promise<VitestJsonReport> {
+  const output = await commandRunner.run(
+    [
+      'npx',
+      'vitest',
+      'run',
+      '--reporter=json',
+      '--config',
+      basename(configPath),
+    ],
+    { cwd: relativePath(dirname(configPath)) },
+  );
+  return JSON.parse(output);
 }
 
 async function _rollback({
   failedPaths,
   originalContents,
   workspace,
-}: {
+}: TransformOptions & {
   failedPaths: readonly RelativePath[];
   originalContents: ReadonlyMap<RelativePath, string>;
-  workspace: WritableWorkspace;
 }): Promise<void> {
   for (const specPath of failedPaths) {
     const jestPath = renameSpecToJestFile(specPath);
