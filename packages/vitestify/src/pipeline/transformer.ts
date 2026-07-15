@@ -2,6 +2,7 @@ import type { Workspace } from '../core/domain/workspace';
 import type { Transform } from '../core/models/transform';
 import { NullProgressReporter } from '../core/ports/null-progress-reporter';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
+import type { CommandFlusher } from './command-flusher';
 
 export class Transformer {
   private readonly _progressReporter: ProgressReporter;
@@ -11,6 +12,8 @@ export class Transformer {
     transforms,
     progressReporter = new NullProgressReporter(),
   }: {
+    /** Injected so `Transformer` can run per-checkpoint flushes; not yet used. */
+    commandFlusher?: CommandFlusher;
     transforms: Transform[];
     progressReporter?: ProgressReporter;
   }) {

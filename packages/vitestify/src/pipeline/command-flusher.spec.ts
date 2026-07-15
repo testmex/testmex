@@ -32,7 +32,7 @@ describe(CommandFlusher, () => {
     expect(workspace.commands.all()).toEqual([]);
   });
 
-  it.todo('continues after command failure', async () => {
+  it('continues after command failure', async () => {
     const commandRunner = new CommandRunnerFake();
     commandRunner.configure({
       'npm install vitest': { error: new Error('install failed') },

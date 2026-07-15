@@ -148,11 +148,11 @@ flowchart LR
 
 _None — pure type/factory addition, exercised indirectly by PR#3's Transformer tests._
 
-# 🚧 PR#2 — Rename Finalizer → CommandFlusher; add CommandQueue.drain(); wire into Transformer constructor
+# ✅ PR#2 — Rename Finalizer → CommandFlusher; add CommandQueue.drain(); wire into Transformer constructor
 
 ## Tasks
 
-- [ ] Rename `Finalizer` → `CommandFlusher`; move from end-of-pipeline-only to injected dependency on `Transformer`.
+- [x] Rename `Finalizer` → `CommandFlusher`; move from end-of-pipeline-only to injected dependency on `Transformer`.
 - [x] Add `CommandQueue.drain(): Command[]` (or equivalent) so `CommandFlusher.flush()` runs only commands queued since the last flush.
 
 ## Testing Strategy
@@ -164,7 +164,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 - Assert both commands executed via `CommandRunner`.
 - Assert command queue is empty after flush.
 
-### 🚧 Continues after command failure
+### ✅ Continues after command failure
 
 - Arrange workspace with 2 commands; first fails, second succeeds.
 - Run `commandFlusher.flush(workspace)`.
