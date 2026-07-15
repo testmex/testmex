@@ -2,8 +2,14 @@ import { Analyzer } from '../pipeline/analyzer';
 import type { Workspace } from '../core/domain/workspace';
 import type { Heuristic } from '../core/models/heuristic';
 import type { Transform } from '../core/models/transform';
-import { CommandRunnerFake } from '../core/ports/command-runner.fake';
+import type { CommandRunner } from '../core/ports/command-runner';
 import { Transformer } from '../pipeline/transformer';
+
+const nullCommandRunner: CommandRunner = {
+  async run() {
+    return '';
+  },
+};
 
 export interface RunTransformOptions {
   workspace: Workspace;
@@ -18,7 +24,7 @@ export async function runTransform({
 }: RunTransformOptions): Promise<void> {
   const analyzer = new Analyzer({ heuristics });
   const transformer = new Transformer({
-    commandRunner: new CommandRunnerFake(),
+    commandRunner: nullCommandRunner,
     flushCommands: false,
     transforms,
   });
