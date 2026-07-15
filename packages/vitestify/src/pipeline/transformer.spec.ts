@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
+import { relativePath } from '../core/models/relative-path';
 import { createTransformResult, defineTransform } from '../core/models/transform';
 import { WorkspaceState } from '../core/models/workspace-state';
 import { FileSystemFake } from '../core/ports/file-system.fake';
@@ -111,11 +112,41 @@ describe(Transformer, () => {
 
   it.todo(
     'non-verifying transform does not flush before the next transform runs',
-    () => {
-      // Arrange transform A (no `verify`) that stages a change to file A.
-      // Arrange transform B (no `verify`), inlined in the test: its `apply()` reads file A from the filesystem and stores the result in a variable before staging its own change.
-      // Run `Transformer.transform(workspace)`.
-      // Assert the variable was never written (stays `undefined`) — B's `apply()` ran before any commit/flush occurred, so file A wasn't yet on disk to read.
+    async () => {
+      const fileSystem = new FileSystemFake();
+      let contentReadByB: string | undefined;
+      const transformer = new Transformer({
+        transforms: [
+          defineTransform({
+            name: 'transform-a',
+            apply: async (workspace) => {
+              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
+              return createTransformResult();
+            },
+          }),
+          defineTransform({
+            name: 'transform-b',
+            apply: async (workspace) => {
+              const content = await fileSystem.maybeReadFile(
+                relativePath('a.ts'),
+              );
+              if (content !== null) {
+                contentReadByB = content;
+              }
+              await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
+              return createTransformResult();
+            },
+          }),
+        ],
+      });
+      const workspace = new Workspace({
+        state: new WorkspaceState(),
+        tree: new Tree({ fileSystem }),
+      });
+
+      await transformer.transform(workspace);
+
+      expect(contentReadByB).toBeUndefined();
     },
   );
 
