@@ -3,6 +3,7 @@ import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
 import { relativePath } from '../core/models/relative-path';
 import { defineTransform } from '../core/models/transform';
+import type { Transform } from '../core/models/transform';
 import { WorkspaceState } from '../core/models/workspace-state';
 import { CommandRunnerFake } from '../core/ports/command-runner.fake';
 import { FileSystemFake } from '../core/ports/file-system.fake';
@@ -12,9 +13,7 @@ import { Transformer } from './transformer';
 
 describe(Transformer, () => {
   it('transformer reports transform name during apply', async () => {
-    const progressReporter = new ProgressReporterFake();
-    const transformer = new Transformer({
-      progressReporter,
+    const { progressReporter, transform } = setUpTransformer({
       transforms: [
         defineTransform({
           name: 'jest-mock',
@@ -30,12 +29,8 @@ describe(Transformer, () => {
         }),
       ],
     });
-    const workspace = new Workspace({
-      state: new WorkspaceState(),
-      tree: new Tree({ fileSystem: new FileSystemFake() }),
-    });
 
-    await transformer.transform(workspace);
+    await transform();
 
     expect(progressReporter.messages()).toEqual([
       '[1/2] jest-mock · transforming',
@@ -48,9 +43,7 @@ describe(Transformer, () => {
   });
 
   it('transformer reports transform error on progress', async () => {
-    const progressReporter = new ProgressReporterFake();
-    const transformer = new Transformer({
-      progressReporter,
+    const { progressReporter, transform } = setUpTransformer({
       transforms: [
         defineTransform({
           name: 'jest-mock',
@@ -60,12 +53,8 @@ describe(Transformer, () => {
         }),
       ],
     });
-    const workspace = new Workspace({
-      state: new WorkspaceState(),
-      tree: new Tree({ fileSystem: new FileSystemFake() }),
-    });
 
-    await transformer.transform(workspace);
+    await transform();
 
     expect(progressReporter.errors()).toEqual([
       '[1/1] jest-mock · failed · parse failed',
@@ -73,9 +62,7 @@ describe(Transformer, () => {
   });
 
   it('transformer continues to next transform after error', async () => {
-    const progressReporter = new ProgressReporterFake();
-    const transformer = new Transformer({
-      progressReporter,
+    const { progressReporter, transform } = setUpTransformer({
       transforms: [
         defineTransform({
           name: 'jest-mock',
@@ -91,12 +78,8 @@ describe(Transformer, () => {
         }),
       ],
     });
-    const workspace = new Workspace({
-      state: new WorkspaceState(),
-      tree: new Tree({ fileSystem: new FileSystemFake() }),
-    });
 
-    await transformer.transform(workspace);
+    await transform();
 
     expect
       .soft(progressReporter.errors())
@@ -112,9 +95,8 @@ describe(Transformer, () => {
   });
 
   it('non-verifying transform does not flush before the next transform runs', async () => {
-    const fileSystem = new FileSystemFake();
     let contentReadByB: string | null = null;
-    const transformer = new Transformer({
+    const { fileSystem, transform } = setUpTransformer({
       transforms: [
         defineTransform({
           name: 'transform-a',
@@ -135,24 +117,18 @@ describe(Transformer, () => {
         }),
       ],
     });
-    const workspace = new Workspace({
-      state: new WorkspaceState(),
-      tree: new Tree({ fileSystem }),
-    });
 
-    await transformer.transform(workspace);
+    await transform();
 
     expect(contentReadByB).toBeNull();
   });
 
   it("non-verifying transform's change is batched with the next checkpoint, not flushed early", async () => {
-    const fileSystem = new FileSystemFake();
-    const commandFlusher = new CommandFlusher({
-      commandRunner: new CommandRunnerFake(),
-    });
     let contentAAtVerify: string | null = null;
-    const transformer = new Transformer({
-      commandFlusher,
+    const { fileSystem, transform } = setUpTransformer({
+      commandFlusher: new CommandFlusher({
+        commandRunner: new CommandRunnerFake(),
+      }),
       transforms: [
         defineTransform({
           name: 'transform-a',
@@ -177,29 +153,17 @@ describe(Transformer, () => {
         }),
       ],
     });
-    const workspace = new Workspace({
-      state: new WorkspaceState(),
-      tree: new Tree({ fileSystem }),
-    });
 
-    await transformer.transform(workspace);
+    await transform();
 
     expect(contentAAtVerify).toBe('expect(1).toBe(1)');
   });
 
   it('transform with verify rolls back', async () => {
-    const fileSystem = new FileSystemFake();
-
-    fileSystem.configure({
-      [relativePath('a.spec.ts')]: 'expect(1).toBe(1)',
-    });
-
-    const commandFlusher = new CommandFlusher({
-      commandRunner: new CommandRunnerFake(),
-    });
-
-    const transformer = new Transformer({
-      commandFlusher,
+    const { fileSystem, transform } = setUpTransformer({
+      commandFlusher: new CommandFlusher({
+        commandRunner: new CommandRunnerFake(),
+      }),
       transforms: [
         defineTransform({
           name: 'transform-a',
@@ -223,12 +187,12 @@ describe(Transformer, () => {
         }),
       ],
     });
-    const workspace = new Workspace({
-      state: new WorkspaceState(),
-      tree: new Tree({ fileSystem }),
+
+    fileSystem.configure({
+      [relativePath('a.spec.ts')]: 'expect(1).toBe(1)',
     });
 
-    await transformer.transform(workspace);
+    await transform();
 
     expect(await fileSystem.maybeReadFile(relativePath('a.spec.ts'))).toBe(
       'expect(1).toBe(1)',
@@ -236,13 +200,11 @@ describe(Transformer, () => {
   });
 
   it('pipeline continues to the next transform after a rollback', async () => {
-    const fileSystem = new FileSystemFake();
-    const commandFlusher = new CommandFlusher({
-      commandRunner: new CommandRunnerFake(),
-    });
     let bApplied = false;
-    const transformer = new Transformer({
-      commandFlusher,
+    const { transform } = setUpTransformer({
+      commandFlusher: new CommandFlusher({
+        commandRunner: new CommandRunnerFake(),
+      }),
       transforms: [
         defineTransform({
           name: 'transform-a',
@@ -262,13 +224,35 @@ describe(Transformer, () => {
         }),
       ],
     });
-    const workspace = new Workspace({
-      state: new WorkspaceState(),
-      tree: new Tree({ fileSystem }),
-    });
 
-    await transformer.transform(workspace);
+    await transform();
 
     expect(bApplied).toBe(true);
   });
 });
+
+function setUpTransformer({
+  commandFlusher,
+  transforms,
+}: {
+  commandFlusher?: CommandFlusher;
+  transforms: Transform[];
+}) {
+  const fileSystem = new FileSystemFake();
+  const progressReporter = new ProgressReporterFake();
+  const workspace = new Workspace({
+    state: new WorkspaceState(),
+    tree: new Tree({ fileSystem }),
+  });
+  const transformer = new Transformer({
+    commandFlusher,
+    progressReporter,
+    transforms,
+  });
+
+  return {
+    fileSystem,
+    progressReporter,
+    transform: () => transformer.transform(workspace),
+  };
+}
