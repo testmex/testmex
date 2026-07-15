@@ -113,7 +113,7 @@ describe(Transformer, () => {
     'non-verifying transform does not flush before the next transform runs',
     async () => {
       const fileSystem = new FileSystemFake();
-      let contentReadByB: string | undefined;
+      let contentReadByB: string | null = null;
       const transformer = new Transformer({
         transforms: [
           defineTransform({
@@ -125,12 +125,9 @@ describe(Transformer, () => {
           defineTransform({
             name: 'transform-b',
             apply: async (workspace) => {
-              const content = await fileSystem.maybeReadFile(
+              contentReadByB = await fileSystem.maybeReadFile(
                 relativePath('a.ts'),
               );
-              if (content !== null) {
-                contentReadByB = content;
-              }
               await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
             },
           }),
@@ -143,7 +140,7 @@ describe(Transformer, () => {
 
       await transformer.transform(workspace);
 
-      expect(contentReadByB).toBeUndefined();
+      expect(contentReadByB).toBeNull();
     },
   );
 
