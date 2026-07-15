@@ -9,9 +9,10 @@ import { WorkspaceState } from '../../../core/models/workspace-state';
 import { FileSystemFake } from '../../../core/ports/file-system.fake';
 import { CommandRunnerFake } from '../../../core/ports/command-runner.fake';
 import { angularJsonMother } from '../angular-json.mother';
-import { AngularCliEnricher } from './angular-cli.enricher';
+import { dummyOnProgress } from '../../../testing/dummy-on-progress';
+import { angularCliEnricher } from './angular-cli.enricher';
 
-describe(AngularCliEnricher, () => {
+describe(angularCliEnricher.name, () => {
   it('discovers projects from angular.json with empty root', async () => {
     const result = await enrich({
       [relativePath('angular.json')]: angularJsonMother
@@ -28,9 +29,10 @@ describe(AngularCliEnricher, () => {
 async function enrich(files: Record<RelativePath, string>) {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(files);
-  const enricher = new AngularCliEnricher();
-  return enricher.enrich({
+
+  return angularCliEnricher.enrich({
     commandRunner: new CommandRunnerFake(),
+    onProgress: dummyOnProgress,
     workspace: new Workspace({
       state: new WorkspaceState(),
       tree: new Tree({ fileSystem }),

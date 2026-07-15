@@ -1,5 +1,5 @@
 import { definePack } from '../../core/models/pack';
-import { JestEnricher } from './enrichers/jest.enricher';
+import { jestEnricher } from './enrichers/jest.enricher';
 import { jestSymbolHeuristic } from './heuristics/jest-symbol/jest-symbol.heuristic';
 import { jestTestTransform } from './transforms/jest-test/jest-test.transform';
 import { jestFocusSkipShorthandHeuristic } from './heuristics/jest-focus-skip-shorthand/jest-focus-skip-shorthand.heuristic';
@@ -10,7 +10,7 @@ import { renameSpecToJestTransform } from './transforms/rename-spec-to-jest/rena
 
 export default definePack({
   name: 'jest',
-  enrichers: [new JestEnricher()],
+  enrichers: [jestEnricher],
   heuristics: [
     jestSymbolHeuristic,
     jestFocusSkipShorthandHeuristic,

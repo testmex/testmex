@@ -1,12 +1,11 @@
 import type { Project } from '../../../core/domain/workspace';
-import { Enricher, type EnricherOptions } from '../../../core/models/enricher';
+import { defineEnricher } from '../../../core/models/enricher';
 import { relativePath } from '../../../core/models/relative-path';
 import { ANGULAR_JSON_PATH, type AngularJson } from '../../core/angular-json';
 
-export class AngularCliEnricher implements Enricher {
-  readonly name = 'angular-cli';
-
-  async enrich({ workspace, onProgress }: EnricherOptions) {
+export const angularCliEnricher = defineEnricher({
+  name: 'angular-cli',
+  async enrich({ workspace, onProgress }) {
     const angularJson = await workspace.tree.maybeReadFile(ANGULAR_JSON_PATH);
 
     if (angularJson === null) {
@@ -23,5 +22,5 @@ export class AngularCliEnricher implements Enricher {
     onProgress?.(`${projects.length} project(s) detected`);
 
     return { projects };
-  }
-}
+  },
+});

@@ -17,13 +17,13 @@ describe(Transformer, () => {
       transforms: [
         defineTransform({
           name: 'jest-mock',
-          apply: async (_workspace, { onProgress }) => {
+          apply: async ({ onProgress }) => {
             onProgress?.('2 file(s) transformed');
           },
         }),
         defineTransform({
           name: 'jest-spy-on',
-          apply: async (_workspace, { onProgress }) => {
+          apply: async ({ onProgress }) => {
             onProgress?.('0 file(s) transformed');
           },
         }),
@@ -72,7 +72,7 @@ describe(Transformer, () => {
         }),
         defineTransform({
           name: 'jest-spy-on',
-          apply: async (_workspace, { onProgress }) => {
+          apply: async ({ onProgress }) => {
             onProgress?.('1 file(s) transformed');
           },
         }),
@@ -100,7 +100,7 @@ describe(Transformer, () => {
       transforms: [
         defineTransform({
           name: 'transform-a',
-          apply: async (workspace) => {
+          apply: async ({ workspace }) => {
             await workspace.tree.write(
               relativePath('a.spec.ts'),
               'expect(1).toBe(1)',
@@ -129,7 +129,7 @@ describe(Transformer, () => {
       transforms: [
         defineTransform({
           name: 'transform-a',
-          apply: async (workspace) => {
+          apply: async ({ workspace }) => {
             await workspace.tree.write(
               relativePath('a.spec.ts'),
               'expect(1).toBe(1)',
@@ -161,7 +161,7 @@ describe(Transformer, () => {
       transforms: [
         defineTransform({
           name: 'transform-a',
-          apply: async (workspace) => {
+          apply: async ({ workspace }) => {
             await workspace.tree.write(
               relativePath('a.spec.ts'),
               'expect(2).toBe(2)',

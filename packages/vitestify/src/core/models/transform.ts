@@ -1,12 +1,13 @@
 import type { WritableWorkspace } from '../domain/workspace';
 import type { PipelineContext } from './pipeline-context';
 
+export interface TransformOptions extends PipelineContext {
+  workspace: WritableWorkspace;
+}
+
 export interface Transform {
   name: string;
-  apply(
-    workspace: WritableWorkspace,
-    context: PipelineContext,
-  ): Promise<void | TransformResult>;
+  apply(options: TransformOptions): Promise<void | TransformResult>;
 }
 
 export interface TransformResult {
@@ -27,15 +28,15 @@ export function defineTransformGroup(
 ): Transform {
   return defineTransform({
     name,
-    apply: async (workspace, ctx) => {
+    apply: async (options) => {
       for (const [index, transform] of transforms.entries()) {
         const step = index + 1;
         const total = transforms.length;
 
-        await transform.apply(workspace, {
-          ...ctx,
+        await transform.apply({
+          ...options,
           onProgress: (detail) => {
-            ctx.onProgress?.(
+            options.onProgress(
               `[${step}/${total}] ${transform.name} · ${detail}`,
             );
           },

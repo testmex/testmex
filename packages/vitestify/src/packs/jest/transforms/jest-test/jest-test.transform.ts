@@ -5,7 +5,7 @@ import {
   defineTransformGroup,
   type VerifyResult,
 } from '../../../../core/models/transform';
-import type { PipelineContext } from '../../../../core/models/pipeline-context';
+import type { TransformOptions } from '../../../../core/models/transform';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
 import { renameSpecToJestFile } from '../rename-spec-to-jest/rename-spec-to-jest.transform';
@@ -38,15 +38,15 @@ const _jestTestGroup = defineTransformGroup('jest-test', [
 
 export const jestTestTransform = defineTransform({
   name: 'jest-test',
-  apply: async (workspace, context) => {
+  apply: async ({ workspace, commandRunner, onProgress }) => {
     const originalContents = await _captureOriginalContents(workspace);
 
-    await _jestTestGroup.apply(workspace, context);
+    await _jestTestGroup.apply({ workspace, commandRunner, onProgress });
 
     return {
       verify: () =>
         _verify({
-          commandRunner: context.commandRunner,
+          commandRunner,
           originalContents,
           workspace,
         }),
@@ -79,7 +79,7 @@ async function _verify({
   originalContents,
   workspace,
 }: {
-  commandRunner: PipelineContext['commandRunner'];
+  commandRunner: TransformOptions['commandRunner'];
   originalContents: ReadonlyMap<RelativePath, string>;
   workspace: WritableWorkspace;
 }): Promise<void | VerifyResult> {

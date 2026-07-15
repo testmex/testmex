@@ -7,6 +7,7 @@ import {
 } from '../../../../core/models/workspace.mother';
 import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
 import { Analyzer } from '../../../../pipeline/analyzer';
+import { dummyOnProgress } from '../../../../testing/dummy-on-progress';
 import { runTransform } from '../../../../testing/run-transform';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
@@ -29,8 +30,10 @@ jest.mock('./foo');
   it('verify returns VerifyResult with rollback on failure', async () => {
     const { commandRunner, workspace } = await _setupVerifyWorkspace();
 
-    const result = await jestTestTransform.apply(workspace, {
+    const result = await jestTestTransform.apply({
+      workspace,
       commandRunner,
+      onProgress: dummyOnProgress,
     });
     const verifyResult = await result?.verify();
 
@@ -40,8 +43,10 @@ jest.mock('./foo');
   it('rollback reverts only failed files', async () => {
     const { commandRunner, workspace } = await _setupVerifyWorkspace();
 
-    const result = await jestTestTransform.apply(workspace, {
+    const result = await jestTestTransform.apply({
+      workspace,
       commandRunner,
+      onProgress: dummyOnProgress,
     });
 
     const verifyResult = await result?.verify();

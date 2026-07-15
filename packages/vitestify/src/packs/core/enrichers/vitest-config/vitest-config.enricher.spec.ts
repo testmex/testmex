@@ -7,9 +7,10 @@ import {
 } from '../../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
 import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
-import { VitestConfigEnricher } from './vitest-config.enricher';
+import { dummyOnProgress } from '../../../../testing/dummy-on-progress';
+import { vitestConfigEnricher } from './vitest-config.enricher';
 
-describe(VitestConfigEnricher, () => {
+describe(vitestConfigEnricher.name, () => {
   it('discovers vitest.config.mts and tags it as vitest-config', async () => {
     const mother = WorkspaceMother.withApp('my-app').withFile(
       WorkspaceFileMother.file({
@@ -54,10 +55,9 @@ async function enrich(mother: WorkspaceMother) {
   fileSystem.configure(mother.buildFiles());
 
   const tree = new Tree({ fileSystem });
-  const enricher = new VitestConfigEnricher();
-
-  return enricher.enrich({
+  return vitestConfigEnricher.enrich({
     commandRunner: new CommandRunnerFake(),
+    onProgress: dummyOnProgress,
     workspace: new Workspace({
       state: mother.buildWorkspaceState(),
       tree,

@@ -7,9 +7,10 @@ import {
 } from '../../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
 import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
-import { CodeEnricher } from './code.enricher';
+import { dummyOnProgress } from '../../../../testing/dummy-on-progress';
+import { codeEnricher } from './code.enricher';
 
-describe(CodeEnricher.name, () => {
+describe(codeEnricher.name, () => {
   it('discovers .ts files and tags them as code', async () => {
     const mother = WorkspaceMother.withApp('my-app').withFile(
       WorkspaceFileMother.file({
@@ -96,10 +97,9 @@ async function enrich(mother: WorkspaceMother) {
   fileSystem.configure(mother.buildFiles());
 
   const tree = new Tree({ fileSystem });
-  const enricher = new CodeEnricher();
-
-  return enricher.enrich({
+  return codeEnricher.enrich({
     commandRunner: new CommandRunnerFake(),
+    onProgress: dummyOnProgress,
     workspace: new Workspace({
       state: mother.buildWorkspaceState(),
       tree,

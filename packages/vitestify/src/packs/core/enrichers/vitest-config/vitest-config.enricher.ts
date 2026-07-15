@@ -1,8 +1,5 @@
 import { basename } from 'node:path/posix';
-import {
-  Enricher,
-  type EnricherOptions,
-} from '../../../../core/models/enricher';
+import { defineEnricher } from '../../../../core/models/enricher';
 import { fileTags } from '../../identifiers';
 
 const VITEST_CONFIG_FILE_NAMES = [
@@ -17,10 +14,9 @@ const VITEST_CONFIG_FILE_NAMES = [
 const VITEST_CONFIG_GLOB_PATTERN =
   '**/vitest.config.{mts,ts,js,mjs,cjs,cts}';
 
-export class VitestConfigEnricher implements Enricher {
-  readonly name = 'vitest-config';
-
-  async enrich({ workspace, onProgress }: EnricherOptions) {
+export const vitestConfigEnricher = defineEnricher({
+  name: 'vitest-config',
+  async enrich({ workspace, onProgress }) {
     const files = [];
     for await (const path of workspace.tree.scanDirectory({
       pattern: VITEST_CONFIG_GLOB_PATTERN,
@@ -38,5 +34,5 @@ export class VitestConfigEnricher implements Enricher {
     return {
       fileInfos: files.map((path) => ({ path, tags: [fileTags.vitestConfig] })),
     };
-  }
-}
+  },
+});

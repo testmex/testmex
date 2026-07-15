@@ -44,7 +44,8 @@ export class Transformer {
       progressStep.message('transforming');
 
       try {
-        const result = await transform.apply(workspace, {
+        const result = await transform.apply({
+          workspace,
           commandRunner: this._commandRunner,
           onProgress: (message) => {
             lastMessage = message;

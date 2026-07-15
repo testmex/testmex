@@ -11,6 +11,8 @@ const nullCommandRunner: CommandRunner = {
   },
 };
 
+export { nullCommandRunner };
+
 export interface RunTransformOptions {
   workspace: Workspace;
   heuristics?: Heuristic[];

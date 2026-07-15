@@ -4,7 +4,7 @@ import { relativePath } from '../../../../core/models/relative-path';
 
 export const nxJestTargetTransform = defineTransform({
   name: 'nx-jest-target',
-  apply: async (workspace, { onProgress }) => {
+  apply: async ({ workspace, onProgress }) => {
     const { tree } = workspace;
     let transformedCount = 0;
 

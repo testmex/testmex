@@ -1,17 +1,16 @@
 import { hasNx } from '../../../core/domain/tree-helpers/has-nx';
-import { Enricher, type EnricherOptions } from '../../../core/models/enricher';
+import { defineEnricher, type EnricherOptions } from '../../../core/models/enricher';
 import { relativePath } from '../../../core/models/relative-path';
 
-export class NxEnricher implements Enricher {
-  readonly name = 'nx';
-
-  async enrich({ workspace, onProgress, commandRunner }: EnricherOptions) {
+export const nxEnricher = defineEnricher({
+  name: 'nx',
+  async enrich({ workspace, onProgress, commandRunner }) {
     if (!(await hasNx(workspace.tree))) {
       return {};
     }
 
     onProgress?.('loading nx graph');
-    const graph = await this._runNxGraphCommand(commandRunner);
+    const graph = await _runNxGraphCommand(commandRunner);
 
     const projects = Object.values(graph.graph.nodes).map((node) => ({
       name: node.name,
@@ -21,19 +20,14 @@ export class NxEnricher implements Enricher {
     onProgress?.(`${projects.length} project(s) detected`);
 
     return { projects };
-  }
+  },
+});
 
-  private async _runNxGraphCommand(
-    commandRunner: EnricherOptions['commandRunner'],
-  ): Promise<NxGraph> {
-    const raw = await commandRunner.run([
-      'npx',
-      'nx',
-      'graph',
-      '--print',
-    ]);
-    return JSON.parse(raw);
-  }
+async function _runNxGraphCommand(
+  commandRunner: EnricherOptions['commandRunner'],
+): Promise<NxGraph> {
+  const raw = await commandRunner.run(['npx', 'nx', 'graph', '--print']);
+  return JSON.parse(raw);
 }
 
 interface NxGraph {

@@ -1,7 +1,7 @@
 import { basename, dirname, join } from 'node:path/posix';
 import type { FileTag, ReadonlyWorkspace } from '../../../core/domain/workspace';
 import type { EnrichmentFileInfo } from '../../../core/models/workspace-state';
-import { Enricher, type EnricherOptions } from '../../../core/models/enricher';
+import { defineEnricher } from '../../../core/models/enricher';
 import {
   relativePath,
   type RelativePath,
@@ -30,12 +30,11 @@ interface JestDiscoveredFile {
   type: JestDiscoveredFileType;
 }
 
-export class JestEnricher implements Enricher {
-  readonly name = 'jest';
-
-  async enrich({ onProgress, workspace }: EnricherOptions) {
+export const jestEnricher = defineEnricher({
+  name: 'jest',
+  async enrich({ onProgress, workspace }) {
     const files: Array<{ type: FileTag; path: RelativePath }> = [];
-    for await (const file of this._discoverJestFiles(workspace)) {
+    for await (const file of _discoverJestFiles(workspace)) {
       files.push(file);
       onProgress?.(`${files.length} file(s) found`);
     }
@@ -47,7 +46,7 @@ export class JestEnricher implements Enricher {
       .filter((file) => file.type === fileTags.test)
       .map((file) => file.path);
 
-    const jestSetupFileInfos = await this._discoverJestSetupFileInfos(
+    const jestSetupFileInfos = await _discoverJestSetupFileInfos(
       workspace,
       jestConfigPaths,
     );
@@ -77,64 +76,64 @@ export class JestEnricher implements Enricher {
         return [{ path }];
       }),
     };
+  },
+});
+
+async function* _discoverJestFiles(
+  workspace: ReadonlyWorkspace,
+): AsyncGenerator<JestDiscoveredFile> {
+  for await (const path of workspace.tree.scanDirectory({
+    pattern: JEST_FILE_GLOB_PATTERN,
+  })) {
+    if (
+      path.endsWith(JEST_CTS_EXTENSION) ||
+      path.endsWith(JEST_TSX_EXTENSION)
+    ) {
+      yield { path, type: fileTags.test };
+    }
+
+    if (
+      JEST_CONFIG_FILE_NAMES.some((name) => basename(path).endsWith(name))
+    ) {
+      yield { path, type: fileTags.jestConfig };
+    }
   }
+}
 
-  private async *_discoverJestFiles(
-    workspace: ReadonlyWorkspace,
-  ): AsyncGenerator<JestDiscoveredFile> {
-    for await (const path of workspace.tree.scanDirectory({
-      pattern: JEST_FILE_GLOB_PATTERN,
-    })) {
-      if (
-        path.endsWith(JEST_CTS_EXTENSION) ||
-        path.endsWith(JEST_TSX_EXTENSION)
-      ) {
-        yield { path, type: fileTags.test };
-      }
+async function _discoverJestSetupFileInfos(
+  workspace: ReadonlyWorkspace,
+  jestConfigPaths: RelativePath[],
+): Promise<EnrichmentFileInfo[]> {
+  const fileInfos: EnrichmentFileInfo[] = [];
 
-      if (
-        JEST_CONFIG_FILE_NAMES.some((name) => basename(path).endsWith(name))
-      ) {
-        yield { path, type: fileTags.jestConfig };
+  for (const jestConfigPath of jestConfigPaths) {
+    const jestConfigContent =
+      await workspace.tree.maybeReadFile(jestConfigPath);
+    if (jestConfigContent == null) {
+      continue;
+    }
+
+    const jestConfigDirectory = relativePath(dirname(jestConfigPath));
+    const setupFilePaths = _parseSetupFilePaths(jestConfigContent);
+
+    for (const setupFilePath of setupFilePaths) {
+      const resolvedPath = _resolveSetupFileRelativePath(
+        setupFilePath,
+        jestConfigDirectory,
+      );
+      const exists =
+        (await workspace.tree.maybeReadFile(resolvedPath)) != null;
+
+      if (exists) {
+        fileInfos.push({
+          path: resolvedPath,
+          tags: [fileTags.jestSetup],
+        });
       }
     }
   }
 
-  private async _discoverJestSetupFileInfos(
-    workspace: ReadonlyWorkspace,
-    jestConfigPaths: RelativePath[],
-  ): Promise<EnrichmentFileInfo[]> {
-    const fileInfos: EnrichmentFileInfo[] = [];
-
-    for (const jestConfigPath of jestConfigPaths) {
-      const jestConfigContent =
-        await workspace.tree.maybeReadFile(jestConfigPath);
-      if (jestConfigContent == null) {
-        continue;
-      }
-
-      const jestConfigDirectory = relativePath(dirname(jestConfigPath));
-      const setupFilePaths = _parseSetupFilePaths(jestConfigContent);
-
-      for (const setupFilePath of setupFilePaths) {
-        const resolvedPath = _resolveSetupFileRelativePath(
-          setupFilePath,
-          jestConfigDirectory,
-        );
-        const exists =
-          (await workspace.tree.maybeReadFile(resolvedPath)) != null;
-
-        if (exists) {
-          fileInfos.push({
-            path: resolvedPath,
-            tags: [fileTags.jestSetup],
-          });
-        }
-      }
-    }
-
-    return fileInfos;
-  }
+  return fileInfos;
 }
 
 function _parseSetupFilePaths(jestConfigContent: string): string[] {

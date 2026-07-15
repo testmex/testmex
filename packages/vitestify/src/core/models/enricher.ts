@@ -10,3 +10,7 @@ export interface Enricher {
   name: string;
   enrich(options: EnricherOptions): Promise<WorkspaceEnrichment>;
 }
+
+export function defineEnricher(args: Enricher): Enricher {
+  return args;
+}
