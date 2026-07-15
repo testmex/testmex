@@ -183,7 +183,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 
 ## Testing Strategy
 
-### 🚧 Non-verifying transform does not flush before the next transform runs
+### ✅ Non-verifying transform does not flush before the next transform runs
 
 - Arrange transform A (no `verify`) that stages a change to file A.
 - Arrange transform B (no `verify`), inlined in the test: its `apply()` reads file A from the filesystem and stores the result in a variable before staging its own change.

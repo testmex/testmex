@@ -110,7 +110,7 @@ describe(Transformer, () => {
     ]);
   });
 
-  it.todo(
+  it(
     'non-verifying transform does not flush before the next transform runs',
     async () => {
       const fileSystem = new FileSystemFake();
