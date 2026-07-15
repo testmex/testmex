@@ -137,10 +137,7 @@ export class CommandQueue {
     return this._commands;
   }
 
-  /**
-   * @deprecated 🚧 work in progress
-   */
   drain(): Command[] {
-    throw new Error(`🚧 work in progress`);
+    return this._commands.splice(0, this._commands.length);
   }
 }

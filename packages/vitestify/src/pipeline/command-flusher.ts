@@ -22,7 +22,7 @@ export class CommandFlusher {
   }
 
   async flush(workspace: Workspace): Promise<void> {
-    const commands = workspace.commands.all();
+    const commands = workspace.commands.drain();
     const stepCount = commands.length;
 
     for (const [index, command] of commands.entries()) {

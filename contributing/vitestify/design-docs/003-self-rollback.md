@@ -153,11 +153,11 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 ## Tasks
 
 - [ ] Rename `Finalizer` → `CommandFlusher`; move from end-of-pipeline-only to injected dependency on `Transformer`.
-- [ ] Add `CommandQueue.drain(): Command[]` (or equivalent) so `CommandFlusher.flush()` runs only commands queued since the last flush.
+- [x] Add `CommandQueue.drain(): Command[]` (or equivalent) so `CommandFlusher.flush()` runs only commands queued since the last flush.
 
 ## Testing Strategy
 
-### 🚧 Drains queued commands on flush
+### ✅ Drains queued commands on flush
 
 - Arrange workspace with 2 queued commands.
 - Run `commandFlusher.flush(workspace)`.

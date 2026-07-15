@@ -8,7 +8,7 @@ import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
 import { CommandFlusher } from './command-flusher';
 
 describe(CommandFlusher, () => {
-  it.todo('drains queued commands on flush', async () => {
+  it('drains queued commands on flush', async () => {
     const commandRunner = new CommandRunnerFake();
     commandRunner.configure({
       'npm install vitest': { output: '' },
