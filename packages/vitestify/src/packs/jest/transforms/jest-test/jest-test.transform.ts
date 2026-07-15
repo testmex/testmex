@@ -1,8 +1,6 @@
 import type { WritableWorkspace } from '../../../../core/domain/workspace';
 import type { RelativePath } from '../../../../core/models/relative-path';
 import {
-  createTransformResult,
-  createVerifyResult,
   defineTransform,
   defineTransformGroup,
   type VerifyResult,
@@ -44,14 +42,14 @@ export const jestTestTransform = defineTransform({
 
     await _jestTestGroup.apply(workspace, options);
 
-    return createTransformResult({
+    return {
       verify: () =>
         _verify({
           commandRunner: options?.commandRunner,
           originalContents,
           workspace,
         }),
-    });
+    };
   },
 });
 
@@ -83,9 +81,9 @@ async function _verify({
   commandRunner: CommandRunner | undefined;
   originalContents: ReadonlyMap<RelativePath, string>;
   workspace: WritableWorkspace;
-}): Promise<VerifyResult> {
+}): Promise<void | VerifyResult> {
   if (commandRunner === undefined || originalContents.size === 0) {
-    return createVerifyResult();
+    return;
   }
 
   const paths = Array.from(originalContents.keys());
@@ -104,12 +102,12 @@ async function _verify({
   );
 
   if (failedPaths.length === 0) {
-    return createVerifyResult();
+    return;
   }
 
-  return createVerifyResult({
+  return {
     rollback: () => _rollback({ failedPaths, originalContents, workspace }),
-  });
+  };
 }
 
 async function _rollback({

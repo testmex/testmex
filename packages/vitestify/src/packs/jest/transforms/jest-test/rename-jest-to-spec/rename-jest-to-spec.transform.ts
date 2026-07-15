@@ -1,7 +1,4 @@
-import {
-  createTransformResult,
-  defineTransform,
-} from '../../../../../core/models/transform';
+import { defineTransform } from '../../../../../core/models/transform';
 import {
   relativePath,
   type RelativePath,
@@ -32,8 +29,6 @@ export const renameJestToSpecTransform = defineTransform({
     }
 
     onProgress?.(`${transformedCount} file(s) transformed`);
-
-    return createTransformResult();
   },
 });
 

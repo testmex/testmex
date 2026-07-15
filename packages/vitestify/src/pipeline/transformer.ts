@@ -50,11 +50,11 @@ export class Transformer {
           },
         });
 
-        if (result.verify) {
+        if (result) {
           await workspace.tree.commit();
           await this._commandFlusher?.flush(workspace);
           const verifyResult = await result.verify();
-          await verifyResult.rollback?.();
+          await verifyResult?.rollback();
         }
 
         progressStep.done(_formatMessage('transformed', lastMessage));

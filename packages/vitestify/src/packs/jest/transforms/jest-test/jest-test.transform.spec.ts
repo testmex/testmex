@@ -75,7 +75,7 @@ jest.mock('./foo');
       const result = await jestTestTransform.apply(workspace, {
         commandRunner,
       });
-      const verifyResult = await result.verify?.();
+      const verifyResult = await result?.verify();
 
       expect(verifyResult?.rollback).toBeDefined();
     },

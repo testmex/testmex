@@ -1,8 +1,5 @@
 import { join } from 'node:path/posix';
-import {
-  createTransformResult,
-  defineTransform,
-} from '../../../../core/models/transform';
+import { defineTransform } from '../../../../core/models/transform';
 import { relativePath } from '../../../../core/models/relative-path';
 
 export const nxProjectJsonTransform = defineTransform({
@@ -32,8 +29,6 @@ export const nxProjectJsonTransform = defineTransform({
     }
 
     onProgress?.(`${transformedCount} file(s) transformed`);
-
-    return createTransformResult();
   },
 });
 

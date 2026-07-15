@@ -2,11 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
 import { relativePath } from '../core/models/relative-path';
-import {
-  createTransformResult,
-  createVerifyResult,
-  defineTransform,
-} from '../core/models/transform';
+import { defineTransform } from '../core/models/transform';
 import { WorkspaceState } from '../core/models/workspace-state';
 import { CommandRunnerFake } from '../core/ports/command-runner.fake';
 import { FileSystemFake } from '../core/ports/file-system.fake';
@@ -24,14 +20,12 @@ describe(Transformer, () => {
           name: 'jest-mock',
           apply: async (_workspace, { onProgress } = {}) => {
             onProgress?.('2 file(s) transformed');
-            return createTransformResult();
           },
         }),
         defineTransform({
           name: 'jest-spy-on',
           apply: async (_workspace, { onProgress } = {}) => {
             onProgress?.('0 file(s) transformed');
-            return createTransformResult();
           },
         }),
       ],
@@ -93,7 +87,6 @@ describe(Transformer, () => {
           name: 'jest-spy-on',
           apply: async (_workspace, { onProgress } = {}) => {
             onProgress?.('1 file(s) transformed');
-            return createTransformResult();
           },
         }),
       ],
@@ -127,7 +120,6 @@ describe(Transformer, () => {
             name: 'transform-a',
             apply: async (workspace) => {
               await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
-              return createTransformResult();
             },
           }),
           defineTransform({
@@ -140,7 +132,6 @@ describe(Transformer, () => {
                 contentReadByB = content;
               }
               await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
-              return createTransformResult();
             },
           }),
         ],
@@ -167,7 +158,6 @@ describe(Transformer, () => {
             name: 'transform-a',
             apply: async (workspace) => {
               await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
-              return createTransformResult();
             },
           }),
           defineTransform({
@@ -175,7 +165,6 @@ describe(Transformer, () => {
             apply: async (workspace) => {
               bApplied = true;
               await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
-              return createTransformResult();
             },
           }),
         ],
@@ -213,14 +202,13 @@ describe(Transformer, () => {
             name: 'transform-a',
             apply: async (workspace) => {
               await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
-              return createTransformResult();
             },
           }),
           defineTransform({
             name: 'transform-b',
             apply: async (workspace) => {
               await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
-              return createTransformResult({
+              return {
                 verify: async () => {
                   contentAAtVerify = await fileSystem.maybeReadFile(
                     relativePath('a.ts'),
@@ -228,9 +216,8 @@ describe(Transformer, () => {
                   contentBAtVerify = await fileSystem.maybeReadFile(
                     relativePath('b.ts'),
                   );
-                  return createVerifyResult();
                 },
-              });
+              };
             },
           }),
         ],
@@ -247,50 +234,48 @@ describe(Transformer, () => {
     },
   );
 
-  it(
-    'transform with verify succeeds when file is on disk',
-    async () => {
-      const fileSystem = new FileSystemFake();
-      const commandFlusher = new CommandFlusher({
-        commandRunner: new CommandRunnerFake(),
-      });
-      const transformer = new Transformer({
-        commandFlusher,
-        transforms: [
-          defineTransform({
-            name: 'transform-a',
-            apply: async (workspace) => {
-              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
-              return createTransformResult({
-                verify: async () => {
-                  const content = await fileSystem.maybeReadFile(
-                    relativePath('a.ts'),
-                  );
-                  return content === 'a-migrated'
-                    ? createVerifyResult()
-                    : createVerifyResult({
-                        rollback: async () => {
-                          throw new Error('unexpected rollback');
-                        },
-                      });
-                },
-              });
-            },
-          }),
-        ],
-      });
-      const workspace = new Workspace({
-        state: new WorkspaceState(),
-        tree: new Tree({ fileSystem }),
-      });
+  it('transform with verify succeeds when file is on disk', async () => {
+    const fileSystem = new FileSystemFake();
+    const commandFlusher = new CommandFlusher({
+      commandRunner: new CommandRunnerFake(),
+    });
+    const transformer = new Transformer({
+      commandFlusher,
+      transforms: [
+        defineTransform({
+          name: 'transform-a',
+          apply: async (workspace) => {
+            await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
+            return {
+              verify: async () => {
+                const content = await fileSystem.maybeReadFile(
+                  relativePath('a.ts'),
+                );
+                if (content === 'a-migrated') {
+                  return;
+                }
+                return {
+                  rollback: async () => {
+                    throw new Error('unexpected rollback');
+                  },
+                };
+              },
+            };
+          },
+        }),
+      ],
+    });
+    const workspace = new Workspace({
+      state: new WorkspaceState(),
+      tree: new Tree({ fileSystem }),
+    });
 
-      await transformer.transform(workspace);
+    await transformer.transform(workspace);
 
-      expect(await fileSystem.maybeReadFile(relativePath('a.ts'))).toBe(
-        'a-migrated',
-      );
-    },
-  );
+    expect(await fileSystem.maybeReadFile(relativePath('a.ts'))).toBe(
+      'a-migrated',
+    );
+  });
 
   it(
     'transform with verify rolls back by renaming the file on disk',
@@ -312,19 +297,17 @@ describe(Transformer, () => {
                 relativePath('a.spec.ts'),
                 'migrated',
               );
-              return createTransformResult({
-                verify: async () => {
-                  return createVerifyResult({
-                    rollback: async () => {
-                      await fileSystem.writeFile(
-                        relativePath('a.jest.ts'),
-                        'original',
-                      );
-                      await fileSystem.deleteFile(relativePath('a.spec.ts'));
-                    },
-                  });
-                },
-              });
+              return {
+                verify: async () => ({
+                  rollback: async () => {
+                    await fileSystem.writeFile(
+                      relativePath('a.jest.ts'),
+                      'original',
+                    );
+                    await fileSystem.deleteFile(relativePath('a.spec.ts'));
+                  },
+                }),
+              };
             },
           }),
         ],
@@ -360,14 +343,13 @@ describe(Transformer, () => {
             name: 'transform-a',
             apply: async (workspace) => {
               await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
-              return createTransformResult({
-                verify: async () =>
-                  createVerifyResult({
-                    rollback: async () => {
-                      await fileSystem.deleteFile(relativePath('a.ts'));
-                    },
-                  }),
-              });
+              return {
+                verify: async () => ({
+                  rollback: async () => {
+                    await fileSystem.deleteFile(relativePath('a.ts'));
+                  },
+                }),
+              };
             },
           }),
           defineTransform({
@@ -375,7 +357,6 @@ describe(Transformer, () => {
             apply: async (workspace) => {
               bApplied = true;
               await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
-              return createTransformResult();
             },
           }),
         ],

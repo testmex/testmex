@@ -1,9 +1,6 @@
 import { dirname, join } from 'node:path/posix';
 import { relativePath } from '../../../../core/models/relative-path';
-import {
-  createTransformResult,
-  defineTransform,
-} from '../../../../core/models/transform';
+import { defineTransform } from '../../../../core/models/transform';
 import { fileTags } from '../../identifiers';
 
 const TSCONFIG_SPEC_FILE_NAME = 'tsconfig.spec.json';
@@ -45,8 +42,6 @@ export const tsconfigTransform = defineTransform({
     }
 
     onProgress?.(`${transformedCount} file(s) transformed`);
-
-    return createTransformResult();
   },
 });
 

@@ -9,27 +9,15 @@ export interface Transform {
       commandRunner?: CommandRunner;
       onProgress?(detail: string): void;
     },
-  ): Promise<TransformResult>;
+  ): Promise<void | TransformResult>;
 }
 
 export interface TransformResult {
-  verify?(): Promise<VerifyResult>;
+  verify(): Promise<void | VerifyResult>;
 }
 
 export interface VerifyResult {
-  rollback?(): Promise<void>;
-}
-
-export function createTransformResult(options?: {
-  verify?(): Promise<VerifyResult>;
-}): TransformResult {
-  return { verify: options?.verify };
-}
-
-export function createVerifyResult(options?: {
-  rollback?(): Promise<void>;
-}): VerifyResult {
-  return { rollback: options?.rollback };
+  rollback(): Promise<void>;
 }
 
 export function defineTransform(args: Transform): Transform {
@@ -54,8 +42,6 @@ export function defineTransformGroup(
           },
         });
       }
-
-      return createTransformResult();
     },
   });
 }
