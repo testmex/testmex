@@ -1,21 +1,21 @@
-import { defineTransform } from '../../../../core/models/transform';
+import { findingType } from '../../../../core/models/finding';
 import {
   relativePath,
   type RelativePath,
 } from '../../../../core/models/relative-path';
-import {
-  JEST_CTS_EXTENSION,
-  JEST_TSX_EXTENSION,
-  SPEC_TS_EXTENSION,
-  SPEC_TSX_EXTENSION,
-} from '../../constants';
-import { findingTypes } from '../../identifiers';
+import { defineTransform } from '../../../../core/models/transform';
+
+const SPEC_TS_EXTENSION = '.spec.ts' as const;
+const SPEC_TSX_EXTENSION = '.spec.tsx' as const;
+const JEST_CTS_EXTENSION = '.jest.cts' as const;
+const JEST_TSX_EXTENSION = '.jest.tsx' as const;
+const JEST_SYMBOL_FINDING = findingType('jest-symbol');
 
 export const renameSpecToJestTransform = defineTransform({
   name: 'rename-spec-to-jest',
   apply: async ({ workspace, onProgress }) => {
     const jestTestPaths = workspace.files
-      .filter((file) => file.findings.includes(findingTypes.jestSymbol))
+      .filter((file) => file.findings.includes(JEST_SYMBOL_FINDING))
       .map((file) => file.path);
     let transformedCount = 0;
 

@@ -6,7 +6,6 @@ import { jestFocusSkipShorthandHeuristic } from './heuristics/jest-focus-skip-sh
 import { vitestImportsNeededHeuristic } from './heuristics/vitest-imports-needed/vitest-imports-needed.heuristic';
 import { configTestMatchTransform } from './transforms/config-test-match/config-test-match.transform';
 import { configTestPathPatternsTransform } from './transforms/config-test-path-patterns/config-test-path-patterns.transform';
-import { renameSpecToJestTransform } from './transforms/rename-spec-to-jest/rename-spec-to-jest.transform';
 
 export default definePack({
   name: 'jest',
@@ -19,7 +18,6 @@ export default definePack({
   transforms: [
     configTestPathPatternsTransform,
     configTestMatchTransform,
-    renameSpecToJestTransform,
     jestTestTransform,
   ],
 });

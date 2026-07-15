@@ -6,8 +6,8 @@ import {
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
 import { runTransform } from '../../../../testing/run-transform';
-import { findingTypes } from '../../identifiers';
-import { jestSymbolHeuristic } from '../../heuristics/jest-symbol/jest-symbol.heuristic';
+import { findingTypes } from '../../../jest/identifiers';
+import { jestSymbolHeuristic } from '../../../jest/heuristics/jest-symbol/jest-symbol.heuristic';
 import { renameSpecToJestTransform } from './rename-spec-to-jest.transform';
 
 describe(renameSpecToJestTransform.name, () => {

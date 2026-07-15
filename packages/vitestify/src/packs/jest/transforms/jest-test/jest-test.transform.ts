@@ -11,7 +11,7 @@ import {
 } from '../../../../core/models/transform';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
-import { renameSpecToJestFile } from '../rename-spec-to-jest/rename-spec-to-jest.transform';
+import { renameSpecToJestFile } from '../../../core/transforms/rename-spec-to-jest/rename-spec-to-jest.transform';
 import { jestFocusSkipShorthandTransform } from './jest-focus-skip-shorthand/jest-focus-skip-shorthand.transform';
 import { jestGlobalsImportTransform } from './jest-globals-import/jest-globals-import.transform';
 import { jestMockTransform } from './jest-mock/jest-mock.transform';
