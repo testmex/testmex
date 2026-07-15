@@ -24,6 +24,19 @@ import { jest } from '@jest/globals';
 jest.mock('./foo');
 `);
   });
+
+  it.todo('verify returns VerifyResult with rollback on failure', () => {
+    // Arrange workspace with 2 converted spec files; fake Vitest output reports 1 failure.
+    // Run `apply()`, then `result.verify()` on returned `TransformResult`.
+    // Assert `verify()` returns `createVerifyResult({ rollback })`.
+  });
+
+  it.todo('rollback reverts only failed files', () => {
+    // Arrange `VerifyResult` from jest-test verify with one failing file renamed `.jest.cts` → `.spec.ts`.
+    // Call `result.rollback()`.
+    // Assert failed file is renamed back to `.jest.cts` with original Jest content restored.
+    // Assert passing file remains `.spec.ts` with Vitest content.
+  });
 });
 
 async function _transformSetupTestFile(content: string) {

@@ -1,4 +1,10 @@
-import { defineTransformGroup } from '../../../../core/models/transform';
+import type { WritableWorkspace } from '../../../../core/domain/workspace';
+import {
+  createTransformResult,
+  defineTransform,
+  defineTransformGroup,
+  type VerifyResult,
+} from '../../../../core/models/transform';
 import { jestGlobalsImportTransform } from './jest-globals-import/jest-globals-import.transform';
 import { jestMockTransform } from './jest-mock/jest-mock.transform';
 import { jestSetMockTransform } from './jest-set-mock/jest-set-mock.transform';
@@ -10,7 +16,7 @@ import { snapTransform } from './snap/snap.transform';
 import { renameJestToSpecTransform } from './rename-jest-to-spec/rename-jest-to-spec.transform';
 import { vitestImportsTransform } from './vitest-imports/vitest-imports.transform';
 
-export const jestTestTransform = defineTransformGroup('jest-test', [
+const _jestTestGroup = defineTransformGroup('jest-test', [
   jestGlobalsImportTransform,
   jestMockTransform,
   jestSetMockTransform,
@@ -22,3 +28,21 @@ export const jestTestTransform = defineTransformGroup('jest-test', [
   vitestImportsTransform,
   renameJestToSpecTransform,
 ]);
+
+export const jestTestTransform = defineTransform({
+  name: 'jest-test',
+  apply: async (workspace, options) => {
+    await _jestTestGroup.apply(workspace, options);
+
+    return createTransformResult({
+      verify: () => _verify(workspace),
+    });
+  },
+});
+
+/**
+ * @deprecated 🚧 work in progress
+ */
+async function _verify(_workspace: WritableWorkspace): Promise<VerifyResult> {
+  throw new Error(`🚧 work in progress`);
+}
