@@ -83,20 +83,22 @@ jest.mock('./foo');
 
   it('rollback reverts only failed files', async () => {
     const appName = 'my-app';
+    const fooOriginalContent = "jest.mock('./foo');";
+    const barOriginalContent = "jest.mock('./bar');";
     const commandRunner = new CommandRunnerFake();
     const workspace = createTestingWorkspace(
       WorkspaceMother.withApp(appName)
         .withFile(
           WorkspaceFileMother.testFile({
             appName,
-            content: "jest.mock('./foo');",
+            content: fooOriginalContent,
             fileName: 'src/foo.jest.cts',
           }).build(),
         )
         .withFile(
           WorkspaceFileMother.testFile({
             appName,
-            content: "jest.mock('./bar');",
+            content: barOriginalContent,
             fileName: 'src/bar.jest.cts',
           }).build(),
         ),
@@ -122,18 +124,14 @@ jest.mock('./foo');
     const result = await jestTestTransform.apply(workspace, {
       commandRunner,
     });
-    await workspace.tree.commit();
-
-    const barMigratedContent = await workspace.tree.maybeReadFile(
-      barSpecPath,
-    );
+    const barMigratedContent = await workspace.tree.maybeReadFile(barSpecPath);
 
     const verifyResult = await result?.verify();
     await verifyResult?.rollback();
 
     expect(await workspace.tree.maybeReadFile(fooSpecPath)).toBeNull();
-    expect(await workspace.tree.maybeReadFile(fooJestPath)).toContain(
-      "jest.mock('./foo');",
+    expect(await workspace.tree.maybeReadFile(fooJestPath)).toBe(
+      fooOriginalContent,
     );
     expect(await workspace.tree.maybeReadFile(barSpecPath)).toBe(
       barMigratedContent,
