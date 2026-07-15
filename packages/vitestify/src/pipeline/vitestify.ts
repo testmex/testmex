@@ -55,6 +55,7 @@ export class Vitestify {
     });
     this._transformer = new Transformer({
       commandFlusher: this._commandFlusher,
+      commandRunner,
       transforms: this._packs.flatMap((pack) => pack.transforms),
       progressReporter,
     });

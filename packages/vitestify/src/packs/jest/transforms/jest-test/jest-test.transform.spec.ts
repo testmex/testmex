@@ -1,16 +1,24 @@
 import { describe, expect, it } from 'vitest';
+import { Analyzer } from '../../../../pipeline/analyzer';
 import {
   createTestingWorkspace,
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
 import { relativePath } from '../../../../core/models/relative-path';
+import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
 import { runTransform } from '../../../../testing/run-transform';
 import { fileTags } from '../../../core/identifiers';
 import { jestSymbolHeuristic } from '../../heuristics/jest-symbol/jest-symbol.heuristic';
 import { jestFocusSkipShorthandHeuristic } from '../../heuristics/jest-focus-skip-shorthand/jest-focus-skip-shorthand.heuristic';
 import { vitestImportsNeededHeuristic } from '../../heuristics/vitest-imports-needed/vitest-imports-needed.heuristic';
 import { jestTestTransform } from './jest-test.transform';
+
+const _heuristics = [
+  jestSymbolHeuristic,
+  jestFocusSkipShorthandHeuristic,
+  vitestImportsNeededHeuristic,
+];
 
 describe('jest-test', () => {
   it('does not transform a test file tagged as jest setup', async () => {
@@ -25,11 +33,53 @@ jest.mock('./foo');
 `);
   });
 
-  it.todo('verify returns VerifyResult with rollback on failure', () => {
-    // Arrange workspace with 2 converted spec files; fake Vitest output reports 1 failure.
-    // Run `apply()`, then `result.verify()` on returned `TransformResult`.
-    // Assert `verify()` returns `createVerifyResult({ rollback })`.
-  });
+  it.todo(
+    'verify returns VerifyResult with rollback on failure',
+    async () => {
+      const appName = 'my-app';
+      const commandRunner = new CommandRunnerFake();
+      const workspace = createTestingWorkspace(
+        WorkspaceMother.withApp(appName)
+          .withFile(
+            WorkspaceFileMother.testFile({
+              appName,
+              content: "jest.mock('./foo');",
+              fileName: 'src/foo.spec.ts',
+            }).build(),
+          )
+          .withFile(
+            WorkspaceFileMother.testFile({
+              appName,
+              content: "jest.mock('./bar');",
+              fileName: 'src/bar.spec.ts',
+            }).build(),
+          ),
+      );
+
+      await new Analyzer({ heuristics: _heuristics }).analyze(workspace);
+
+      const fooPath = relativePath(`apps/${appName}/src/foo.spec.ts`);
+      const barPath = relativePath(`apps/${appName}/src/bar.spec.ts`);
+
+      commandRunner.configure({
+        [`npx vitest run --reporter=json ${fooPath} ${barPath}`]: {
+          output: JSON.stringify({
+            testResults: [
+              { name: fooPath, status: 'failed' },
+              { name: barPath, status: 'passed' },
+            ],
+          }),
+        },
+      });
+
+      const result = await jestTestTransform.apply(workspace, {
+        commandRunner,
+      });
+      const verifyResult = await result.verify?.();
+
+      expect(verifyResult?.rollback).toBeDefined();
+    },
+  );
 
   it.todo('rollback reverts only failed files', () => {
     // Arrange `VerifyResult` from jest-test verify with one failing file renamed `.jest.cts` → `.spec.ts`.

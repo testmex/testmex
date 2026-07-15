@@ -1,24 +1,29 @@
 import type { Workspace } from '../core/domain/workspace';
 import type { Transform } from '../core/models/transform';
+import type { CommandRunner } from '../core/ports/command-runner';
 import { NullProgressReporter } from '../core/ports/null-progress-reporter';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
 import type { CommandFlusher } from './command-flusher';
 
 export class Transformer {
   private readonly _commandFlusher: CommandFlusher | undefined;
+  private readonly _commandRunner: CommandRunner | undefined;
   private readonly _progressReporter: ProgressReporter;
   private readonly _transforms: Transform[];
 
   constructor({
     commandFlusher,
+    commandRunner,
     transforms,
     progressReporter = new NullProgressReporter(),
   }: {
     commandFlusher?: CommandFlusher;
+    commandRunner?: CommandRunner;
     transforms: Transform[];
     progressReporter?: ProgressReporter;
   }) {
     this._commandFlusher = commandFlusher;
+    this._commandRunner = commandRunner;
     this._progressReporter = progressReporter;
     this._transforms = transforms;
   }
@@ -38,6 +43,7 @@ export class Transformer {
 
       try {
         const result = await transform.apply(workspace, {
+          commandRunner: this._commandRunner,
           onProgress: (message) => {
             lastMessage = message;
             progressStep.message(_formatMessage('transforming', message));

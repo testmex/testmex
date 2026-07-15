@@ -37,7 +37,7 @@ export const renameJestToSpecTransform = defineTransform({
   },
 });
 
-function renameJestToSpecFile(path: RelativePath): RelativePath | null {
+export function renameJestToSpecFile(path: RelativePath): RelativePath | null {
   if (path.endsWith(JEST_TSX_EXTENSION)) {
     return relativePath(
       path.slice(0, -JEST_TSX_EXTENSION.length) + SPEC_TSX_EXTENSION,
