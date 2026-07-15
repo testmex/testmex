@@ -81,11 +81,63 @@ jest.mock('./foo');
     },
   );
 
-  it.todo('rollback reverts only failed files', () => {
-    // Arrange `VerifyResult` from jest-test verify with one failing file renamed `.jest.cts` → `.spec.ts`.
-    // Call `result.rollback()`.
-    // Assert failed file is renamed back to `.jest.cts` with original Jest content restored.
-    // Assert passing file remains `.spec.ts` with Vitest content.
+  it.todo('rollback reverts only failed files', async () => {
+    const appName = 'my-app';
+    const commandRunner = new CommandRunnerFake();
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp(appName)
+        .withFile(
+          WorkspaceFileMother.testFile({
+            appName,
+            content: "jest.mock('./foo');",
+            fileName: 'src/foo.jest.cts',
+          }).build(),
+        )
+        .withFile(
+          WorkspaceFileMother.testFile({
+            appName,
+            content: "jest.mock('./bar');",
+            fileName: 'src/bar.jest.cts',
+          }).build(),
+        ),
+    );
+
+    await new Analyzer({ heuristics: _heuristics }).analyze(workspace);
+
+    const fooSpecPath = relativePath(`apps/${appName}/src/foo.spec.ts`);
+    const barSpecPath = relativePath(`apps/${appName}/src/bar.spec.ts`);
+    const fooJestPath = relativePath(`apps/${appName}/src/foo.jest.cts`);
+
+    commandRunner.configure({
+      [`npx vitest run --reporter=json ${fooSpecPath} ${barSpecPath}`]: {
+        output: JSON.stringify({
+          testResults: [
+            { name: fooSpecPath, status: 'failed' },
+            { name: barSpecPath, status: 'passed' },
+          ],
+        }),
+      },
+    });
+
+    const result = await jestTestTransform.apply(workspace, {
+      commandRunner,
+    });
+    await workspace.tree.commit();
+
+    const barMigratedContent = await workspace.tree.maybeReadFile(
+      barSpecPath,
+    );
+
+    const verifyResult = await result?.verify();
+    await verifyResult?.rollback();
+
+    expect(await workspace.tree.maybeReadFile(fooSpecPath)).toBeNull();
+    expect(await workspace.tree.maybeReadFile(fooJestPath)).toContain(
+      "jest.mock('./foo');",
+    );
+    expect(await workspace.tree.maybeReadFile(barSpecPath)).toBe(
+      barMigratedContent,
+    );
   });
 });
 

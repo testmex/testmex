@@ -127,8 +127,8 @@ async function _rollback({
       continue;
     }
 
-    await workspace.rename(specPath, jestPath);
     await workspace.tree.write(jestPath, originalContent);
+    workspace.delete(specPath);
   }
 
   await workspace.tree.commit();
