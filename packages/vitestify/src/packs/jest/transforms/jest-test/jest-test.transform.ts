@@ -6,6 +6,7 @@ import {
   type VerifyResult,
 } from '../../../../core/models/transform';
 import type { CommandRunner } from '../../../../core/ports/command-runner';
+import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
 import { renameSpecToJestFile } from '../rename-spec-to-jest/rename-spec-to-jest.transform';
 import { jestGlobalsImportTransform } from './jest-globals-import/jest-globals-import.transform';
@@ -86,20 +87,41 @@ async function _verify({
     return;
   }
 
-  const paths = Array.from(originalContents.keys());
-  const output = await commandRunner.run([
-    'npx',
-    'vitest',
-    'run',
-    '--reporter=json',
-    ...paths,
-  ]);
-  const report = JSON.parse(output) as VitestJsonReport;
-  const failedPaths = paths.filter((path) =>
-    report.testResults.some(
-      (result) => result.status === 'failed' && result.name.endsWith(path),
-    ),
-  );
+  const vitestConfigPaths = workspace.files
+    .filter((file) => file.tags.includes(fileTags.vitestConfig))
+    .map((file) => file.path);
+
+  if (vitestConfigPaths.length === 0) {
+    return;
+  }
+
+  const migratedPaths = Array.from(originalContents.keys());
+  const failedPaths: RelativePath[] = [];
+
+  for (const configPath of vitestConfigPaths) {
+    const output = await commandRunner.run([
+      'npx',
+      'vitest',
+      'run',
+      '--reporter=json',
+      '--config',
+      configPath,
+    ]);
+    const report = JSON.parse(output) as VitestJsonReport;
+
+    for (const path of migratedPaths) {
+      if (
+        failedPaths.includes(path) ||
+        !report.testResults.some(
+          (result) => result.status === 'failed' && result.name.endsWith(path),
+        )
+      ) {
+        continue;
+      }
+
+      failedPaths.push(path);
+    }
+  }
 
   if (failedPaths.length === 0) {
     return;
@@ -134,6 +156,6 @@ async function _rollback({
   await workspace.tree.commit();
 }
 
-interface VitestJsonReport {
+export interface VitestJsonReport {
   testResults: Array<{ name: string; status: string }>;
 }

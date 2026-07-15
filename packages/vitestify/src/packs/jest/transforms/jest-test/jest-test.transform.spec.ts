@@ -1,24 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { Analyzer } from '../../../../pipeline/analyzer';
+import { relativePath } from '../../../../core/models/relative-path';
 import {
   createTestingWorkspace,
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
-import { relativePath } from '../../../../core/models/relative-path';
 import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
+import { Analyzer } from '../../../../pipeline/analyzer';
 import { runTransform } from '../../../../testing/run-transform';
 import { fileTags } from '../../../core/identifiers';
-import { jestSymbolHeuristic } from '../../heuristics/jest-symbol/jest-symbol.heuristic';
-import { jestFocusSkipShorthandHeuristic } from '../../heuristics/jest-focus-skip-shorthand/jest-focus-skip-shorthand.heuristic';
-import { vitestImportsNeededHeuristic } from '../../heuristics/vitest-imports-needed/vitest-imports-needed.heuristic';
-import { jestTestTransform } from './jest-test.transform';
-
-const _heuristics = [
-  jestSymbolHeuristic,
-  jestFocusSkipShorthandHeuristic,
-  vitestImportsNeededHeuristic,
-];
+import { findingTypes } from '../../identifiers';
+import jestPack from '../../index';
+import { jestTestTransform, VitestJsonReport } from './jest-test.transform';
 
 describe('jest-test', () => {
   it('does not transform a test file tagged as jest setup', async () => {
@@ -33,111 +26,116 @@ jest.mock('./foo');
 `);
   });
 
-  it(
-    'verify returns VerifyResult with rollback on failure',
-    async () => {
-      const appName = 'my-app';
-      const commandRunner = new CommandRunnerFake();
-      const workspace = createTestingWorkspace(
-        WorkspaceMother.withApp(appName)
-          .withFile(
-            WorkspaceFileMother.testFile({
-              appName,
-              content: "jest.mock('./foo');",
-              fileName: 'src/foo.spec.ts',
-            }).build(),
-          )
-          .withFile(
-            WorkspaceFileMother.testFile({
-              appName,
-              content: "jest.mock('./bar');",
-              fileName: 'src/bar.spec.ts',
-            }).build(),
-          ),
-      );
-
-      await new Analyzer({ heuristics: _heuristics }).analyze(workspace);
-
-      const fooPath = relativePath(`apps/${appName}/src/foo.spec.ts`);
-      const barPath = relativePath(`apps/${appName}/src/bar.spec.ts`);
-
-      commandRunner.configure({
-        [`npx vitest run --reporter=json ${fooPath} ${barPath}`]: {
-          output: JSON.stringify({
-            testResults: [
-              { name: fooPath, status: 'failed' },
-              { name: barPath, status: 'passed' },
-            ],
-          }),
-        },
-      });
-
-      const result = await jestTestTransform.apply(workspace, {
-        commandRunner,
-      });
-      const verifyResult = await result?.verify();
-
-      expect(verifyResult?.rollback).toBeDefined();
-    },
-  );
-
-  it('rollback reverts only failed files', async () => {
-    const appName = 'my-app';
-    const fooOriginalContent = "jest.mock('./foo');";
-    const barOriginalContent = "jest.mock('./bar');";
-    const commandRunner = new CommandRunnerFake();
-    const workspace = createTestingWorkspace(
-      WorkspaceMother.withApp(appName)
-        .withFile(
-          WorkspaceFileMother.testFile({
-            appName,
-            content: fooOriginalContent,
-            fileName: 'src/foo.jest.cts',
-          }).build(),
-        )
-        .withFile(
-          WorkspaceFileMother.testFile({
-            appName,
-            content: barOriginalContent,
-            fileName: 'src/bar.jest.cts',
-          }).build(),
-        ),
-    );
-
-    await new Analyzer({ heuristics: _heuristics }).analyze(workspace);
-
-    const fooSpecPath = relativePath(`apps/${appName}/src/foo.spec.ts`);
-    const barSpecPath = relativePath(`apps/${appName}/src/bar.spec.ts`);
-    const fooJestPath = relativePath(`apps/${appName}/src/foo.jest.cts`);
-
-    commandRunner.configure({
-      [`npx vitest run --reporter=json ${fooSpecPath} ${barSpecPath}`]: {
-        output: JSON.stringify({
-          testResults: [
-            { name: fooSpecPath, status: 'failed' },
-            { name: barSpecPath, status: 'passed' },
-          ],
-        }),
-      },
-    });
+  it('verify returns VerifyResult with rollback on failure', async () => {
+    const { commandRunner, workspace } = await _setupVerifyWorkspace();
 
     const result = await jestTestTransform.apply(workspace, {
       commandRunner,
     });
-    const barMigratedContent = await workspace.tree.maybeReadFile(barSpecPath);
+    const verifyResult = await result?.verify();
+
+    expect(verifyResult?.rollback).toBeDefined();
+  });
+
+  it('rollback reverts only failed files', async () => {
+    const { commandRunner, workspace } = await _setupVerifyWorkspace();
+
+    const result = await jestTestTransform.apply(workspace, {
+      commandRunner,
+    });
 
     const verifyResult = await result?.verify();
     await verifyResult?.rollback();
 
-    expect(await workspace.tree.maybeReadFile(fooSpecPath)).toBeNull();
-    expect(await workspace.tree.maybeReadFile(fooJestPath)).toBe(
-      fooOriginalContent,
-    );
-    expect(await workspace.tree.maybeReadFile(barSpecPath)).toBe(
-      barMigratedContent,
-    );
+    expect
+      .soft(
+        await workspace.tree.maybeReadFile(
+          relativePath('apps/my-app/src/failing.spec.ts'),
+        ),
+      )
+      .toBeNull();
+
+    expect
+      .soft(
+        await workspace.tree.maybeReadFile(
+          relativePath('apps/my-app/src/failing.jest.cts'),
+        ),
+      )
+      .toBe('expect(jest.fn()).toHaveBeenCalledWith(42);');
+
+    expect
+      .soft(
+        await workspace.tree.maybeReadFile(
+          relativePath('apps/my-app/src/passing.spec.ts'),
+        ),
+      )
+      .toContain(`expect(vi.fn()).not.toHaveBeenCalled();`);
   });
 });
+
+async function _setupVerifyWorkspace() {
+  const appName = 'my-app';
+  const commandRunner = new CommandRunnerFake();
+  const vitestConfigPath = relativePath(`apps/${appName}/vitest.config.mts`);
+  const failingJestPath = relativePath(`apps/${appName}/src/failing.jest.cts`);
+  const passingJestPath = relativePath(`apps/${appName}/src/passing.jest.cts`);
+  const failingSpecPath = relativePath(`apps/${appName}/src/failing.spec.ts`);
+  const passingSpecPath = relativePath(`apps/${appName}/src/passing.spec.ts`);
+
+  const workspace = createTestingWorkspace(
+    WorkspaceMother.withApp(appName)
+      .withFile(
+        WorkspaceFileMother.file({
+          appName,
+          content: 'export default {}',
+          fileName: 'vitest.config.mts',
+          tags: [fileTags.vitestConfig],
+        }).build(),
+      )
+      .withFile(
+        WorkspaceFileMother.testFile({
+          appName,
+          content: `expect(jest.fn()).toHaveBeenCalledWith(42);`,
+          fileName: 'src/failing.jest.cts',
+        }).build(),
+      )
+      .withFile(
+        WorkspaceFileMother.testFile({
+          appName,
+          content: 'expect(jest.fn()).not.toHaveBeenCalled();',
+          fileName: 'src/passing.jest.cts',
+        }).build(),
+      ),
+  );
+
+  await new Analyzer({ heuristics: jestPack.heuristics }).analyze(workspace);
+
+  workspace.applyHeuristicResults({
+    findings: [
+      { type: findingTypes.jestSymbol, filePath: failingJestPath },
+      { type: findingTypes.jestSymbol, filePath: passingJestPath },
+    ],
+  });
+
+  commandRunner.configure({
+    [`npx vitest run --reporter=json --config ${vitestConfigPath}`]: {
+      output: JSON.stringify({
+        testResults: [
+          { name: failingSpecPath, status: 'failed' },
+          { name: passingSpecPath, status: 'passed' },
+        ],
+      } satisfies VitestJsonReport),
+    },
+  });
+
+  return {
+    commandRunner,
+    failingJestPath,
+    failingSpecPath,
+    passingSpecPath,
+    workspace,
+  };
+}
 
 async function _transformSetupTestFile(content: string) {
   const appName = 'my-app';
@@ -156,11 +154,7 @@ async function _transformSetupTestFile(content: string) {
 
   await runTransform({
     workspace,
-    heuristics: [
-      jestSymbolHeuristic,
-      jestFocusSkipShorthandHeuristic,
-      vitestImportsNeededHeuristic,
-    ],
+    heuristics: jestPack.heuristics,
     transforms: [jestTestTransform],
   });
 
