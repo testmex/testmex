@@ -27,7 +27,8 @@
     "src/**/*.d.ts",
     "src/**/testing.ts",
     "src/**/*.fake.ts",
-    "src/**/*.mother.ts"
+    "src/**/*.mother.ts",
+    "src/testing/**/*.ts"
   ],
   "references": [
     {
