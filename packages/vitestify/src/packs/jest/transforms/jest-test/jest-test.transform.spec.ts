@@ -81,7 +81,7 @@ jest.mock('./foo');
     },
   );
 
-  it.todo('rollback reverts only failed files', async () => {
+  it('rollback reverts only failed files', async () => {
     const appName = 'my-app';
     const commandRunner = new CommandRunnerFake();
     const workspace = createTestingWorkspace(

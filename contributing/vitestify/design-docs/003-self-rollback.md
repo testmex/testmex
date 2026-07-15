@@ -218,7 +218,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 - Run `Transformer.transform(workspace)`.
 - Assert the variable is `true` — B's `apply()` still ran after A's rollback, and file B ends up on disk with migrated content once the run finishes.
 
-# 🚧 PR#4 — jest-test apply() returns TransformResult with verify; implement Vitest run and per-file rollback
+# ✅ PR#4 — jest-test apply() returns TransformResult with verify; implement Vitest run and per-file rollback
 
 ## Tasks
 
@@ -233,7 +233,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 - Run `apply()`, then `result.verify()` on returned `TransformResult`.
 - Assert `verify()` returns `{ rollback }`.
 
-### 🚧 Rollback reverts only failed files
+### ✅ Rollback reverts only failed files
 
 - Arrange `VerifyResult` from jest-test verify with one failing file renamed `.jest.cts` → `.spec.ts`.
 - Call `result.rollback()`.
