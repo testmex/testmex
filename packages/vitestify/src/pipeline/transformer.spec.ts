@@ -150,7 +150,7 @@ describe(Transformer, () => {
     },
   );
 
-  it.todo(
+  it(
     'pipeline continues to the next transform after a non-verifying transform',
     async () => {
       const fileSystem = new FileSystemFake();

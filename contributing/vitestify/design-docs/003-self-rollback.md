@@ -176,7 +176,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 
 - [ ] `Transformer` runs checkpoint cycle when `result.verify !== undefined`.
 - [ ] For verifying transforms: after `apply()`, call `tree.commit()`, then `commandFlusher.flush(workspace)`, then `result.verify()`, then `verifyResult.rollback()` when `rollback` is defined.
-- [ ] For non-verifying transforms: `apply()` returns `createTransformResult()`; staged changes stay in `Tree` until the next checkpoint or end-of-run commit.
+- [x] For non-verifying transforms: `apply()` returns `createTransformResult()`; staged changes stay in `Tree` until the next checkpoint or end-of-run commit.
 - [ ] Remove `Vitestify`'s end-of-pipeline `finalizer.finalize()` — command flushing is owned by `Transformer` checkpoints and a final flush at end of run.
 - [ ] End of run: `tree.commit()` for any remaining staged changes, then `commandFlusher.flush()` for any remaining queued commands.
 - [ ] `rollback()` runs after disk is up to date — it may stage reversions via `Tree` and call `tree.commit()` again.
@@ -190,7 +190,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 - Run `Transformer.transform(workspace)`.
 - Assert the variable was never written (stays `undefined`) — B's `apply()` ran before any commit/flush occurred, so file A wasn't yet on disk to read.
 
-### 🚧 Pipeline continues to the next transform after a non-verifying transform
+### ✅ Pipeline continues to the next transform after a non-verifying transform
 
 - Arrange transform A (no `verify`) that stages a change to file A.
 - Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
