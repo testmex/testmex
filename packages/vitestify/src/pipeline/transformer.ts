@@ -6,21 +6,25 @@ import type { ProgressReporter } from '../core/ports/progress-reporter';
 import { CommandFlusher } from './command-flusher';
 
 export class Transformer {
-  private readonly _commandFlusher: CommandFlusher;
+  private readonly _commandFlusher: CommandFlusher | undefined;
   private readonly _commandRunner: CommandRunner;
   private readonly _progressReporter: ProgressReporter;
   private readonly _transforms: Transform[];
 
   constructor({
     commandRunner,
+    flushCommands = true,
     transforms,
     progressReporter = new NullProgressReporter(),
   }: {
     commandRunner: CommandRunner;
+    flushCommands?: boolean;
     transforms: Transform[];
     progressReporter?: ProgressReporter;
   }) {
-    this._commandFlusher = new CommandFlusher({ commandRunner, progressReporter });
+    this._commandFlusher = flushCommands
+      ? new CommandFlusher({ commandRunner, progressReporter })
+      : undefined;
     this._commandRunner = commandRunner;
     this._progressReporter = progressReporter;
     this._transforms = transforms;
@@ -50,7 +54,7 @@ export class Transformer {
 
         if (result) {
           await workspace.tree.commit();
-          await this._commandFlusher.flush(workspace);
+          await this._commandFlusher?.flush(workspace);
           const verifyResult = await result.verify();
           await verifyResult?.rollback();
         }
@@ -68,7 +72,7 @@ export class Transformer {
     }
 
     await workspace.tree.commit();
-    await this._commandFlusher.flush(workspace);
+    await this._commandFlusher?.flush(workspace);
   }
 }
 
