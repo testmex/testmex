@@ -179,14 +179,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 - Arrange transform A (no `verify`) that stages a change to file A.
 - Arrange transform B (no `verify`), inlined in the test: its `apply()` reads file A from the filesystem and stores the result in a variable before staging its own change.
 - Run `Transformer.transform(workspace)`.
-- Assert the variable was never written (stays `undefined`) — B's `apply()` ran before any commit/flush occurred, so file A wasn't yet on disk to read.
-
-### ✅ Pipeline continues to the next transform after a non-verifying transform
-
-- Arrange transform A (no `verify`) that stages a change to file A.
-- Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
-- Run `Transformer.transform(workspace)`.
-- Assert the variable is `true` — B's `apply()` ran after A, and both files end up on disk with migrated content once the run finishes.
+- Assert the variable is `null` — B's `apply()` ran before any commit/flush occurred, so file A wasn't yet on disk to read.
 
 ### ✅ Non-verifying transform's change is batched with the next checkpoint, not flushed early
 

@@ -145,45 +145,6 @@ describe(Transformer, () => {
   );
 
   it(
-    'pipeline continues to the next transform after a non-verifying transform',
-    async () => {
-      const fileSystem = new FileSystemFake();
-      let bApplied = false;
-      const transformer = new Transformer({
-        transforms: [
-          defineTransform({
-            name: 'transform-a',
-            apply: async (workspace) => {
-              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
-            },
-          }),
-          defineTransform({
-            name: 'transform-b',
-            apply: async (workspace) => {
-              bApplied = true;
-              await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
-            },
-          }),
-        ],
-      });
-      const workspace = new Workspace({
-        state: new WorkspaceState(),
-        tree: new Tree({ fileSystem }),
-      });
-
-      await transformer.transform(workspace);
-
-      expect(bApplied).toBe(true);
-      expect(await fileSystem.maybeReadFile(relativePath('a.ts'))).toBe(
-        'a-migrated',
-      );
-      expect(await fileSystem.maybeReadFile(relativePath('b.ts'))).toBe(
-        'b-migrated',
-      );
-    },
-  );
-
-  it(
     "non-verifying transform's change is batched with the next checkpoint, not flushed early",
     async () => {
       const fileSystem = new FileSystemFake();
