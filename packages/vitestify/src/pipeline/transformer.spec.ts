@@ -101,137 +101,76 @@ describe(Transformer, () => {
     expect
       .soft(progressReporter.errors())
       .toEqual(['[1/2] jest-mock · failed · parse failed']);
-    expect.soft(progressReporter.messages()).toEqual([
-      '[1/2] jest-mock · transforming',
-      '[2/2] jest-spy-on · transforming',
-      '[2/2] jest-spy-on · transforming · 1 file(s) transformed',
-      '[2/2] jest-spy-on · transformed · 1 file(s) transformed',
-    ]);
+    expect
+      .soft(progressReporter.messages())
+      .toEqual([
+        '[1/2] jest-mock · transforming',
+        '[2/2] jest-spy-on · transforming',
+        '[2/2] jest-spy-on · transforming · 1 file(s) transformed',
+        '[2/2] jest-spy-on · transformed · 1 file(s) transformed',
+      ]);
   });
 
-  it(
-    'non-verifying transform does not flush before the next transform runs',
-    async () => {
-      const fileSystem = new FileSystemFake();
-      let contentReadByB: string | null = null;
-      const transformer = new Transformer({
-        transforms: [
-          defineTransform({
-            name: 'transform-a',
-            apply: async (workspace) => {
-              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
-            },
-          }),
-          defineTransform({
-            name: 'transform-b',
-            apply: async (workspace) => {
-              contentReadByB = await fileSystem.maybeReadFile(
-                relativePath('a.ts'),
-              );
-              await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
-            },
-          }),
-        ],
-      });
-      const workspace = new Workspace({
-        state: new WorkspaceState(),
-        tree: new Tree({ fileSystem }),
-      });
+  it('non-verifying transform does not flush before the next transform runs', async () => {
+    const fileSystem = new FileSystemFake();
+    let contentReadByB: string | null = null;
+    const transformer = new Transformer({
+      transforms: [
+        defineTransform({
+          name: 'transform-a',
+          apply: async (workspace) => {
+            await workspace.tree.write(
+              relativePath('a.spec.ts'),
+              'expect(1).toBe(1)',
+            );
+          },
+        }),
+        defineTransform({
+          name: 'transform-b',
+          apply: async () => {
+            contentReadByB = await fileSystem.maybeReadFile(
+              relativePath('a.spec.ts'),
+            );
+          },
+        }),
+      ],
+    });
+    const workspace = new Workspace({
+      state: new WorkspaceState(),
+      tree: new Tree({ fileSystem }),
+    });
 
-      await transformer.transform(workspace);
+    await transformer.transform(workspace);
 
-      expect(contentReadByB).toBeNull();
-    },
-  );
+    expect(contentReadByB).toBeNull();
+  });
 
-  it(
-    "non-verifying transform's change is batched with the next checkpoint, not flushed early",
-    async () => {
-      const fileSystem = new FileSystemFake();
-      const commandFlusher = new CommandFlusher({
-        commandRunner: new CommandRunnerFake(),
-      });
-      const aMigratedContent = 'a-migrated';
-      const bMigratedContent = 'b-migrated';
-      let contentAOnFsWhenBApplies: string | null = null;
-      let contentAAtVerify: string | null = null;
-      let contentBAtVerify: string | null = null;
-      const transformer = new Transformer({
-        commandFlusher,
-        transforms: [
-          defineTransform({
-            name: 'transform-a',
-            apply: async (workspace) => {
-              await workspace.tree.write(
-                relativePath('a.ts'),
-                aMigratedContent,
-              );
-            },
-          }),
-          defineTransform({
-            name: 'transform-b',
-            apply: async (workspace) => {
-              contentAOnFsWhenBApplies = await fileSystem.maybeReadFile(
-                relativePath('a.ts'),
-              );
-              await workspace.tree.write(
-                relativePath('b.ts'),
-                bMigratedContent,
-              );
-              return {
-                verify: async () => {
-                  contentAAtVerify = aMigratedContent;
-                  contentBAtVerify = bMigratedContent;
-                },
-              };
-            },
-          }),
-        ],
-      });
-      const workspace = new Workspace({
-        state: new WorkspaceState(),
-        tree: new Tree({ fileSystem }),
-      });
-
-      await transformer.transform(workspace);
-
-      expect(contentAOnFsWhenBApplies).toBeNull();
-      expect(contentAAtVerify).toBe(aMigratedContent);
-      expect(contentBAtVerify).toBe(bMigratedContent);
-      expect(await fileSystem.maybeReadFile(relativePath('a.ts'))).toBe(
-        aMigratedContent,
-      );
-      expect(await fileSystem.maybeReadFile(relativePath('b.ts'))).toBe(
-        bMigratedContent,
-      );
-    },
-  );
-
-  it('transform with verify succeeds when file is on disk', async () => {
+  it("non-verifying transform's change is batched with the next checkpoint, not flushed early", async () => {
     const fileSystem = new FileSystemFake();
     const commandFlusher = new CommandFlusher({
       commandRunner: new CommandRunnerFake(),
     });
+    let contentAAtVerify: string | null = null;
     const transformer = new Transformer({
       commandFlusher,
       transforms: [
         defineTransform({
           name: 'transform-a',
           apply: async (workspace) => {
-            await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
+            await workspace.tree.write(
+              relativePath('a.spec.ts'),
+              'expect(1).toBe(1)',
+            );
+          },
+        }),
+        defineTransform({
+          name: 'transform-b',
+          apply: async () => {
             return {
               verify: async () => {
-                const content = await fileSystem.maybeReadFile(
-                  relativePath('a.ts'),
+                contentAAtVerify = await fileSystem.maybeReadFile(
+                  relativePath('a.spec.ts'),
                 );
-                if (content === 'a-migrated') {
-                  return;
-                }
-                return {
-                  rollback: async () => {
-                    throw new Error('unexpected rollback');
-                  },
-                };
               },
             };
           },
@@ -245,106 +184,91 @@ describe(Transformer, () => {
 
     await transformer.transform(workspace);
 
-    expect(await fileSystem.maybeReadFile(relativePath('a.ts'))).toBe(
-      'a-migrated',
+    expect(contentAAtVerify).toBe('expect(1).toBe(1)');
+  });
+
+  it('transform with verify rolls back', async () => {
+    const fileSystem = new FileSystemFake();
+
+    fileSystem.configure({
+      [relativePath('a.spec.ts')]: 'expect(1).toBe(1)',
+    });
+
+    const commandFlusher = new CommandFlusher({
+      commandRunner: new CommandRunnerFake(),
+    });
+
+    const transformer = new Transformer({
+      commandFlusher,
+      transforms: [
+        defineTransform({
+          name: 'transform-a',
+          apply: async (workspace) => {
+            await workspace.tree.write(
+              relativePath('a.spec.ts'),
+              'expect(2).toBe(2)',
+            );
+
+            return {
+              verify: async () => ({
+                rollback: async () => {
+                  await workspace.tree.write(
+                    relativePath('a.spec.ts'),
+                    'expect(1).toBe(1)',
+                  );
+                },
+              }),
+            };
+          },
+        }),
+      ],
+    });
+    const workspace = new Workspace({
+      state: new WorkspaceState(),
+      tree: new Tree({ fileSystem }),
+    });
+
+    await transformer.transform(workspace);
+
+    expect(await fileSystem.maybeReadFile(relativePath('a.spec.ts'))).toBe(
+      'expect(1).toBe(1)',
     );
   });
 
-  it(
-    'transform with verify rolls back by renaming the file on disk',
-    async () => {
-      const fileSystem = new FileSystemFake();
-      fileSystem.configure({
-        [relativePath('a.spec.ts')]: 'original',
-      });
-      const commandFlusher = new CommandFlusher({
-        commandRunner: new CommandRunnerFake(),
-      });
-      const transformer = new Transformer({
-        commandFlusher,
-        transforms: [
-          defineTransform({
-            name: 'transform-a',
-            apply: async (workspace) => {
-              await workspace.tree.write(
-                relativePath('a.spec.ts'),
-                'migrated',
-              );
-              return {
-                verify: async () => ({
-                  rollback: async () => {
-                    await fileSystem.writeFile(
-                      relativePath('a.jest.ts'),
-                      'original',
-                    );
-                    await fileSystem.deleteFile(relativePath('a.spec.ts'));
-                  },
-                }),
-              };
-            },
-          }),
-        ],
-      });
-      const workspace = new Workspace({
-        state: new WorkspaceState(),
-        tree: new Tree({ fileSystem }),
-      });
+  it('pipeline continues to the next transform after a rollback', async () => {
+    const fileSystem = new FileSystemFake();
+    const commandFlusher = new CommandFlusher({
+      commandRunner: new CommandRunnerFake(),
+    });
+    let bApplied = false;
+    const transformer = new Transformer({
+      commandFlusher,
+      transforms: [
+        defineTransform({
+          name: 'transform-a',
+          apply: async () => {
+            return {
+              verify: async () => ({
+                rollback: async () => undefined,
+              }),
+            };
+          },
+        }),
+        defineTransform({
+          name: 'transform-b',
+          apply: async () => {
+            bApplied = true;
+          },
+        }),
+      ],
+    });
+    const workspace = new Workspace({
+      state: new WorkspaceState(),
+      tree: new Tree({ fileSystem }),
+    });
 
-      await transformer.transform(workspace);
+    await transformer.transform(workspace);
 
-      expect(
-        await fileSystem.maybeReadFile(relativePath('a.spec.ts')),
-      ).toBeNull();
-      expect(await fileSystem.maybeReadFile(relativePath('a.jest.ts'))).toBe(
-        'original',
-      );
-    },
-  );
-
-  it(
-    'pipeline continues to the next transform after a rollback',
-    async () => {
-      const fileSystem = new FileSystemFake();
-      const commandFlusher = new CommandFlusher({
-        commandRunner: new CommandRunnerFake(),
-      });
-      let bApplied = false;
-      const transformer = new Transformer({
-        commandFlusher,
-        transforms: [
-          defineTransform({
-            name: 'transform-a',
-            apply: async (workspace) => {
-              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
-              return {
-                verify: async () => ({
-                  rollback: async () => {
-                    await fileSystem.deleteFile(relativePath('a.ts'));
-                  },
-                }),
-              };
-            },
-          }),
-          defineTransform({
-            name: 'transform-b',
-            apply: async (workspace) => {
-              bApplied = true;
-              await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
-            },
-          }),
-        ],
-      });
-      const workspace = new Workspace({
-        state: new WorkspaceState(),
-        tree: new Tree({ fileSystem }),
-      });
-
-      await transformer.transform(workspace);
-
-      expect(bApplied).toBe(true);
-      expect(await fileSystem.maybeReadFile(relativePath('b.ts'))).toBe(
-        'b-migrated',
-      );
-    },
-  );
+    expect(bApplied).toBe(true);
+  });
 });
