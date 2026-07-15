@@ -10,7 +10,6 @@ import {
   type VerifyResult,
 } from '../../../../core/models/transform';
 import { fileTags } from '../../../core/identifiers';
-import { findingTypes } from '../../identifiers';
 import { renameSpecToJestFile } from '../../../core/transforms/rename-spec-to-jest/rename-spec-to-jest.transform';
 import { jestFocusSkipShorthandTransform } from './jest-focus-skip-shorthand/jest-focus-skip-shorthand.transform';
 import { jestGlobalsImportTransform } from './jest-globals-import/jest-globals-import.transform';
@@ -55,14 +54,14 @@ export const jestTestTransform = defineTransform({
 async function _captureOriginalContents({
   workspace,
 }: TransformOptions): Promise<Map<RelativePath, string>> {
-  const jestTestPaths = workspace.files
-    .filter((file) => file.findings.includes(findingTypes.jestSymbol))
+  const testPaths = workspace.files
+    .filter((file) => file.tags.includes(fileTags.test))
     .map((file) => file.path);
   const originalContents = new Map<RelativePath, string>();
 
-  for (const jestPath of jestTestPaths) {
-    const content = await workspace.tree.maybeReadFile(jestPath);
-    const finalPath = renameJestToSpecFile(jestPath) ?? jestPath;
+  for (const testPath of testPaths) {
+    const content = await workspace.tree.maybeReadFile(testPath);
+    const finalPath = renameJestToSpecFile(testPath) ?? testPath;
 
     if (content !== null) {
       originalContents.set(finalPath, content);
@@ -90,31 +89,28 @@ async function _verify(
     return;
   }
 
-  const migratedPaths = Array.from(originalContents.keys());
-  const failedPaths: RelativePath[] = [];
+  const testPaths = Array.from(originalContents.keys());
+  const failedTestPaths = new Set<RelativePath>();
 
   for (const configPath of vitestConfigPaths) {
     const report = await _runVitest(configPath, options);
-
-    for (const path of migratedPaths) {
-      if (
-        failedPaths.includes(path) ||
-        !report.testResults.some(
-          (result) => result.status === 'failed' && result.name.endsWith(path),
-        )
-      ) {
-        continue;
-      }
-
-      failedPaths.push(path);
+    for (const failedTestResult of report.testResults
+      .filter((result) => result.status === 'failed')
+      .flatMap((result) =>
+        testPaths.filter((path) => result.name.endsWith(path)),
+      )) {
+      failedTestPaths.add(failedTestResult);
     }
   }
 
-  if (failedPaths.length === 0) {
+  if (failedTestPaths.size === 0) {
     return;
   }
 
-  return { rollback: () => _rollback({ ...options, failedPaths }) };
+  return {
+    rollback: () =>
+      _rollback({ ...options, failedTestPaths: Array.from(failedTestPaths) }),
+  };
 }
 
 async function _runVitest(
@@ -139,28 +135,28 @@ async function _runVitest(
 }
 
 async function _rollback({
-  failedPaths,
+  failedTestPaths,
   originalContents,
   workspace,
 }: TransformOptions & {
-  failedPaths: readonly RelativePath[];
+  failedTestPaths: readonly RelativePath[];
   originalContents: ReadonlyMap<RelativePath, string>;
 }): Promise<void> {
-  for (const specPath of failedPaths) {
-    const jestPath = renameSpecToJestFile(specPath);
-    const originalContent = originalContents.get(specPath);
+  for (const failedTestPath of failedTestPaths) {
+    const jestPath = renameSpecToJestFile(failedTestPath);
+    const originalContent = originalContents.get(failedTestPath);
 
     if (jestPath === null || originalContent === undefined) {
       continue;
     }
 
     await workspace.tree.write(jestPath, originalContent);
-    workspace.delete(specPath);
+    workspace.delete(failedTestPath);
   }
 
   await workspace.tree.commit();
 }
 
 export interface VitestJsonReport {
-  testResults: Array<{ name: string; status: string }>;
+  testResults: Array<{ name: string; status: 'failed' | 'passed' }>;
 }

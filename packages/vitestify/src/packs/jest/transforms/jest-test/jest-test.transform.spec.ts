@@ -134,8 +134,8 @@ async function _setupVerifyWorkspace() {
       cwd: relativePath('apps/my-app'),
       output: JSON.stringify({
         testResults: [
-          { name: failingSpecPath, status: 'failed' },
-          { name: passingSpecPath, status: 'passed' },
+          { name: `/my-workspace/${failingSpecPath}`, status: 'failed' },
+          { name: `/my-workspace/${passingSpecPath}`, status: 'passed' },
         ],
       } satisfies VitestJsonReport),
     },
