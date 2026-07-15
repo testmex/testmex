@@ -7,6 +7,7 @@ import {
 } from '../../../../core/models/relative-path';
 import { WorkspaceState } from '../../../../core/models/workspace-state';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
+import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
 import { PackageManagerEnricher } from './package-manager.enricher';
 
 describe(PackageManagerEnricher, () => {
@@ -108,6 +109,7 @@ async function enrich(files: Record<RelativePath, string>) {
   const enricher = new PackageManagerEnricher();
 
   return enricher.enrich({
+    commandRunner: new CommandRunnerFake(),
     workspace: new Workspace({
       state: new WorkspaceState(),
       tree: new Tree({ fileSystem }),

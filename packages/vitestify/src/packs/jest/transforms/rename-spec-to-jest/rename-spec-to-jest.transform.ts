@@ -13,7 +13,7 @@ import { findingTypes } from '../../identifiers';
 
 export const renameSpecToJestTransform = defineTransform({
   name: 'rename-spec-to-jest',
-  apply: async (workspace, { onProgress } = {}) => {
+  apply: async (workspace, { onProgress }) => {
     const jestTestPaths = workspace.files
       .filter((file) => file.findings.includes(findingTypes.jestSymbol))
       .map((file) => file.path);

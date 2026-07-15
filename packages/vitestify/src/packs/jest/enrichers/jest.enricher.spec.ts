@@ -6,6 +6,7 @@ import {
   WorkspaceMother,
 } from '../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../core/ports/file-system.fake';
+import { CommandRunnerFake } from '../../../core/ports/command-runner.fake';
 import { JestEnricher } from './jest.enricher';
 
 describe(JestEnricher.name, () => {
@@ -135,6 +136,7 @@ async function enrich(mother: WorkspaceMother) {
   const enricher = new JestEnricher();
 
   return enricher.enrich({
+    commandRunner: new CommandRunnerFake(),
     workspace: new Workspace({
       state: mother.buildWorkspaceState(),
       tree,

@@ -9,7 +9,7 @@ const VITEST_BUILDER = '@analogjs/vitest-angular:test';
 
 export const angularBuilderJestTransform = defineTransform({
   name: 'angular-builder-jest',
-  apply: async (workspace, { onProgress } = {}) => {
+  apply: async (workspace, { onProgress }) => {
     const { commands, tree } = workspace;
     const originalAngularJson =
       await tree.maybeReadJsonFile<AngularJson>(ANGULAR_JSON_PATH);

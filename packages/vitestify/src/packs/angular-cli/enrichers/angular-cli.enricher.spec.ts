@@ -7,6 +7,7 @@ import {
 } from '../../../core/models/relative-path';
 import { WorkspaceState } from '../../../core/models/workspace-state';
 import { FileSystemFake } from '../../../core/ports/file-system.fake';
+import { CommandRunnerFake } from '../../../core/ports/command-runner.fake';
 import { angularJsonMother } from '../angular-json.mother';
 import { AngularCliEnricher } from './angular-cli.enricher';
 
@@ -29,6 +30,7 @@ async function enrich(files: Record<RelativePath, string>) {
   fileSystem.configure(files);
   const enricher = new AngularCliEnricher();
   return enricher.enrich({
+    commandRunner: new CommandRunnerFake(),
     workspace: new Workspace({
       state: new WorkspaceState(),
       tree: new Tree({ fileSystem }),

@@ -6,6 +6,7 @@ import {
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
+import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
 import { VitestConfigEnricher } from './vitest-config.enricher';
 
 describe(VitestConfigEnricher, () => {
@@ -56,6 +57,7 @@ async function enrich(mother: WorkspaceMother) {
   const enricher = new VitestConfigEnricher();
 
   return enricher.enrich({
+    commandRunner: new CommandRunnerFake(),
     workspace: new Workspace({
       state: mother.buildWorkspaceState(),
       tree,
