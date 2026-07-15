@@ -1,3 +1,4 @@
+import { dirname } from 'node:path/posix';
 import { describe, expect, it } from 'vitest';
 import { relativePath } from '../../../../core/models/relative-path';
 import {
@@ -81,7 +82,6 @@ jest.mock('./foo');
 async function _setupVerifyWorkspace() {
   const appName = 'my-app';
   const commandRunner = new CommandRunnerFake();
-  const vitestConfigPath = relativePath(`apps/${appName}/vitest.config.mts`);
   const failingJestPath = relativePath(`apps/${appName}/src/failing.jest.cts`);
   const passingJestPath = relativePath(`apps/${appName}/src/passing.jest.cts`);
   const failingSpecPath = relativePath(`apps/${appName}/src/failing.spec.ts`);
@@ -122,8 +122,17 @@ async function _setupVerifyWorkspace() {
     ],
   });
 
-  commandRunner.configure({
-    [`npx vitest run --reporter=json --config ${vitestConfigPath}`]: {
+  commandRunner.configure([
+    {
+      command: [
+        'npx',
+        'vitest',
+        'run',
+        '--reporter=json',
+        '--config',
+        'vitest.config.mts',
+      ],
+      cwd: relativePath('apps/my-app'),
       output: JSON.stringify({
         testResults: [
           { name: failingSpecPath, status: 'failed' },
@@ -131,7 +140,7 @@ async function _setupVerifyWorkspace() {
         ],
       } satisfies VitestJsonReport),
     },
-  });
+  ]);
 
   return {
     commandRunner,

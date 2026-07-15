@@ -1,5 +1,9 @@
+import { basename, dirname } from 'node:path/posix';
 import type { WritableWorkspace } from '../../../../core/domain/workspace';
-import type { RelativePath } from '../../../../core/models/relative-path';
+import {
+  relativePath,
+  type RelativePath,
+} from '../../../../core/models/relative-path';
 import {
   defineTransform,
   defineTransformGroup,
@@ -99,14 +103,17 @@ async function _verify({
   const failedPaths: RelativePath[] = [];
 
   for (const configPath of vitestConfigPaths) {
-    const output = await commandRunner.run([
-      'npx',
-      'vitest',
-      'run',
-      '--reporter=json',
-      '--config',
-      configPath,
-    ]);
+    const output = await commandRunner.run(
+      [
+        'npx',
+        'vitest',
+        'run',
+        '--reporter=json',
+        '--config',
+        basename(configPath),
+      ],
+      { cwd: relativePath(dirname(configPath)) },
+    );
     const report = JSON.parse(output) as VitestJsonReport;
 
     for (const path of migratedPaths) {

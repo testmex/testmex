@@ -2,7 +2,7 @@ import {
   relativePath,
   type RelativePath,
 } from '../../core/models/relative-path';
-import type { CommandRunnerResult } from '../../core/ports/command-runner.fake';
+import type { ExpectedCommand } from '../../core/ports/command-runner.fake';
 
 class NxWorkspaceInfraMother {
   constructor(private readonly _state: State = { appFiles: {}, libs: [] }) {}
@@ -92,7 +92,7 @@ class NxWorkspaceInfraMother {
     return files;
   }
 
-  buildCommands(): Record<string, CommandRunnerResult> {
+  buildCommands(): ExpectedCommand[] {
     if (!this._hasProjects()) {
       throw new Error('NxWorkspaceInfraMother: configure a workspace first');
     }
@@ -108,21 +108,23 @@ class NxWorkspaceInfraMother {
       nodes[lib.name] = { name: lib.name, data: { root: lib.root } };
     }
 
-    return {
-      ['pnpm add -D vite-tsconfig-paths vitest']: { output: '' },
-      ['npx nx add @nx/vitest']: { output: '' },
-      ['npx nx graph --print']: {
+    return [
+      {
+        command: ['pnpm', 'add', '-D', 'vite-tsconfig-paths', 'vitest'],
+        output: '',
+      },
+      { command: ['npx', 'nx', 'add', '@nx/vitest'], output: '' },
+      {
+        command: ['npx', 'nx', 'graph', '--print'],
         output: JSON.stringify({
           graph: { nodes },
         }),
       },
-    };
+    ];
   }
 
   private _hasProjects(): boolean {
-    return (
-      this._state.name !== undefined || this._state.libs.length > 0
-    );
+    return this._state.name !== undefined || this._state.libs.length > 0;
   }
 }
 
