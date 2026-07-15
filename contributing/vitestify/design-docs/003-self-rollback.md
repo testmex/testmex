@@ -174,7 +174,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 
 ## Tasks
 
-- [ ] `Transformer` runs checkpoint cycle when `result.verify !== undefined`.
+- [x] `Transformer` runs checkpoint cycle when `result.verify !== undefined`.
 - [ ] For verifying transforms: after `apply()`, call `tree.commit()`, then `commandFlusher.flush(workspace)`, then `result.verify()`, then `verifyResult.rollback()` when `rollback` is defined.
 - [x] For non-verifying transforms: `apply()` returns `createTransformResult()`; staged changes stay in `Tree` until the next checkpoint or end-of-run commit.
 - [ ] Remove `Vitestify`'s end-of-pipeline `finalizer.finalize()` — command flushing is owned by `Transformer` checkpoints and a final flush at end of run.
@@ -197,7 +197,7 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 - Run `Transformer.transform(workspace)`.
 - Assert the variable is `true` — B's `apply()` ran after A, and both files end up on disk with migrated content once the run finishes.
 
-### 🚧 Non-verifying transform's change is batched with the next checkpoint, not flushed early
+### ✅ Non-verifying transform's change is batched with the next checkpoint, not flushed early
 
 - Arrange transform A (no `verify`) that stages a change to file A, followed by transform B (`verify`) that stages a change to file B.
 - B's `verify()` reads both file A and file B from the filesystem.

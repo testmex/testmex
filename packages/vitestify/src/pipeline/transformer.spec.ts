@@ -197,7 +197,7 @@ describe(Transformer, () => {
     },
   );
 
-  it.todo(
+  it(
     "non-verifying transform's change is batched with the next checkpoint, not flushed early",
     async () => {
       const fileSystem = new FileSystemFake();

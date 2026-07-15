@@ -5,18 +5,20 @@ import type { ProgressReporter } from '../core/ports/progress-reporter';
 import type { CommandFlusher } from './command-flusher';
 
 export class Transformer {
+  private readonly _commandFlusher: CommandFlusher | undefined;
   private readonly _progressReporter: ProgressReporter;
   private readonly _transforms: Transform[];
 
   constructor({
+    commandFlusher,
     transforms,
     progressReporter = new NullProgressReporter(),
   }: {
-    /** Injected so `Transformer` can run per-checkpoint flushes; not yet used. */
     commandFlusher?: CommandFlusher;
     transforms: Transform[];
     progressReporter?: ProgressReporter;
   }) {
+    this._commandFlusher = commandFlusher;
     this._progressReporter = progressReporter;
     this._transforms = transforms;
   }
@@ -35,12 +37,18 @@ export class Transformer {
       progressStep.message('transforming');
 
       try {
-        await transform.apply(workspace, {
+        const result = await transform.apply(workspace, {
           onProgress: (message) => {
             lastMessage = message;
             progressStep.message(_formatMessage('transforming', message));
           },
         });
+
+        if (result.verify) {
+          await workspace.tree.commit();
+          await this._commandFlusher?.flush(workspace);
+          await result.verify();
+        }
 
         progressStep.done(_formatMessage('transformed', lastMessage));
       } catch (error) {
