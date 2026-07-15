@@ -247,13 +247,50 @@ describe(Transformer, () => {
     },
   );
 
-  it.todo('transform with verify succeeds when file is on disk', () => {
-    // Arrange a fake transform whose `apply()` stages a file change and returns `createTransformResult({ verify })`.
-    // `verify()` reads the file from the filesystem and returns `createVerifyResult()` if the expected content is there, otherwise `createVerifyResult({ rollback })`.
-    // Run `Transformer.transform(workspace)`.
-    // Assert the file is present on the real filesystem with the migrated content (proves commit + flush ran before `verify()`).
-    // Assert the file still has the migrated content after the run (no rollback triggered).
-  });
+  it.todo(
+    'transform with verify succeeds when file is on disk',
+    async () => {
+      const fileSystem = new FileSystemFake();
+      const commandFlusher = new CommandFlusher({
+        commandRunner: new CommandRunnerFake(),
+      });
+      const transformer = new Transformer({
+        commandFlusher,
+        transforms: [
+          defineTransform({
+            name: 'transform-a',
+            apply: async (workspace) => {
+              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
+              return createTransformResult({
+                verify: async () => {
+                  const content = await fileSystem.maybeReadFile(
+                    relativePath('a.ts'),
+                  );
+                  return content === 'a-migrated'
+                    ? createVerifyResult()
+                    : createVerifyResult({
+                        rollback: async () => {
+                          throw new Error('unexpected rollback');
+                        },
+                      });
+                },
+              });
+            },
+          }),
+        ],
+      });
+      const workspace = new Workspace({
+        state: new WorkspaceState(),
+        tree: new Tree({ fileSystem }),
+      });
+
+      await transformer.transform(workspace);
+
+      expect(await fileSystem.maybeReadFile(relativePath('a.ts'))).toBe(
+        'a-migrated',
+      );
+    },
+  );
 
   it.todo(
     'transform with verify rolls back by renaming the file on disk',
