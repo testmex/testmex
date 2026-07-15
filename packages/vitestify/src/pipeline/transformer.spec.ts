@@ -193,6 +193,8 @@ describe(Transformer, () => {
       const commandFlusher = new CommandFlusher({
         commandRunner: new CommandRunnerFake(),
       });
+      const aMigratedContent = 'a-migrated';
+      const bMigratedContent = 'b-migrated';
       let contentAAtVerify: string | null = null;
       let contentBAtVerify: string | null = null;
       const transformer = new Transformer({
@@ -201,19 +203,25 @@ describe(Transformer, () => {
           defineTransform({
             name: 'transform-a',
             apply: async (workspace) => {
-              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
+              await workspace.tree.write(
+                relativePath('a.ts'),
+                aMigratedContent,
+              );
             },
           }),
           defineTransform({
             name: 'transform-b',
             apply: async (workspace) => {
-              await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
+              await workspace.tree.write(
+                relativePath('b.ts'),
+                bMigratedContent,
+              );
               return {
                 verify: async () => {
-                  contentAAtVerify = await fileSystem.maybeReadFile(
+                  contentAAtVerify = await workspace.tree.maybeReadFile(
                     relativePath('a.ts'),
                   );
-                  contentBAtVerify = await fileSystem.maybeReadFile(
+                  contentBAtVerify = await workspace.tree.maybeReadFile(
                     relativePath('b.ts'),
                   );
                 },
@@ -229,8 +237,8 @@ describe(Transformer, () => {
 
       await transformer.transform(workspace);
 
-      expect(contentAAtVerify).toBe('a-migrated');
-      expect(contentBAtVerify).toBe('b-migrated');
+      expect(contentAAtVerify).toBe(aMigratedContent);
+      expect(contentBAtVerify).toBe(bMigratedContent);
     },
   );
 
