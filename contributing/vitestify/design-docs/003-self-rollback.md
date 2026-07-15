@@ -222,12 +222,12 @@ _None — pure type/factory addition, exercised indirectly by PR#3's Transformer
 
 ## Tasks
 
-- [ ] jest-test `apply()` returns `{ verify }` closing over transformed files and their original content.
-- [ ] jest-test `verify()` runs Vitest via `CommandRunner`; on success returns void; on failure returns `{ rollback }`.
+- [x] jest-test `apply()` returns `{ verify }` closing over transformed files and their original content.
+- [x] jest-test `verify()` runs Vitest via `CommandRunner`; on success returns void; on failure returns `{ rollback }`.
 
 ## Testing Strategy
 
-### 🚧 Verify returns VerifyResult with rollback on failure
+### ✅ Verify returns VerifyResult with rollback on failure
 
 - Arrange workspace with 2 converted spec files; fake Vitest output reports 1 failure.
 - Run `apply()`, then `result.verify()` on returned `TransformResult`.

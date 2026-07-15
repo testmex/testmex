@@ -33,7 +33,7 @@ jest.mock('./foo');
 `);
   });
 
-  it.todo(
+  it(
     'verify returns VerifyResult with rollback on failure',
     async () => {
       const appName = 'my-app';
