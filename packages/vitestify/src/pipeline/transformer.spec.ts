@@ -152,11 +152,42 @@ describe(Transformer, () => {
 
   it.todo(
     'pipeline continues to the next transform after a non-verifying transform',
-    () => {
-      // Arrange transform A (no `verify`) that stages a change to file A.
-      // Arrange transform B (no `verify`), inlined in the test: its `apply()` sets a variable to `true` and stages a change to file B.
-      // Run `Transformer.transform(workspace)`.
-      // Assert the variable is `true` — B's `apply()` ran after A, and both files end up on disk with migrated content once the run finishes.
+    async () => {
+      const fileSystem = new FileSystemFake();
+      let bApplied = false;
+      const transformer = new Transformer({
+        transforms: [
+          defineTransform({
+            name: 'transform-a',
+            apply: async (workspace) => {
+              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
+              return createTransformResult();
+            },
+          }),
+          defineTransform({
+            name: 'transform-b',
+            apply: async (workspace) => {
+              bApplied = true;
+              await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
+              return createTransformResult();
+            },
+          }),
+        ],
+      });
+      const workspace = new Workspace({
+        state: new WorkspaceState(),
+        tree: new Tree({ fileSystem }),
+      });
+
+      await transformer.transform(workspace);
+
+      expect(bApplied).toBe(true);
+      expect(await fileSystem.maybeReadFile(relativePath('a.ts'))).toBe(
+        'a-migrated',
+      );
+      expect(await fileSystem.maybeReadFile(relativePath('b.ts'))).toBe(
+        'b-migrated',
+      );
     },
   );
 
