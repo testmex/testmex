@@ -4,29 +4,31 @@ import { relativePath } from '../../../core/models/relative-path';
 
 export const nxEnricher = defineEnricher({
   name: 'nx',
-  async enrich({ workspace, onProgress, commandRunner }) {
+  async enrich(options) {
+    const { workspace, onProgress } = options;
+
     if (!(await hasNx(workspace.tree))) {
       return {};
     }
 
-    onProgress?.('loading nx graph');
-    const graph = await _runNxGraphCommand(commandRunner);
+    onProgress('loading nx graph');
+    const graph = await _runNxGraphCommand(options);
 
     const projects = Object.values(graph.graph.nodes).map((node) => ({
       name: node.name,
       path: relativePath(node.data.root),
     }));
 
-    onProgress?.(`${projects.length} project(s) detected`);
+    onProgress(`${projects.length} project(s) detected`);
 
     return { projects };
   },
 });
 
 async function _runNxGraphCommand(
-  commandRunner: EnricherOptions['commandRunner'],
+  options: EnricherOptions,
 ): Promise<NxGraph> {
-  const raw = await commandRunner.run(['npx', 'nx', 'graph', '--print']);
+  const raw = await options.commandRunner.run(['npx', 'nx', 'graph', '--print']);
   return JSON.parse(raw);
 }
 
