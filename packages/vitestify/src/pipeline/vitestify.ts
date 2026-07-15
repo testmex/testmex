@@ -12,7 +12,6 @@ import jestPack from '../packs/jest';
 import nxPack from '../packs/nx';
 import { Scanner } from '../pipeline/scanner';
 import { Analyzer } from './analyzer';
-import { CommandFlusher } from './command-flusher';
 import { Transformer } from './transformer';
 
 export class Vitestify {
@@ -27,7 +26,6 @@ export class Vitestify {
     nxPack,
   ];
   private readonly _analyzer: Analyzer;
-  private readonly _commandFlusher: CommandFlusher;
   private readonly _scanner: Scanner;
   private readonly _transformer: Transformer;
 
@@ -46,7 +44,6 @@ export class Vitestify {
       heuristics: this._packs.flatMap((pack) => pack.heuristics),
       progressReporter,
     });
-    this._commandFlusher = new CommandFlusher({ commandRunner, progressReporter });
     this._scanner = new Scanner({
       commandRunner,
       enricherFactories: this._packs.flatMap((pack) => pack.enricherFactories),
@@ -54,7 +51,6 @@ export class Vitestify {
       progressReporter,
     });
     this._transformer = new Transformer({
-      commandFlusher: this._commandFlusher,
       commandRunner,
       transforms: this._packs.flatMap((pack) => pack.transforms),
       progressReporter,

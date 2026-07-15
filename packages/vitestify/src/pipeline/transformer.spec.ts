@@ -5,10 +5,10 @@ import { relativePath } from '../core/models/relative-path';
 import { defineTransform } from '../core/models/transform';
 import type { Transform } from '../core/models/transform';
 import { WorkspaceState } from '../core/models/workspace-state';
+import type { CommandRunner } from '../core/ports/command-runner';
 import { CommandRunnerFake } from '../core/ports/command-runner.fake';
 import { FileSystemFake } from '../core/ports/file-system.fake';
 import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
-import { CommandFlusher } from './command-flusher';
 import { Transformer } from './transformer';
 
 describe(Transformer, () => {
@@ -126,9 +126,6 @@ describe(Transformer, () => {
   it("non-verifying transform's change is batched with the next checkpoint, not flushed early", async () => {
     let contentAAtVerify: string | null = null;
     const { fileSystem, transform } = setUpTransformer({
-      commandFlusher: new CommandFlusher({
-        commandRunner: new CommandRunnerFake(),
-      }),
       transforms: [
         defineTransform({
           name: 'transform-a',
@@ -161,9 +158,6 @@ describe(Transformer, () => {
 
   it('transform with verify rolls back', async () => {
     const { fileSystem, transform } = setUpTransformer({
-      commandFlusher: new CommandFlusher({
-        commandRunner: new CommandRunnerFake(),
-      }),
       transforms: [
         defineTransform({
           name: 'transform-a',
@@ -202,9 +196,6 @@ describe(Transformer, () => {
   it('pipeline continues to the next transform after a rollback', async () => {
     let bApplied = false;
     const { transform } = setUpTransformer({
-      commandFlusher: new CommandFlusher({
-        commandRunner: new CommandRunnerFake(),
-      }),
       transforms: [
         defineTransform({
           name: 'transform-a',
@@ -232,10 +223,10 @@ describe(Transformer, () => {
 });
 
 function setUpTransformer({
-  commandFlusher,
+  commandRunner = new CommandRunnerFake(),
   transforms,
 }: {
-  commandFlusher?: CommandFlusher;
+  commandRunner?: CommandRunner;
   transforms: Transform[];
 }) {
   const fileSystem = new FileSystemFake();
@@ -245,7 +236,7 @@ function setUpTransformer({
     tree: new Tree({ fileSystem }),
   });
   const transformer = new Transformer({
-    commandFlusher,
+    commandRunner,
     progressReporter,
     transforms,
   });
