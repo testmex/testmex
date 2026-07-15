@@ -2,10 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
 import { relativePath } from '../core/models/relative-path';
-import { createTransformResult, defineTransform } from '../core/models/transform';
+import {
+  createTransformResult,
+  createVerifyResult,
+  defineTransform,
+} from '../core/models/transform';
 import { WorkspaceState } from '../core/models/workspace-state';
+import { CommandRunnerFake } from '../core/ports/command-runner.fake';
 import { FileSystemFake } from '../core/ports/file-system.fake';
 import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
+import { CommandFlusher } from './command-flusher';
 import { Transformer } from './transformer';
 
 describe(Transformer, () => {
@@ -193,11 +199,51 @@ describe(Transformer, () => {
 
   it.todo(
     "non-verifying transform's change is batched with the next checkpoint, not flushed early",
-    () => {
-      // Arrange transform A (no `verify`) that stages a change to file A, followed by transform B (`verify`) that stages a change to file B.
-      // B's `verify()` reads both file A and file B from the filesystem.
-      // Run `Transformer.transform(workspace)`.
-      // Assert `verify()` observes both file A and file B already on disk with their migrated content — A's staged change was carried forward and flushed together with B's checkpoint, rather than being flushed separately right after A ran.
+    async () => {
+      const fileSystem = new FileSystemFake();
+      const commandFlusher = new CommandFlusher({
+        commandRunner: new CommandRunnerFake(),
+      });
+      let contentAAtVerify: string | null = null;
+      let contentBAtVerify: string | null = null;
+      const transformer = new Transformer({
+        commandFlusher,
+        transforms: [
+          defineTransform({
+            name: 'transform-a',
+            apply: async (workspace) => {
+              await workspace.tree.write(relativePath('a.ts'), 'a-migrated');
+              return createTransformResult();
+            },
+          }),
+          defineTransform({
+            name: 'transform-b',
+            apply: async (workspace) => {
+              await workspace.tree.write(relativePath('b.ts'), 'b-migrated');
+              return createTransformResult({
+                verify: async () => {
+                  contentAAtVerify = await fileSystem.maybeReadFile(
+                    relativePath('a.ts'),
+                  );
+                  contentBAtVerify = await fileSystem.maybeReadFile(
+                    relativePath('b.ts'),
+                  );
+                  return createVerifyResult();
+                },
+              });
+            },
+          }),
+        ],
+      });
+      const workspace = new Workspace({
+        state: new WorkspaceState(),
+        tree: new Tree({ fileSystem }),
+      });
+
+      await transformer.transform(workspace);
+
+      expect(contentAAtVerify).toBe('a-migrated');
+      expect(contentBAtVerify).toBe('b-migrated');
     },
   );
 
