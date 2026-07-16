@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'TestMex',
   tagline:
-    'Opinionated JavaScript testing tools with a spicy kick — making life easier for humans and agents',
+    'Opinionated JavaScript testing tools — making life easier for humans and agents',
   favicon: 'img/favicon.ico',
 
   future: {
