@@ -1,0 +1,16 @@
+# Getting started
+
+Migrate a workspace from Jest to [Vitest](https://vitest.dev/) with one command:
+
+```sh
+npx @testmex/vitestify
+```
+
+Run it from your workspace root. Vitestify scans the workspace for Jest tests, applies transforms, and updates configuration so common Jest patterns move to Vitest.
+
+## What it does
+
+- Discovers Jest configs, test files, and related dependencies,
+- Rewrites Jest APIs and imports to Vitest equivalents,
+- Updates package and config files as part of the migration,
+- Leaves agent instructions for steps that are too risky to automate.

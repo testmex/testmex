@@ -28,7 +28,7 @@ function HomepageHeader() {
               'button button--secondary button--lg',
               styles.button,
             )}
-            to="/docs/intro"
+            to="/docs/vitestify/getting-started"
           >
             Get started
           </Link>

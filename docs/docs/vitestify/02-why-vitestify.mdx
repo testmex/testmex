@@ -1,0 +1,15 @@
+# Why Vitestify
+
+Moving from Jest to Vitest is usually a pile of one-off edits: configs, dependencies, imports, mocks, and framework-specific test setup. Vitestify turns that into a single, repeatable migration path.
+
+## Opinionated by design
+
+Vitestify focuses on the patterns teams hit most often. It prefers clear, automated transforms over a fragile attempt to cover every edge case.
+
+## Built for humans and agents
+
+Automated transforms handle the boring bulk of the migration. When something cannot be rewritten safely, Vitestify writes agent instructions so an AI coding assistant — or a human — can finish the job with context instead of guesswork.
+
+## Framework-aware, not framework-locked
+
+The first release targets Angular (CLI and Nx) Jest setups. The architecture stays open so React, Vue, and other stacks can plug into the same detect → act pipeline later.
