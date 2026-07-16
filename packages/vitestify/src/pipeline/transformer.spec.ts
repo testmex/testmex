@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
 import { relativePath } from '../core/models/relative-path';
+import type { Transform, TransformResult } from '../core/models/transform';
 import { defineTransform } from '../core/models/transform';
-import type { Transform } from '../core/models/transform';
 import { WorkspaceState } from '../core/models/workspace-state';
 import type { CommandRunner } from '../core/ports/command-runner';
 import { CommandRunnerFake } from '../core/ports/command-runner.fake';
@@ -205,6 +205,23 @@ describe(Transformer, () => {
     expect(await fileSystem.maybeReadFile(relativePath('a.spec.ts'))).toBe(
       'expect(1).toBe(1)',
     );
+  });
+
+  it('does not call verify when transform made no tree changes', async () => {
+    const verify = vi.fn<TransformResult['verify']>(async () => undefined);
+
+    const { transform } = setUpTransformer({
+      transforms: [
+        defineTransform({
+          name: 'no-op-with-verify',
+          apply: async () => ({ verify }),
+        }),
+      ],
+    });
+
+    await transform();
+
+    expect(verify).not.toHaveBeenCalled();
   });
 
   it('pipeline continues to the next transform after a rollback', async () => {

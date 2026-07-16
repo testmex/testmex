@@ -35,7 +35,8 @@ export class Transformer {
         workspace,
       });
 
-      if (result) {
+      /* We only verify if the transform asked for it and if the workspace has pending changes. */
+      if (result && workspace.tree.isDirty()) {
         await this._applyChanges({ workspace, phase });
 
         const verifyStep = phase.createStep({ name: 'Verifying' });

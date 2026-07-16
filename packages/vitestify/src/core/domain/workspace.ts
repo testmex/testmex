@@ -121,9 +121,7 @@ export interface WritableWorkspace
  * This is the workspace tree that does not allow changes that should go through
  * the Workspace aggregate root.
  */
-export type WorkspaceTree = WritableTree & Pick<Tree, 'commit'>;
-
-export type WritableTree = ReadonlyTree &
+export type WorkspaceTree = ReadonlyTree &
   Pick<Tree, 'commit' | 'maybeReadFile' | 'maybeReadJsonFile' | 'write'>;
 
 export class CommandQueue {

@@ -14,6 +14,16 @@ export class Tree {
     this._fileSystemCached = new FileSystemCached(fileSystem);
   }
 
+  changes(): Change[] {
+    return Array.from(this._fileStates.entries())
+      .map(([path, state]) => ({ path, ...state }))
+      .filter((state): state is Change => !_isGhost(state));
+  }
+
+  isDirty(): boolean {
+    return this.changes().length > 0;
+  }
+
   async maybeReadFile(path: RelativePath): Promise<string | null> {
     const state = this._fileStates.get(path);
 
@@ -91,12 +101,6 @@ export class Tree {
     this._fileStates.set(path, { type: 'delete' });
   }
 
-  changes(): Change[] {
-    return Array.from(this._fileStates.entries())
-      .map(([path, state]) => ({ path, ...state }))
-      .filter((state): state is Change => !_isGhost(state));
-  }
-
   async commit(): Promise<{ count: number }> {
     const count = this.changes().length;
     for (const change of this.changes()) {
@@ -120,7 +124,7 @@ export class Tree {
 
 export type ReadonlyTree = Pick<
   Tree,
-  'maybeReadFile' | 'maybeReadJsonFile' | 'scanDirectory'
+  'isDirty' | 'maybeReadFile' | 'maybeReadJsonFile' | 'scanDirectory'
 >;
 
 export type Change = { path: RelativePath } & (
