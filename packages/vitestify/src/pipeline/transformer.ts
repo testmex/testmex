@@ -78,7 +78,7 @@ export class Transformer {
         workspace,
         commandRunner: this._commandRunner,
         progressStep: {
-          ...NO_OP_STEP,
+          ...progressStep,
           updateMessage: (detail) => {
             lastMessageDetail = detail;
             progressStep.updateMessage(
@@ -115,18 +115,15 @@ export class Transformer {
     workspace: Workspace,
     progressStep: Step,
   ): Promise<void> {
-    const commitSubStep = progressStep.createSubStep(
-      'applying file system changes',
-    );
+    const commitSubStep = progressStep.createSubStep('applying changes');
     const { count } = await workspace.tree.commit();
-    commitSubStep?.updateMessage(`applied ${count} file system changes`);
+    commitSubStep?.updateMessage(`applied ${count} changes`);
 
     for (const command of workspace.commands.drain()) {
-      const commandString = command.join(' ');
-      const subStepLabel = `command: ${commandString}`;
-      const subStep = progressStep.createSubStep(subStepLabel);
-
-      subStep?.updateMessage(this._concatMessages([subStepLabel, 'running']));
+      const subStepLabel = command.join(' ');
+      const subStep = progressStep.createSubStep(
+        this._concatMessages([subStepLabel, 'running']),
+      );
 
       try {
         await this._commandRunner.run(command);

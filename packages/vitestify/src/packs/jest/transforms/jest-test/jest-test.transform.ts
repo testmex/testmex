@@ -6,7 +6,7 @@ import {
 import type { TransformOptions } from '../../../../core/models/transform';
 import {
   defineTransform,
-  defineTransformGroup,
+  type Transform,
   type VerifyResult,
 } from '../../../../core/models/transform';
 import { fileTags } from '../../../core/identifiers';
@@ -25,7 +25,7 @@ import {
 import { snapTransform } from './snap/snap.transform';
 import { vitestImportsTransform } from './vitest-imports/vitest-imports.transform';
 
-const _jestTestGroup = defineTransformGroup('jest-test', [
+const _jestTestTransforms = [
   jestGlobalsImportTransform,
   jestMockTransform,
   jestSetMockTransform,
@@ -36,14 +36,30 @@ const _jestTestGroup = defineTransformGroup('jest-test', [
   snapTransform,
   vitestImportsTransform,
   renameJestToSpecTransform,
-]);
+] as const satisfies readonly Transform[];
 
 export const jestTestTransform = defineTransform({
   name: 'jest-test',
   apply: async (options) => {
+    const { progressStep } = options;
     const originalContents = await _captureOriginalContents(options);
 
-    await _jestTestGroup.apply(options);
+    for (const [index, transform] of _jestTestTransforms.entries()) {
+      const step = index + 1;
+      const total = _jestTestTransforms.length;
+
+      await transform.apply({
+        ...options,
+        progressStep: {
+          ...progressStep,
+          updateMessage: (detail) => {
+            progressStep.createSubStep(
+              `[${step}/${total}] ${transform.name} · ${detail}`,
+            );
+          },
+        },
+      });
+    }
 
     return {
       verify: () => _verify({ ...options, originalContents }),
@@ -115,33 +131,39 @@ async function _verify(
 
 async function _runVitest(
   configPath: RelativePath,
-  { commandRunner }: TransformOptions,
+  { commandRunner, progressStep }: TransformOptions,
 ): Promise<VitestJsonReport> {
-  const output = await commandRunner.run(
-    [
-      'npx',
-      'vitest',
-      'run',
-      '--reporter=json',
-      '--config',
-      basename(configPath),
-    ],
-    {
-      cwd: relativePath(dirname(configPath)),
-      ignoreExitCode: true,
-    },
-  );
+  const command = [
+    'npx',
+    'vitest',
+    'run',
+    '--reporter=json',
+    '--config',
+    basename(configPath),
+  ];
+  const cwd = relativePath(dirname(configPath));
+
+  progressStep.createSubStep(`${command.join(' ')} (cwd: ${cwd})`);
+
+  const output = await commandRunner.run(command, {
+    cwd,
+    ignoreExitCode: true,
+  });
+
   return JSON.parse(output);
 }
 
 async function _rollback({
   failedTestPaths,
   originalContents,
+  progressStep,
   workspace,
 }: TransformOptions & {
   failedTestPaths: readonly RelativePath[];
   originalContents: ReadonlyMap<RelativePath, string>;
 }): Promise<void> {
+  const subStep = progressStep.createSubStep('rolling back');
+
   for (const failedTestPath of failedTestPaths) {
     const jestPath = renameSpecToJestFile(failedTestPath);
     const originalContent = originalContents.get(failedTestPath);
@@ -155,6 +177,8 @@ async function _rollback({
   }
 
   await workspace.tree.commit();
+
+  subStep.updateMessage(`rolled back ${failedTestPaths.length} file(s)`);
 }
 
 export interface VitestJsonReport {

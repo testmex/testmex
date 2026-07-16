@@ -325,7 +325,7 @@ describe(Transformer, () => {
         name: 'Applying changes',
         status: 'done',
         subSteps: [
-          { message: 'applied 0 file system changes' },
+          { message: 'applied 0 changes' },
           { message: 'command: npm install vitest · succeeded' },
           { message: 'command: npx nx add @nx/vitest · succeeded' },
         ],
@@ -358,7 +358,7 @@ describe(Transformer, () => {
     expect(progressReporter.phases()[0].steps[1]).toMatchObject({
       name: 'Applying changes',
       subSteps: [
-        { message: 'applied 0 file system changes' },
+        { message: 'applied 0 changes' },
         { message: 'command: npm install vitest · failed · install failed' },
       ],
     });
