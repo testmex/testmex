@@ -9,14 +9,15 @@ describe(ThrottledProgressReporter, () => {
     const inner = new ProgressReporterFake();
     const reporter = new ThrottledProgressReporter(inner, { duration: 100 });
 
-    const progressStep = reporter.createStep({
+    const phase = reporter.createPhase('test');
+    const progressStep = phase.createStep({
       name: 'test',
       stepNumber: 1,
       stepCount: 5,
     });
-    progressStep.message('started');
+    progressStep.updateMessage('started');
     await vi.advanceTimersByTimeAsync(90);
-    progressStep.message('pending');
+    progressStep.updateMessage('pending');
 
     expect(inner.message()).toBe('[1/5] test · started');
   });
@@ -26,14 +27,15 @@ describe(ThrottledProgressReporter, () => {
     const inner = new ProgressReporterFake();
     const reporter = new ThrottledProgressReporter(inner, { duration: 100 });
 
-    const progressStep = reporter.createStep({
+    const phase = reporter.createPhase('test');
+    const progressStep = phase.createStep({
       name: 'test',
       stepNumber: 1,
       stepCount: 5,
     });
-    progressStep.message('started');
+    progressStep.updateMessage('started');
     await vi.advanceTimersByTimeAsync(90);
-    progressStep.message('pending');
+    progressStep.updateMessage('pending');
     await vi.advanceTimersByTimeAsync(10);
 
     expect(inner.message()).toBe('[1/5] test · pending');
@@ -44,12 +46,13 @@ describe(ThrottledProgressReporter, () => {
     const inner = new ProgressReporterFake();
     const reporter = new ThrottledProgressReporter(inner, { duration: 100 });
 
-    const progressStep = reporter.createStep({
+    const phase = reporter.createPhase('test');
+    const progressStep = phase.createStep({
       name: 'test',
       stepNumber: 1,
       stepCount: 5,
     });
-    progressStep.message('started');
+    progressStep.updateMessage('started');
     progressStep.done('completed');
 
     expect(inner.message()).toBe('[1/5] test · completed');

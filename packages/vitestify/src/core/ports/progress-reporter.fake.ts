@@ -1,22 +1,19 @@
-import type { ProgressReporter, Step, StepArgs } from './progress-reporter';
+import type {
+  Phase,
+  ProgressReporter,
+  Step,
+  StepArgs,
+  SubStep,
+} from './progress-reporter';
 
 export class ProgressReporterFake implements ProgressReporter {
   private readonly _errors: string[] = [];
   private readonly _messages: string[] = [];
 
-  createStep(args: StepArgs): Step {
+  createPhase(_title: string): Phase {
     return {
-      message: (body: string) => {
-        this._messages.push(_formatStepMessage(args, body));
-      },
-      done: (body?: string) => {
-        if (body !== undefined) {
-          this._messages.push(_formatStepMessage(args, body));
-        }
-      },
-      error: (body: string) => {
-        this._errors.push(_formatStepMessage(args, body));
-      },
+      createStep: (args) => this._createStep(args),
+      done: () => undefined,
     };
   }
 
@@ -30,6 +27,28 @@ export class ProgressReporterFake implements ProgressReporter {
 
   errors(): readonly string[] {
     return this._errors;
+  }
+
+  private _createStep(args: StepArgs): Step {
+    return {
+      createSubStep: (message: string): SubStep => {
+        this._messages.push(_formatStepMessage(args, message));
+        return {
+          updateMessage: (body: string) => {
+            this._messages.push(_formatStepMessage(args, body));
+          },
+        };
+      },
+      updateMessage: (body: string) => {
+        this._messages.push(_formatStepMessage(args, body));
+      },
+      done: (body: string) => {
+        this._messages.push(_formatStepMessage(args, body));
+      },
+      error: (body: string) => {
+        this._errors.push(_formatStepMessage(args, body));
+      },
+    };
   }
 }
 

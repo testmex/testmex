@@ -2,7 +2,7 @@ import type { Workspace } from '../core/domain/workspace';
 import type { Transform, TransformResult } from '../core/models/transform';
 import type { CommandRunner } from '../core/ports/command-runner';
 import { NullProgressReporter } from '../core/ports/null-progress-reporter';
-import type { ProgressReporter } from '../core/ports/progress-reporter';
+import type { Phase, ProgressReporter } from '../core/ports/progress-reporter';
 import { CommandFlusher } from './command-flusher';
 
 export class Transformer {
@@ -31,9 +31,11 @@ export class Transformer {
 
   async transform(workspace: Workspace): Promise<void> {
     const stepCount = this._transforms.length;
+    const phase = this._progressReporter.createPhase('Transforming');
 
     for (const [index, transform] of this._transforms.entries()) {
       const result = await this._applyTransform({
+        phase,
         stepCount,
         stepNumber: index + 1,
         transform,
@@ -48,29 +50,33 @@ export class Transformer {
       }
     }
 
+    phase.done();
+
     await workspace.tree.commit();
     await this._commandFlusher.flush(workspace);
   }
 
   private async _applyTransform({
+    phase,
     stepCount,
     stepNumber,
     transform,
     workspace,
   }: {
+    phase: Phase;
     stepCount: number;
     stepNumber: number;
     transform: Transform;
     workspace: Workspace;
   }): Promise<void | TransformResult> {
-    const progressStep = this._progressReporter.createStep({
+    const progressStep = phase.createStep({
       name: transform.name,
       stepNumber,
       stepCount,
     });
     let lastMessage: string | undefined;
 
-    progressStep.message('transforming');
+    progressStep.updateMessage('transforming');
 
     try {
       const result = await transform.apply({
@@ -78,7 +84,9 @@ export class Transformer {
         commandRunner: this._commandRunner,
         onProgress: (message) => {
           lastMessage = message;
-          progressStep.message(this._formatMessage('transforming', message));
+          progressStep.updateMessage(
+            this._formatMessage('transforming', message),
+          );
         },
       });
 

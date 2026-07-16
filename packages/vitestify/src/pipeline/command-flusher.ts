@@ -24,16 +24,17 @@ export class CommandFlusher {
   async flush(workspace: Workspace): Promise<void> {
     const commands = workspace.commands.drain();
     const stepCount = commands.length;
+    const phase = this._progressReporter.createPhase('Commands');
 
     for (const [index, command] of commands.entries()) {
       const commandString = command.join(' ');
-      const progressStep = this._progressReporter.createStep({
+      const progressStep = phase.createStep({
         name: `command: ${commandString}`,
         stepNumber: index + 1,
         stepCount,
       });
 
-      progressStep.message('running');
+      progressStep.updateMessage('running');
 
       try {
         await this._commandRunner.run(command);
@@ -48,5 +49,7 @@ export class CommandFlusher {
         continue;
       }
     }
+
+    phase.done();
   }
 }

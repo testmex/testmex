@@ -1,5 +1,10 @@
-import { Subject, throttleTime } from 'rxjs';
-import type { ProgressReporter, Step, StepArgs } from '../ports/progress-reporter';
+import { Subscription, Subject, throttleTime } from 'rxjs';
+import type {
+  Phase,
+  ProgressReporter,
+  Step,
+  SubStep,
+} from '../ports/progress-reporter';
 
 export class ThrottledProgressReporter implements ProgressReporter {
   private readonly _duration: number;
@@ -11,33 +16,65 @@ export class ThrottledProgressReporter implements ProgressReporter {
     this._duration = options.duration ?? 100;
   }
 
-  createStep(args: StepArgs): Step {
-    const innerProgressStep = this._inner.createStep(args);
-    const messages$ = new Subject<string>();
-
-    const subscription = messages$
-      .pipe(
-        throttleTime(this._duration, undefined, {
-          leading: true,
-          trailing: true,
-        }),
-      )
-      .subscribe((body) => {
-        innerProgressStep.message(body);
-      });
+  createPhase(title: string): Phase {
+    const innerPhase = this._inner.createPhase(title);
 
     return {
-      message: (body: string) => {
-        messages$.next(body);
+      ...innerPhase,
+      createStep: (args) => this._wrapStep(innerPhase.createStep(args)),
+    };
+  }
+
+  private _wrapStep(inner: Step): Step {
+    const subscription = new Subscription();
+
+    return {
+      createSubStep: (message: string): SubStep => {
+        const innerSubStep = inner.createSubStep(message);
+
+        return {
+          updateMessage: this._throttledUpdateMessage(
+            (body) => innerSubStep.updateMessage(body),
+            subscription,
+          ),
+        };
       },
-      done: (body?: string) => {
+      updateMessage: this._throttledUpdateMessage(
+        (body) => inner.updateMessage(body),
+        subscription,
+      ),
+      done: (body: string) => {
         subscription.unsubscribe();
-        innerProgressStep.done(body);
+        inner.done(body);
       },
       error: (body: string) => {
         subscription.unsubscribe();
-        innerProgressStep.error(body);
+        inner.error(body);
       },
+    };
+  }
+
+  private _throttledUpdateMessage(
+    updateMessage: (body: string) => void,
+    subscription: Subscription,
+  ): (body: string) => void {
+    const messages$ = new Subject<string>();
+
+    subscription.add(
+      messages$
+        .pipe(
+          throttleTime(this._duration, undefined, {
+            leading: true,
+            trailing: true,
+          }),
+        )
+        .subscribe((body) => {
+          updateMessage(body);
+        }),
+    );
+
+    return (body: string) => {
+      messages$.next(body);
     };
   }
 }

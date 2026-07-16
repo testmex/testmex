@@ -28,23 +28,24 @@ export class Scanner {
     const workspace = new Workspace({ tree });
 
     const stepCount = this._enrichers.length;
+    const phase = this._progressReporter.createPhase('Scanning');
 
     for (const [index, enricher] of this._enrichers.entries()) {
-      const progressStep = this._progressReporter.createStep({
+      const progressStep = phase.createStep({
         name: enricher.name,
         stepNumber: index + 1,
         stepCount,
       });
       let lastMessage: string | undefined;
 
-      progressStep.message('scanning');
+      progressStep.updateMessage('scanning');
 
       const result = await enricher.enrich({
         workspace: workspace.asReadonly(),
         commandRunner: this._commandRunner,
         onProgress: (message) => {
           lastMessage = message;
-          progressStep.message(_formatStepMessage('scanning', message));
+          progressStep.updateMessage(_formatStepMessage('scanning', message));
         },
       });
 
@@ -52,6 +53,8 @@ export class Scanner {
 
       progressStep.done(_formatStepMessage('scanned', lastMessage));
     }
+
+    phase.done();
 
     return workspace;
   }
