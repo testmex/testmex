@@ -3,7 +3,7 @@ import { SgEditor } from '../../../../infra/ast/sg-editor';
 import { fileTags } from '../../../core/identifiers';
 import { findJestConfig } from '../../jest-ast-utils';
 
-const JEST_CONFIG_TEST_MATCH_VALUE = `["**/.*\\\\.jest\\\\.(cts|tsx)"]`;
+const JEST_CONFIG_TEST_MATCH_VALUE = `["**/*.jest.{cts,tsx}"]`;
 
 export const configTestMatchTransform = defineFileTransform({
   name: 'config-test-match',
