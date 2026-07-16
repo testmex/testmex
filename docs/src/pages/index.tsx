@@ -14,7 +14,7 @@ function HomepageHeader() {
       <div className={clsx('container', styles.container)}>
         <section>
           <img
-            alt="Testmex logo"
+            alt="TestMex logo"
             className={styles.heroLogo}
             src={useBaseUrl('/img/logo.svg')}
             height="220"
@@ -41,19 +41,14 @@ function HomepageHeader() {
 function Features() {
   const features = [
     {
-      title: 'JEST → VITEST',
+      title: 'OPINIONATED',
       description:
-        'Automated migration recipes for moving test suites from Jest to Vitest.',
+        'Strong defaults, fewer choices — so the suite stays clear instead of tooling-shaped.',
     },
     {
-      title: 'SAFE & INCREMENTAL',
+      title: 'HUMANS & AGENTS',
       description:
-        'Migrate file by file with confidence — no big-bang rewrite required.',
-    },
-    {
-      title: 'OPEN SOURCE',
-      description:
-        'Built by the community, for teams modernizing their test tooling.',
+        'Shaped for agent generation and human review — clear enough to trust at a glance.',
     },
   ];
 

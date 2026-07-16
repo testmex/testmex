@@ -3,8 +3,9 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'Testmex',
-  tagline: 'Migrate test suites from Jest to Vitest',
+  title: 'TestMex',
+  tagline:
+    'Opinionated JavaScript testing tools with a spicy kick — making life easier for humans and agents',
   favicon: 'img/favicon.ico',
 
   future: {
@@ -46,9 +47,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'Testmex',
+      title: 'TestMex',
       logo: {
-        alt: 'Testmex Logo',
+        alt: 'TestMex Logo',
         src: 'img/logo.svg',
       },
       items: [
@@ -87,7 +88,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Testmex. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} TestMex. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

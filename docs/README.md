@@ -1,4 +1,4 @@
-# Testmex docs
+# TestMex docs
 
 Documentation site built with [Docusaurus](https://docusaurus.io/).
 
