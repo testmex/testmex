@@ -97,7 +97,8 @@ export class Tree {
       .filter((state): state is Change => !_isGhost(state));
   }
 
-  async commit(): Promise<void> {
+  async commit(): Promise<{ count: number }> {
+    const count = this.changes().length;
     for (const change of this.changes()) {
       if (change.type === 'delete') {
         await this._fileSystemCached.deleteFile(change.path);
@@ -112,6 +113,8 @@ export class Tree {
     }
 
     this._fileStates.clear();
+
+    return { count };
   }
 }
 

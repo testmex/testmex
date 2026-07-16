@@ -1,12 +1,14 @@
 import type { Workspace } from '../core/domain/workspace';
-import type { Transform, TransformResult } from '../core/models/transform';
+import type { Transform } from '../core/models/transform';
 import type { CommandRunner } from '../core/ports/command-runner';
 import { NullProgressReporter } from '../core/ports/null-progress-reporter';
-import type { Phase, ProgressReporter } from '../core/ports/progress-reporter';
-import { CommandFlusher } from './command-flusher';
+import type {
+  Phase,
+  ProgressReporter,
+  Step,
+} from '../core/ports/progress-reporter';
 
 export class Transformer {
-  private readonly _commandFlusher: CommandFlusher;
   private readonly _commandRunner: CommandRunner;
   private readonly _progressReporter: ProgressReporter;
   private readonly _transforms: Transform[];
@@ -20,10 +22,6 @@ export class Transformer {
     transforms: Transform[];
     progressReporter?: ProgressReporter;
   }) {
-    this._commandFlusher = new CommandFlusher({
-      commandRunner,
-      progressReporter,
-    });
     this._commandRunner = commandRunner;
     this._progressReporter = progressReporter;
     this._transforms = transforms;
@@ -34,24 +32,22 @@ export class Transformer {
     const phase = this._progressReporter.createPhase('Transforming');
 
     for (const [index, transform] of this._transforms.entries()) {
-      const result = await this._applyTransform({
+      await this._applyTransform({
         phase,
         stepCount,
         stepNumber: index + 1,
         transform,
         workspace,
       });
-
-      if (result) {
-        await this._applyChanges(workspace);
-        const verifyResult = await result.verify();
-        await verifyResult?.rollback();
-      }
     }
 
-    phase.done();
+    const progressStep = phase.createStep({ name: 'Applying changes' });
 
-    await this._applyChanges(workspace);
+    await this._applyChanges(workspace, progressStep);
+
+    progressStep?.done('done');
+
+    phase.done();
   }
 
   private async _applyTransform({
@@ -66,13 +62,13 @@ export class Transformer {
     stepNumber: number;
     transform: Transform;
     workspace: Workspace;
-  }): Promise<void | TransformResult> {
+  }): Promise<void> {
     const progressStep = phase.createStep({
       name: transform.name,
       stepNumber,
       stepCount,
     });
-    let lastMessage: string | undefined;
+    let lastMessageDetail: string | undefined;
 
     progressStep.updateMessage('transforming');
 
@@ -80,33 +76,73 @@ export class Transformer {
       const result = await transform.apply({
         workspace,
         commandRunner: this._commandRunner,
-        onProgress: (message) => {
-          lastMessage = message;
+        onProgress: (detail) => {
+          lastMessageDetail = detail;
           progressStep.updateMessage(
-            this._formatMessage('transforming', message),
+            this._concatMessages(['transforming', detail]),
           );
         },
       });
 
-      progressStep.done(this._formatMessage('transformed', lastMessage));
+      if (result) {
+        await this._applyChanges(workspace, progressStep);
+        const verifyResult = await result.verify();
+        await verifyResult?.rollback();
+      }
 
-      return result;
+      progressStep.done(
+        this._concatMessages(
+          lastMessageDetail === undefined
+            ? ['transformed']
+            : ['transformed', lastMessageDetail],
+        ),
+      );
     } catch (error) {
       progressStep.error(
-        this._formatMessage(
+        this._concatMessages([
           'failed',
           error instanceof Error ? error.message : String(error),
-        ),
+        ]),
       );
     }
   }
 
-  private async _applyChanges(workspace: Workspace): Promise<void> {
-    await workspace.tree.commit();
-    await this._commandFlusher.flush(workspace);
+  private async _applyChanges(
+    workspace: Workspace,
+    progressStep: Step,
+  ): Promise<void> {
+    const commitSubStep = progressStep.createSubStep(
+      'applying file system changes',
+    );
+    const { count } = await workspace.tree.commit();
+    commitSubStep?.updateMessage(`applied ${count} file system changes`);
+
+    for (const command of workspace.commands.drain()) {
+      const commandString = command.join(' ');
+      const subStepLabel = `command: ${commandString}`;
+      const subStep = progressStep.createSubStep(subStepLabel);
+
+      subStep?.updateMessage(this._concatMessages([subStepLabel, 'running']));
+
+      try {
+        await this._commandRunner.run(command);
+        subStep?.updateMessage(
+          this._concatMessages([subStepLabel, 'succeeded']),
+        );
+      } catch (error) {
+        subStep?.updateMessage(
+          this._concatMessages([
+            subStepLabel,
+            'failed',
+            error instanceof Error ? error.message : String(error),
+          ]),
+        );
+        continue;
+      }
+    }
   }
 
-  private _formatMessage(phase: string, detail?: string) {
-    return detail === undefined ? phase : `${phase} · ${detail}`;
+  private _concatMessages(messages: string[]) {
+    return messages.join(' · ');
   }
 }

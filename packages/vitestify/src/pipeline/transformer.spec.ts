@@ -47,6 +47,12 @@ describe(Transformer, () => {
         status: 'done',
         message: 'transformed · 0 file(s) transformed',
       },
+      {
+        name: 'Applying changes',
+        status: 'done',
+        message: 'done',
+        subSteps: [{ message: 'applied 0 file system changes' }],
+      },
     ]);
   });
 
@@ -287,6 +293,75 @@ describe(Transformer, () => {
       { command: ['npm', 'install', 'vitest'] },
       { command: ['npx', 'nx', 'add', '@nx/vitest'] },
     ]);
+  });
+
+  it('reports queued commands as substeps during final flush', async () => {
+    const commandRunner = new CommandRunnerFake();
+    commandRunner.configure([
+      { command: ['npm', 'install', 'vitest'], output: '' },
+      { command: ['npx', 'nx', 'add', '@nx/vitest'], output: '' },
+    ]);
+    const { progressReporter, transform } = setUpTransformer({
+      commandRunner,
+      transforms: [
+        defineTransform({
+          name: 'install-deps',
+          apply: async ({ workspace }) => {
+            workspace.commands.add(['npm', 'install', 'vitest']);
+            workspace.commands.add(['npx', 'nx', 'add', '@nx/vitest']);
+          },
+        }),
+      ],
+    });
+
+    await transform();
+
+    expect(progressReporter.phases()[0].steps).toMatchObject([
+      {
+        name: 'install-deps',
+        status: 'done',
+      },
+      {
+        name: 'Applying changes',
+        status: 'done',
+        subSteps: [
+          { message: 'applied 0 file system changes' },
+          { message: 'command: npm install vitest · succeeded' },
+          { message: 'command: npx nx add @nx/vitest · succeeded' },
+        ],
+      },
+    ]);
+  });
+
+  it('reports command failure as a substep during final flush', async () => {
+    const commandRunner = new CommandRunnerFake();
+    commandRunner.configure([
+      {
+        command: ['npm', 'install', 'vitest'],
+        error: new Error('install failed'),
+      },
+    ]);
+    const { progressReporter, transform } = setUpTransformer({
+      commandRunner,
+      transforms: [
+        defineTransform({
+          name: 'install-deps',
+          apply: async ({ workspace }) => {
+            workspace.commands.add(['npm', 'install', 'vitest']);
+          },
+        }),
+      ],
+    });
+
+    await transform();
+
+    expect(progressReporter.phases()[0].steps[1]).toMatchObject({
+      name: 'Applying changes',
+      subSteps: [
+        { message: 'applied 0 file system changes' },
+        { message: 'command: npm install vitest · failed · install failed' },
+      ],
+    });
   });
 });
 
