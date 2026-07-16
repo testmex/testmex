@@ -23,7 +23,7 @@ module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testMatch: ["**/.*\\\\.jest\\\\.(cts|tsx)"],
+  testMatch: ["**/*.jest.{cts,tsx}"],
 };
 `);
   });
@@ -36,7 +36,7 @@ module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testMatch: ["**/.*\\\\.anything\\\\.spec\\\\.(ts|tsx)"],
+  testMatch: ["**/*.anything.spec.{ts,tsx}"],
 };
 `);
     expect(transformed).toContain(`\
@@ -44,7 +44,7 @@ module.exports = {
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
-  testMatch: ["**/.*\\\\.jest\\\\.(cts|tsx)"],
+  testMatch: ["**/*.jest.{cts,tsx}"],
 };
 `);
   });
