@@ -2,11 +2,7 @@ import type { Workspace } from '../core/domain/workspace';
 import type { Transform, TransformResult } from '../core/models/transform';
 import type { CommandRunner } from '../core/ports/command-runner';
 import { NullProgressReporter } from '../core/ports/null-progress-reporter';
-import type {
-  Phase,
-  ProgressReporter,
-  Step,
-} from '../core/ports/progress-reporter';
+import type { Phase, ProgressReporter } from '../core/ports/progress-reporter';
 export class Transformer {
   private readonly _commandRunner: CommandRunner;
   private readonly _progressReporter: ProgressReporter;
@@ -40,9 +36,7 @@ export class Transformer {
       });
 
       if (result) {
-        const applyChangesStep = phase.createStep({ name: 'Applying changes' });
-        await this._applyChanges(workspace, applyChangesStep);
-        applyChangesStep.done('done');
+        await this._applyChanges({ workspace, phase });
 
         const verifyStep = phase.createStep({ name: 'Verifying' });
         const verifyResult = await result.verify({ progressStep: verifyStep });
@@ -58,11 +52,7 @@ export class Transformer {
       }
     }
 
-    const progressStep = phase.createStep({ name: 'Applying changes' });
-
-    await this._applyChanges(workspace, progressStep);
-
-    progressStep?.done('done');
+    await this._applyChanges({ workspace, phase });
 
     phase.done();
   }
@@ -123,10 +113,14 @@ export class Transformer {
     }
   }
 
-  private async _applyChanges(
-    workspace: Workspace,
-    progressStep: Step,
-  ): Promise<void> {
+  private async _applyChanges({
+    phase,
+    workspace,
+  }: {
+    phase: Phase;
+    workspace: Workspace;
+  }): Promise<void> {
+    const progressStep = phase.createStep({ name: 'Applying changes' });
     const commitSubStep = progressStep.createSubStep('applying changes');
     const { count } = await workspace.tree.commit();
     commitSubStep?.updateMessage(`applied ${count} changes`);
@@ -153,6 +147,8 @@ export class Transformer {
         continue;
       }
     }
+
+    progressStep.done('done');
   }
 
   private _concatMessages(messages: string[]) {
