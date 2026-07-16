@@ -31,6 +31,11 @@
   object-fit: contain;
 }
 
+[data-theme='dark'] .heroLogo {
+  filter: drop-shadow(0 0 0.6px rgba(253, 246, 227, 0.85))
+    drop-shadow(0 0 1.5px rgba(253, 246, 227, 0.4));
+}
+
 .heroTitle {
   font-size: 40px;
   font-weight: 500;
@@ -63,6 +68,7 @@
 
 .button {
   background: white;
+  border: 2px solid var(--testmex-plum);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,6 +81,7 @@
 
 .button:hover {
   background: var(--testmex-mint);
+  border-color: var(--testmex-plum);
   color: var(--testmex-plum);
 }
 
@@ -106,10 +113,13 @@
   max-width: 280px;
   padding: 1.5rem;
   text-align: center;
+  background: #fffef9;
+  border: 1px solid rgba(56, 0, 48, 0.22);
+  box-shadow: 0 4px 14px rgba(31, 31, 29, 0.12);
 }
 
 .featureCard h3 {
-  color: var(--testmex-green);
+  color: var(--testmex-green-ink);
   font-size: 1.1rem;
   letter-spacing: 2px;
   margin-bottom: 0.75rem;
@@ -124,7 +134,7 @@
 
 [data-theme='dark'] .wrapper,
 [data-theme='dark'] .heroBanner {
-  background: var(--testmex-charcoal);
+  background: var(--testmex-night);
   color: var(--testmex-cream);
 }
 
@@ -134,23 +144,31 @@
 }
 
 [data-theme='dark'] .featuresSection {
+  background: #161411;
+}
+
+[data-theme='dark'] .featureCard {
   background: #2a2520;
+  border: 1px solid rgba(253, 246, 227, 0.22);
+  box-shadow: none;
 }
 
 [data-theme='dark'] .featureCard p {
-  color: var(--testmex-cream);
+  color: #fff8e7;
 }
 
 [data-theme='dark'] .featureCard h3 {
-  color: var(--testmex-yellow);
+  color: var(--testmex-green-glow);
 }
 
 [data-theme='dark'] .button {
   background: var(--testmex-plum);
+  border-color: var(--testmex-yellow);
   color: var(--testmex-cream);
 }
 
 [data-theme='dark'] .button:hover {
   background: #4d083f;
+  border-color: var(--testmex-yellow);
   color: var(--testmex-yellow);
 }

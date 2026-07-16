@@ -12,7 +12,7 @@ const config: Config = {
   },
 
   url: 'https://testmex.github.io',
-  baseUrl: '/testmex/',
+  baseUrl: '/',
 
   organizationName: 'testmex',
   projectName: 'testmex',
