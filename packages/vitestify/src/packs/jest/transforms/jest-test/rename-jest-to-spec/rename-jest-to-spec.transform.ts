@@ -1,14 +1,5 @@
 import { defineTransform } from '../../../../../core/models/transform';
-import {
-  relativePath,
-  type RelativePath,
-} from '../../../../../core/models/relative-path';
-import {
-  JEST_CTS_EXTENSION,
-  JEST_TSX_EXTENSION,
-  SPEC_TS_EXTENSION,
-  SPEC_TSX_EXTENSION,
-} from '../../../constants';
+import { renameJestToSpecFile } from '../../../jest-core';
 import { findingTypes } from '../../../identifiers';
 
 export const renameJestToSpecTransform = defineTransform({
@@ -31,19 +22,3 @@ export const renameJestToSpecTransform = defineTransform({
     progressStep.updateMessage(`${transformedCount} file(s) transformed`);
   },
 });
-
-export function renameJestToSpecFile(path: RelativePath): RelativePath | null {
-  if (path.endsWith(JEST_TSX_EXTENSION)) {
-    return relativePath(
-      path.slice(0, -JEST_TSX_EXTENSION.length) + SPEC_TSX_EXTENSION,
-    );
-  }
-
-  if (path.endsWith(JEST_CTS_EXTENSION)) {
-    return relativePath(
-      path.slice(0, -JEST_CTS_EXTENSION.length) + SPEC_TS_EXTENSION,
-    );
-  }
-
-  return null;
-}

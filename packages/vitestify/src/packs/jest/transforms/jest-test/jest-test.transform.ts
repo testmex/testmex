@@ -10,7 +10,7 @@ import {
   type VerifyResult,
 } from '../../../../core/models/transform';
 import { fileTags } from '../../../core/identifiers';
-import { renameSpecToJestFile } from '../../../core/transforms/rename-spec-to-jest/rename-spec-to-jest.transform';
+import { renameJestToSpecFile, renameSpecToJestFile } from '../../jest-core';
 import { jestFocusSkipShorthandTransform } from './jest-focus-skip-shorthand/jest-focus-skip-shorthand.transform';
 import { jestGlobalsImportTransform } from './jest-globals-import/jest-globals-import.transform';
 import { jestMockTransform } from './jest-mock/jest-mock.transform';
@@ -18,10 +18,7 @@ import { jestSetMockTransform } from './jest-set-mock/jest-set-mock.transform';
 import { jestSetTimeoutTransform } from './jest-set-timeout/jest-set-timeout.transform';
 import { jestTypesTransform } from './jest-types/jest-types.transform';
 import { jestViTransform } from './jest-vi/jest-vi.transform';
-import {
-  renameJestToSpecFile,
-  renameJestToSpecTransform,
-} from './rename-jest-to-spec/rename-jest-to-spec.transform';
+import { renameJestToSpecTransform } from './rename-jest-to-spec/rename-jest-to-spec.transform';
 import { snapTransform } from './snap/snap.transform';
 import { vitestImportsTransform } from './vitest-imports/vitest-imports.transform';
 

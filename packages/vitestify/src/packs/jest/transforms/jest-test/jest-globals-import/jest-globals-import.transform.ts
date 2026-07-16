@@ -1,7 +1,7 @@
 import { defineFileTransform } from '../../../../../core/domain/define-file-transform';
 import { SgEditor } from '../../../../../infra/ast/sg-editor';
 import { findingTypes } from '../../../identifiers';
-import { isTransformable } from '../../../utils';
+import { isTransformable } from '../../../jest-core';
 
 export const jestGlobalsImportTransform = defineFileTransform({
   name: 'jest-globals-import',
