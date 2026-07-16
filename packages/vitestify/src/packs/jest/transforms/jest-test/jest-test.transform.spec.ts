@@ -35,7 +35,7 @@ jest.mock('./foo');
       commandRunner,
       progressStep: NO_OP_STEP,
     });
-    const verifyResult = await result?.verify();
+    const verifyResult = await result?.verify({ progressStep: NO_OP_STEP });
 
     expect(verifyResult?.rollback).toBeDefined();
   });
@@ -49,8 +49,8 @@ jest.mock('./foo');
       progressStep: NO_OP_STEP,
     });
 
-    const verifyResult = await result?.verify();
-    await verifyResult?.rollback();
+    const verifyResult = await result?.verify({ progressStep: NO_OP_STEP });
+    await verifyResult?.rollback({ progressStep: NO_OP_STEP });
 
     expect
       .soft(

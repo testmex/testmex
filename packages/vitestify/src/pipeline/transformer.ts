@@ -1,5 +1,5 @@
 import type { Workspace } from '../core/domain/workspace';
-import type { Transform } from '../core/models/transform';
+import type { Transform, TransformResult } from '../core/models/transform';
 import type { CommandRunner } from '../core/ports/command-runner';
 import { NullProgressReporter } from '../core/ports/null-progress-reporter';
 import type {
@@ -31,13 +31,31 @@ export class Transformer {
     const phase = this._progressReporter.createPhase('Transforming');
 
     for (const [index, transform] of this._transforms.entries()) {
-      await this._applyTransform({
+      const result = await this._applyTransform({
         phase,
         stepCount,
         stepNumber: index + 1,
         transform,
         workspace,
       });
+
+      if (result) {
+        const applyChangesStep = phase.createStep({ name: 'Applying changes' });
+        await this._applyChanges(workspace, applyChangesStep);
+        applyChangesStep.done('done');
+
+        const verifyStep = phase.createStep({ name: 'Verifying' });
+        const verifyResult = await result.verify({ progressStep: verifyStep });
+
+        if (verifyResult) {
+          verifyStep.error('failed');
+          const rollbackStep = phase.createStep({ name: 'Rolling back' });
+          await verifyResult.rollback({ progressStep: rollbackStep });
+          rollbackStep.done('rolled back');
+        } else {
+          verifyStep.done('verified');
+        }
+      }
     }
 
     const progressStep = phase.createStep({ name: 'Applying changes' });
@@ -61,7 +79,7 @@ export class Transformer {
     stepNumber: number;
     transform: Transform;
     workspace: Workspace;
-  }): Promise<void> {
+  }): Promise<void | TransformResult> {
     const progressStep = phase.createStep({
       name: transform.name,
       stepNumber,
@@ -86,12 +104,6 @@ export class Transformer {
         },
       });
 
-      if (result) {
-        await this._applyChanges(workspace, progressStep);
-        const verifyResult = await result.verify();
-        await verifyResult?.rollback();
-      }
-
       progressStep.done(
         this._concatMessages(
           lastMessageDetail === undefined
@@ -99,6 +111,8 @@ export class Transformer {
             : ['transformed', lastMessageDetail],
         ),
       );
+
+      return result;
     } catch (error) {
       progressStep.error(
         this._concatMessages([

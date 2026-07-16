@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { _renderStepMessage } from './terminal-progress-reporter';
 
 describe(_renderStepMessage, () => {
+  it('formats step without message', () => {
+    expect(
+      _renderStepMessage({
+        name: 'scan',
+      }),
+    ).toBe('scan');
+  });
+
   it('formats step message without step number', () => {
     expect(
       _renderStepMessage({
         name: 'scan',
         message: 'reading files',
-        subStepMessages: [],
       }),
     ).toBe('scan · reading files');
   });
@@ -19,7 +26,6 @@ describe(_renderStepMessage, () => {
         stepNumber: 2,
         stepCount: 5,
         message: 'reading files',
-        subStepMessages: [],
       }),
     ).toBe('[2/5] scan · reading files');
   });

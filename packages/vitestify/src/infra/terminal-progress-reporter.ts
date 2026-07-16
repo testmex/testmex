@@ -27,7 +27,7 @@ export class TerminalProgressReporter implements ProgressReporter {
   private _createStep(args: StepArgs): Step {
     const clackSpinner = spinner();
     let started = false;
-    let stepMessage = '';
+    let stepMessage: string | undefined = undefined;
     const subStepMessages: string[] = [];
 
     return {
@@ -105,16 +105,22 @@ export function _renderStepMessage({
   subStepMessages = [],
 }: {
   name: string;
-  message: string;
+  message?: string;
   subStepMessages?: readonly string[];
   stepNumber?: number;
   stepCount?: number;
 }): string {
-  const prefix =
-    stepNumber !== undefined && stepCount !== undefined
-      ? `[${stepNumber}/${stepCount}] ${name} · `
-      : `${name} · `;
-  const formatted = `${prefix}${message}`;
+  let formatted = '';
+
+  if (stepNumber !== undefined && stepCount !== undefined) {
+    formatted = `[${stepNumber}/${stepCount}] `;
+  }
+
+  formatted += name;
+
+  if (message !== undefined) {
+    formatted += ` · ${message}`;
+  }
 
   if (subStepMessages.length === 0) {
     return formatted;

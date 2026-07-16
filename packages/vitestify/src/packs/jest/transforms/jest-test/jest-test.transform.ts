@@ -62,7 +62,8 @@ export const jestTestTransform = defineTransform({
     }
 
     return {
-      verify: () => _verify({ ...options, originalContents }),
+      verify: ({ progressStep }) =>
+        _verify({ ...options, progressStep, originalContents }),
     };
   },
 });
@@ -124,8 +125,12 @@ async function _verify(
   }
 
   return {
-    rollback: () =>
-      _rollback({ ...options, failedTestPaths: Array.from(failedTestPaths) }),
+    rollback: ({ progressStep }) =>
+      _rollback({
+        ...options,
+        progressStep,
+        failedTestPaths: Array.from(failedTestPaths),
+      }),
   };
 }
 
