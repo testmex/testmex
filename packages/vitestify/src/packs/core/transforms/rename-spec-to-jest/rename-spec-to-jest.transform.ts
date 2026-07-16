@@ -13,7 +13,7 @@ const JEST_SYMBOL_FINDING = findingType('jest-symbol');
 
 export const renameSpecToJestTransform = defineTransform({
   name: 'rename-spec-to-jest',
-  apply: async ({ workspace, onProgress }) => {
+  apply: async ({ workspace, progressStep }) => {
     const jestTestPaths = workspace.files
       .filter((file) => file.findings.includes(JEST_SYMBOL_FINDING))
       .map((file) => file.path);
@@ -28,7 +28,7 @@ export const renameSpecToJestTransform = defineTransform({
       }
     }
 
-    onProgress?.(`${transformedCount} file(s) transformed`);
+    progressStep.updateMessage(`${transformedCount} file(s) transformed`);
   },
 });
 

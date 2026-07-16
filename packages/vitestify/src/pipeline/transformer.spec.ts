@@ -17,14 +17,14 @@ describe(Transformer, () => {
       transforms: [
         defineTransform({
           name: 'jest-mock',
-          apply: async ({ onProgress }) => {
-            onProgress?.('2 file(s) transformed');
+          apply: async ({ progressStep }) => {
+            progressStep.updateMessage('2 file(s) transformed');
           },
         }),
         defineTransform({
           name: 'jest-spy-on',
-          apply: async ({ onProgress }) => {
-            onProgress?.('0 file(s) transformed');
+          apply: async ({ progressStep }) => {
+            progressStep.updateMessage('0 file(s) transformed');
           },
         }),
       ],
@@ -87,8 +87,8 @@ describe(Transformer, () => {
         }),
         defineTransform({
           name: 'jest-spy-on',
-          apply: async ({ onProgress }) => {
-            onProgress?.('1 file(s) transformed');
+          apply: async ({ progressStep }) => {
+            progressStep.updateMessage('1 file(s) transformed');
           },
         }),
       ],

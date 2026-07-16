@@ -16,7 +16,7 @@ const VITEST_CONFIG_GLOB_PATTERN =
 
 export const vitestConfigEnricher = defineEnricher({
   name: 'vitest-config',
-  async enrich({ workspace, onProgress }) {
+  async enrich({ workspace, progressStep }) {
     const files = [];
     for await (const path of workspace.tree.scanDirectory({
       pattern: VITEST_CONFIG_GLOB_PATTERN,
@@ -28,7 +28,7 @@ export const vitestConfigEnricher = defineEnricher({
       }
 
       files.push(path);
-      onProgress?.(`${files.length} file(s) found`);
+      progressStep.updateMessage(`${files.length} file(s) found`);
     }
 
     return {

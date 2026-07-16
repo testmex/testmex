@@ -7,7 +7,7 @@ const TSCONFIG_SPEC_FILE_NAME = 'tsconfig.spec.json';
 
 export const tsconfigTransform = defineTransform({
   name: 'tsconfig',
-  apply: async ({ workspace, onProgress }) => {
+  apply: async ({ workspace, progressStep }) => {
     const { tree } = workspace;
     let transformedCount = 0;
 
@@ -41,7 +41,7 @@ export const tsconfigTransform = defineTransform({
       transformedCount++;
     }
 
-    onProgress?.(`${transformedCount} file(s) transformed`);
+    progressStep.updateMessage(`${transformedCount} file(s) transformed`);
   },
 });
 

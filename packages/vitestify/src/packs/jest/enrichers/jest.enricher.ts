@@ -32,11 +32,11 @@ interface JestDiscoveredFile {
 
 export const jestEnricher = defineEnricher({
   name: 'jest',
-  async enrich({ onProgress, workspace }) {
+  async enrich({ progressStep, workspace }) {
     const files: Array<{ type: FileTag; path: RelativePath }> = [];
     for await (const file of _discoverJestFiles(workspace)) {
       files.push(file);
-      onProgress?.(`${files.length} file(s) found`);
+      progressStep.updateMessage(`${files.length} file(s) found`);
     }
 
     const jestConfigPaths = files

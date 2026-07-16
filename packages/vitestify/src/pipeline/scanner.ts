@@ -3,6 +3,7 @@ import { Workspace } from '../core/domain/workspace';
 import type { Enricher } from '../core/models/enricher';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
+import { NO_OP_STEP } from '../core/ports/progress-reporter';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
 
 export class Scanner {
@@ -43,9 +44,12 @@ export class Scanner {
       const result = await enricher.enrich({
         workspace: workspace.asReadonly(),
         commandRunner: this._commandRunner,
-        onProgress: (message) => {
-          lastMessage = message;
-          progressStep.updateMessage(_formatStepMessage('scanning', message));
+        progressStep: {
+          ...NO_OP_STEP,
+          updateMessage: (detail) => {
+            lastMessage = detail;
+            progressStep.updateMessage(_formatStepMessage('scanning', detail));
+          },
         },
       });
 

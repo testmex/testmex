@@ -9,7 +9,7 @@ const VITEST_BUILDER = '@analogjs/vitest-angular:test';
 
 export const angularBuilderJestTransform = defineTransform({
   name: 'angular-builder-jest',
-  apply: async ({ workspace, onProgress }) => {
+  apply: async ({ workspace, progressStep }) => {
     const { commands, tree } = workspace;
     const originalAngularJson =
       await tree.maybeReadJsonFile<AngularJson>(ANGULAR_JSON_PATH);
@@ -53,7 +53,7 @@ export const angularBuilderJestTransform = defineTransform({
 
     if (angularJson !== originalAngularJson) {
       await tree.write(ANGULAR_JSON_PATH, JSON.stringify(angularJson, null, 2));
-      onProgress?.('1 file(s) transformed');
+      progressStep.updateMessage('1 file(s) transformed');
     }
   },
 });

@@ -8,7 +8,7 @@ import {
 
 export const packageManagerEnricher = defineEnricher({
   name: 'package-manager',
-  async enrich({ workspace, onProgress }) {
+  async enrich({ workspace, progressStep }) {
     const packageManager =
       (await _detectFromPackageJson(workspace)) ??
       (await _detectFromLockFiles(workspace));
@@ -18,7 +18,7 @@ export const packageManagerEnricher = defineEnricher({
     }
 
     const goodChoice = packageManager === 'pnpm' ? ' (good choice 😉)' : '';
-    onProgress?.(`${packageManager} detected${goodChoice}`);
+    progressStep.updateMessage(`${packageManager} detected${goodChoice}`);
 
     return { packageManager };
   },

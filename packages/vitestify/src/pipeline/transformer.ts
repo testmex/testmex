@@ -7,6 +7,7 @@ import type {
   ProgressReporter,
   Step,
 } from '../core/ports/progress-reporter';
+import { NO_OP_STEP } from '../core/ports/progress-reporter';
 
 export class Transformer {
   private readonly _commandRunner: CommandRunner;
@@ -76,11 +77,14 @@ export class Transformer {
       const result = await transform.apply({
         workspace,
         commandRunner: this._commandRunner,
-        onProgress: (detail) => {
-          lastMessageDetail = detail;
-          progressStep.updateMessage(
-            this._concatMessages(['transforming', detail]),
-          );
+        progressStep: {
+          ...NO_OP_STEP,
+          updateMessage: (detail) => {
+            lastMessageDetail = detail;
+            progressStep.updateMessage(
+              this._concatMessages(['transforming', detail]),
+            );
+          },
         },
       });
 

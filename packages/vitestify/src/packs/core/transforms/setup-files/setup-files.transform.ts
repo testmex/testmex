@@ -8,7 +8,7 @@ const JEST_PRESET_ANGULAR_MODULE_PREFIX = 'jest-preset-angular';
 
 export const setupFilesTransform = defineTransform({
   name: 'setup-files',
-  apply: async ({ workspace, onProgress }) => {
+  apply: async ({ workspace, progressStep }) => {
     let transformedCount = 0;
 
     for (const file of workspace.files) {
@@ -34,7 +34,7 @@ export const setupFilesTransform = defineTransform({
       transformedCount++;
     }
 
-    onProgress?.(`${transformedCount} file(s) transformed`);
+    progressStep.updateMessage(`${transformedCount} file(s) transformed`);
   },
 });
 

@@ -1,4 +1,5 @@
 import type { WritableWorkspace } from '../domain/workspace';
+import { NO_OP_STEP } from '../ports/progress-reporter';
 import type { PipelineContext } from './pipeline-context';
 
 export interface TransformOptions extends PipelineContext {
@@ -35,10 +36,13 @@ export function defineTransformGroup(
 
         await transform.apply({
           ...options,
-          onProgress: (detail) => {
-            options.onProgress(
-              `[${step}/${total}] ${transform.name} · ${detail}`,
-            );
+          progressStep: {
+            ...NO_OP_STEP,
+            updateMessage: (detail) => {
+              options.progressStep.updateMessage(
+                `[${step}/${total}] ${transform.name} · ${detail}`,
+              );
+            },
           },
         });
       }

@@ -7,7 +7,7 @@ import {
 } from '../../../../core/models/workspace.mother';
 import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
 import { Analyzer } from '../../../../pipeline/analyzer';
-import { dummyOnProgress } from '../../../../testing/dummy-on-progress';
+import { NO_OP_STEP } from '../../../../core/ports/progress-reporter';
 import { runTransform } from '../../../../testing/run-transform';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
@@ -33,7 +33,7 @@ jest.mock('./foo');
     const result = await jestTestTransform.apply({
       workspace,
       commandRunner,
-      onProgress: dummyOnProgress,
+      progressStep: NO_OP_STEP,
     });
     const verifyResult = await result?.verify();
 
@@ -46,7 +46,7 @@ jest.mock('./foo');
     const result = await jestTestTransform.apply({
       workspace,
       commandRunner,
-      onProgress: dummyOnProgress,
+      progressStep: NO_OP_STEP,
     });
 
     const verifyResult = await result?.verify();

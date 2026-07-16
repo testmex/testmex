@@ -7,7 +7,7 @@ import {
 } from '../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../core/ports/file-system.fake';
 import { CommandRunnerFake } from '../../../core/ports/command-runner.fake';
-import { dummyOnProgress } from '../../../testing/dummy-on-progress';
+import { NO_OP_STEP } from '../../../core/ports/progress-reporter';
 import { jestEnricher } from './jest.enricher';
 
 describe(jestEnricher.name, () => {
@@ -136,7 +136,7 @@ async function enrich(mother: WorkspaceMother) {
   const tree = new Tree({ fileSystem });
   return jestEnricher.enrich({
     commandRunner: new CommandRunnerFake(),
-    onProgress: dummyOnProgress,
+    progressStep: NO_OP_STEP,
     workspace: new Workspace({
       state: mother.buildWorkspaceState(),
       tree,

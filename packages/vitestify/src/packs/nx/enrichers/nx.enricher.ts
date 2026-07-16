@@ -5,13 +5,13 @@ import { relativePath } from '../../../core/models/relative-path';
 export const nxEnricher = defineEnricher({
   name: 'nx',
   async enrich(options) {
-    const { workspace, onProgress } = options;
+    const { workspace, progressStep } = options;
 
     if (!(await hasNx(workspace.tree))) {
       return {};
     }
 
-    onProgress('loading nx graph');
+    progressStep.updateMessage('loading nx graph');
     const graph = await _runNxGraphCommand(options);
 
     const projects = Object.values(graph.graph.nodes).map((node) => ({
@@ -19,7 +19,7 @@ export const nxEnricher = defineEnricher({
       path: relativePath(node.data.root),
     }));
 
-    onProgress(`${projects.length} project(s) detected`);
+    progressStep.updateMessage(`${projects.length} project(s) detected`);
 
     return { projects };
   },

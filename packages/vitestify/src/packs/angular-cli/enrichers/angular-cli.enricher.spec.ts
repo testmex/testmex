@@ -9,7 +9,7 @@ import { WorkspaceState } from '../../../core/models/workspace-state';
 import { FileSystemFake } from '../../../core/ports/file-system.fake';
 import { CommandRunnerFake } from '../../../core/ports/command-runner.fake';
 import { angularJsonMother } from '../angular-json.mother';
-import { dummyOnProgress } from '../../../testing/dummy-on-progress';
+import { NO_OP_STEP } from '../../../core/ports/progress-reporter';
 import { angularCliEnricher } from './angular-cli.enricher';
 
 describe(angularCliEnricher.name, () => {
@@ -32,7 +32,7 @@ async function enrich(files: Record<RelativePath, string>) {
 
   return angularCliEnricher.enrich({
     commandRunner: new CommandRunnerFake(),
-    onProgress: dummyOnProgress,
+    progressStep: NO_OP_STEP,
     workspace: new Workspace({
       state: new WorkspaceState(),
       tree: new Tree({ fileSystem }),

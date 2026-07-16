@@ -5,7 +5,7 @@ import { ANGULAR_JSON_PATH, type AngularJson } from '../../core/angular-json';
 
 export const angularCliEnricher = defineEnricher({
   name: 'angular-cli',
-  async enrich({ workspace, onProgress }) {
+  async enrich({ workspace, progressStep }) {
     const angularJson = await workspace.tree.maybeReadFile(ANGULAR_JSON_PATH);
 
     if (angularJson === null) {
@@ -19,7 +19,7 @@ export const angularCliEnricher = defineEnricher({
         meta.root != null ? [{ name, path: relativePath(meta.root) }] : [],
     );
 
-    onProgress?.(`${projects.length} project(s) detected`);
+    progressStep.updateMessage(`${projects.length} project(s) detected`);
 
     return { projects };
   },
