@@ -8,8 +8,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'vitestify/getting-started',
-        'vitestify/why-vitestify',
-        'vitestify/future-work',
+        'vitestify/scope',
       ],
     },
   ],
