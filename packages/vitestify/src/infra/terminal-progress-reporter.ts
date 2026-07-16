@@ -17,76 +17,108 @@ export class TerminalProgressReporter implements ProgressReporter {
     intro(`${title} started`);
 
     return {
-      createStep: (args) => _createStep(args),
+      createStep: (args) => this._createStep(args),
       done: () => {
         outro(`${title} finished`);
       },
     };
   }
-}
 
-function _createStep(args: StepArgs): Step {
-  const clackSpinner = spinner();
-  let started = false;
-  let currentMessage = '';
-  const subStepMessages: string[] = [];
+  private _createStep(args: StepArgs): Step {
+    const clackSpinner = spinner();
+    let started = false;
+    let stepMessage = '';
+    const subStepMessages: string[] = [];
 
-  const format = (body: string) => _formatStepMessage(args, body);
+    return {
+      createSubStep: (message: string): SubStep => {
+        const index = subStepMessages.length;
+        subStepMessages.push(message);
+        _render();
 
-  const render = () => {
-    const formatted = format(currentMessage);
-    const display =
-      subStepMessages.length === 0
-        ? formatted
-        : `${formatted}\n${subStepMessages.map((m) => `| ${m}`).join('\n')}`;
+        return {
+          updateMessage: (next: string) => {
+            subStepMessages[index] = next;
+            _render();
+          },
+        };
+      },
+      updateMessage: (message: string) => {
+        stepMessage = message;
+        _render();
+      },
+      done: (message: string) => {
+        if (!started) {
+          return;
+        }
 
-    if (!started) {
-      clackSpinner.start(display);
-      started = true;
-      return;
+        clackSpinner.stop(
+          _renderStepMessage({
+            ...args,
+            message,
+          }),
+        );
+      },
+      error: (message: string) => {
+        if (!started) {
+          return;
+        }
+
+        clackSpinner.error(
+          _renderStepMessage({
+            ...args,
+            message,
+          }),
+        );
+      },
+    };
+
+    function _render() {
+      const display = _renderStepMessage({
+        ...args,
+        message: stepMessage,
+        subStepMessages,
+      });
+
+      if (!started) {
+        clackSpinner.start(display);
+        started = true;
+        return;
+      }
+
+      clackSpinner.message(display);
     }
-
-    clackSpinner.message(display);
-  };
-
-  return {
-    createSubStep: (message: string): SubStep => {
-      const index = subStepMessages.length;
-      subStepMessages.push(message);
-      render();
-
-      return {
-        updateMessage: (next: string) => {
-          subStepMessages[index] = next;
-          render();
-        },
-      };
-    },
-    updateMessage: (message: string) => {
-      currentMessage = message;
-      render();
-    },
-    done: (message: string) => {
-      if (!started) {
-        return;
-      }
-
-      clackSpinner.stop(format(message));
-    },
-    error: (message: string) => {
-      if (!started) {
-        return;
-      }
-
-      clackSpinner.error(format(message));
-    },
-  };
+  }
 }
 
-function _formatStepMessage(args: StepArgs, body: string): string {
+/**
+ * Formats the text shown for a progress step in the terminal.
+ *
+ * Builds a single-line step label (`name · message`, or `[n/m] name · message`
+ * when numbering is provided) and appends sub-step lines prefixed with `| `.
+ */
+export function _renderStepMessage({
+  stepNumber,
+  stepCount,
+  name,
+  message,
+  subStepMessages = [],
+}: {
+  name: string;
+  message: string;
+  subStepMessages?: readonly string[];
+  stepNumber?: number;
+  stepCount?: number;
+}): string {
   const prefix =
-    'stepNumber' in args
-      ? `[${args.stepNumber}/${args.stepCount}] ${args.name} · `
-      : `${args.name} · `;
-  return `${prefix}${body}`;
+    stepNumber !== undefined && stepCount !== undefined
+      ? `[${stepNumber}/${stepCount}] ${name} · `
+      : `${name} · `;
+  const formatted = `${prefix}${message}`;
+
+  if (subStepMessages.length === 0) {
+    return formatted;
+  }
+
+  return `${formatted}\n${subStepMessages.map((m) => `| ${m}`).join('\n')}`;
 }
