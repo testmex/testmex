@@ -2,7 +2,10 @@
   "name": "@testmex/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "docs:start": "nx start docs",
+    "docs:build": "nx build docs"
+  },
   "private": true,
   "devDependencies": {
     "@eslint/js": "^9.8.0",
