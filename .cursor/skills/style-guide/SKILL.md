@@ -8,6 +8,34 @@ description: >-
 
 # Style Guide
 
+## Module layout: main types first
+
+Put the main exported types and functions at the top of the file. Place the types and helper functions they depend on below, ordered from outer to inner.
+
+```typescript
+// ✅
+export class ProgressReporterFake { /* … */ }
+
+export interface PhaseState {
+  steps: readonly StepState[];
+}
+
+export interface StepState {
+  subSteps: readonly SubStepState[];
+}
+
+export interface SubStepState {
+  message: string;
+}
+
+interface MutablePhaseState { /* … */ }
+
+// ❌ — leaf types before the class that exposes them
+export interface SubStepState { /* … */ }
+export interface StepState { /* … */ }
+export class ProgressReporterFake { /* … */ }
+```
+
 ## Object shapes: prefer `interface`
 
 Use `interface` for object shapes. Use `type` only when `interface` cannot express the shape (unions, intersections, mapped types, branded primitives).
