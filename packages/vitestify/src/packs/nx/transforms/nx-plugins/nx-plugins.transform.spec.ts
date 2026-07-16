@@ -48,7 +48,9 @@ describe('nxPluginsTransform', () => {
   it('queues nx add @nx/vitest when @nx/plugin is not configured', async () => {
     const { commands } = await transformNxJson({});
 
-    expect(commands).toEqual([['npx', 'nx', 'add', '@nx/vitest']]);
+    expect(commands).toMatchObject([
+      { command: ['npx', 'nx', 'add', '@nx/vitest'] },
+    ]);
   });
 
   it('skips when @nx/vitest plugin already present', async () => {
@@ -119,13 +121,16 @@ async function transformNxJson(content?: NxJson) {
     );
   }
 
-  await runTransform({ workspace, transforms: [nxPluginsTransform] });
+  const { commands } = await runTransform({
+    workspace,
+    transforms: [nxPluginsTransform],
+  });
 
   return {
     nxJson: await workspace.tree.maybeReadJsonFile<NxJson>(
       relativePath('nx.json'),
     ),
-    commands: workspace.commands.all(),
+    commands,
   };
 }
 

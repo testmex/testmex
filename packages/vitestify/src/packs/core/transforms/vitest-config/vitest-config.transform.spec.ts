@@ -60,14 +60,12 @@ export default defineConfig({
       ),
     );
 
-    await transform(workspace);
+    const { commands } = await transform(workspace);
 
-    expect(workspace.commands.all()).toContainEqual([
-      'npm',
-      'add',
-      '-D',
-      'vite-tsconfig-paths',
-      'vitest',
+    expect(commands).toMatchObject([
+      {
+        command: ['npm', 'add', '-D', 'vite-tsconfig-paths', 'vitest'],
+      },
     ]);
   });
 
@@ -284,11 +282,13 @@ setupTestBed();
         ),
     );
 
-    await transform(workspace);
+    const { commands } = await transform(workspace);
 
-    expect(workspace.commands.all()).toContainEqual(
+    expect(
+      commands.find(({ command }) => command.join(' ').startsWith('npm add -D'))
+        ?.command,
+    ).toEqual(
       expect.arrayContaining([
-        'npm',
         '@analogjs/vite-plugin-angular',
         '@analogjs/vitest-angular',
       ]),
@@ -369,11 +369,12 @@ setupTestBed();
         ),
     );
 
-    await transform(workspace);
+    const { commands } = await transform(workspace);
 
-    expect(workspace.commands.all()).toContainEqual(
-      expect.arrayContaining(['npm', '@vitejs/plugin-react']),
-    );
+    expect(
+      commands.find(({ command }) => command.join(' ').startsWith('npm add -D'))
+        ?.command,
+    ).toEqual(expect.arrayContaining(['@vitejs/plugin-react']));
   });
 
   it('configures jsdom when dom tests are detected', async () => {
@@ -806,7 +807,7 @@ export default {
 });
 
 async function transform(workspace: ReturnType<typeof createTestingWorkspace>) {
-  await runTransform({
+  return await runTransform({
     workspace,
     heuristics: [
       angularHeuristic,

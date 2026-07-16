@@ -36,14 +36,14 @@ export class CommandRunnerFake implements CommandRunner {
         expected.cwd === options?.cwd,
     );
 
+    this._executedCommands.push({ command, options });
+
     if (expectedCommand === undefined) {
       throw new Error(
         `CommandRunnerFake: Unexpected command: ${JSON.stringify(command)}` +
           (options?.cwd === undefined ? '' : ` cwd:${options.cwd}`),
       );
     }
-
-    this._executedCommands.push({ command, options });
 
     if ('error' in expectedCommand) {
       throw expectedCommand.error;
