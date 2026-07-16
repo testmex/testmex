@@ -51,7 +51,7 @@ describe(Transformer, () => {
         name: 'Applying changes',
         status: 'done',
         message: 'done',
-        subSteps: [{ message: 'applied 0 file system changes' }],
+        subSteps: [{ message: 'applied 0 changes' }],
       },
     ]);
   });
@@ -326,8 +326,8 @@ describe(Transformer, () => {
         status: 'done',
         subSteps: [
           { message: 'applied 0 changes' },
-          { message: 'command: npm install vitest · succeeded' },
-          { message: 'command: npx nx add @nx/vitest · succeeded' },
+          { message: 'npm install vitest · succeeded' },
+          { message: 'npx nx add @nx/vitest · succeeded' },
         ],
       },
     ]);
@@ -359,7 +359,7 @@ describe(Transformer, () => {
       name: 'Applying changes',
       subSteps: [
         { message: 'applied 0 changes' },
-        { message: 'command: npm install vitest · failed · install failed' },
+        { message: 'npm install vitest · failed · install failed' },
       ],
     });
   });

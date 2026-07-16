@@ -7,8 +7,6 @@ import type {
   ProgressReporter,
   Step,
 } from '../core/ports/progress-reporter';
-import { NO_OP_STEP } from '../core/ports/progress-reporter';
-
 export class Transformer {
   private readonly _commandRunner: CommandRunner;
   private readonly _progressReporter: ProgressReporter;
