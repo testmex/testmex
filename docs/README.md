@@ -7,8 +7,6 @@ Documentation site built with [Docusaurus](https://docusaurus.io/).
 From the monorepo root:
 
 ```bash
-pnpm docs:start
-# or
 pnpm nx start docs
 ```
 
@@ -21,8 +19,6 @@ pnpm start
 ## Production build
 
 ```bash
-pnpm docs:build
-# or
 pnpm nx build docs
 ```
 
