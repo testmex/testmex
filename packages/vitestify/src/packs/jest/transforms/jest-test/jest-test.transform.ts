@@ -25,7 +25,7 @@ import {
 import { snapTransform } from './snap/snap.transform';
 import { vitestImportsTransform } from './vitest-imports/vitest-imports.transform';
 
-const _jestTestTransforms = [
+const JEST_TEST_TRANSFORMS = [
   jestGlobalsImportTransform,
   jestMockTransform,
   jestSetMockTransform,
@@ -44,9 +44,9 @@ export const jestTestTransform = defineTransform({
     const { progressStep } = options;
     const originalContents = await _captureOriginalContents(options);
 
-    for (const [index, transform] of _jestTestTransforms.entries()) {
+    const total = JEST_TEST_TRANSFORMS.length;
+    for (const [index, transform] of JEST_TEST_TRANSFORMS.entries()) {
       const step = index + 1;
-      const total = _jestTestTransforms.length;
 
       await transform.apply({
         ...options,
