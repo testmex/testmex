@@ -228,6 +228,66 @@ describe(Transformer, () => {
 
     expect(bApplied).toBe(true);
   });
+
+  it('drains queued commands', async () => {
+    const commandRunner = new CommandRunnerFake();
+    commandRunner.configure([
+      { command: ['npm', 'install', 'vitest'], output: '' },
+      { command: ['npx', 'nx', 'add', '@nx/vitest'], output: '' },
+    ]);
+    const { transform, workspace } = setUpTransformer({
+      commandRunner,
+      transforms: [
+        defineTransform({
+          name: 'install-deps',
+          apply: async ({ workspace }) => {
+            workspace.commands.add(['npm', 'install', 'vitest']);
+            workspace.commands.add(['npx', 'nx', 'add', '@nx/vitest']);
+          },
+        }),
+      ],
+    });
+
+    await transform();
+
+    expect
+      .soft(commandRunner.executedCommands())
+      .toMatchObject([
+        { command: ['npm', 'install', 'vitest'] },
+        { command: ['npx', 'nx', 'add', '@nx/vitest'] },
+      ]);
+    expect.soft(workspace.commands.all()).toEqual([]);
+  });
+
+  it('continues after command failure', async () => {
+    const commandRunner = new CommandRunnerFake();
+    commandRunner.configure([
+      {
+        command: ['npm', 'install', 'vitest'],
+        error: new Error('install failed'),
+      },
+      { command: ['npx', 'nx', 'add', '@nx/vitest'], output: '' },
+    ]);
+    const { transform } = setUpTransformer({
+      commandRunner,
+      transforms: [
+        defineTransform({
+          name: 'install-deps',
+          apply: async ({ workspace }) => {
+            workspace.commands.add(['npm', 'install', 'vitest']);
+            workspace.commands.add(['npx', 'nx', 'add', '@nx/vitest']);
+          },
+        }),
+      ],
+    });
+
+    await transform();
+
+    expect(commandRunner.executedCommands()).toMatchObject([
+      { command: ['npm', 'install', 'vitest'] },
+      { command: ['npx', 'nx', 'add', '@nx/vitest'] },
+    ]);
+  });
 });
 
 function setUpTransformer({
@@ -250,8 +310,10 @@ function setUpTransformer({
   });
 
   return {
+    commandRunner,
     fileSystem,
     progressReporter,
     transform: () => transformer.transform(workspace),
+    workspace,
   };
 }

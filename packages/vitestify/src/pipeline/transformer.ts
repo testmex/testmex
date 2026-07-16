@@ -43,8 +43,7 @@ export class Transformer {
       });
 
       if (result) {
-        await workspace.tree.commit();
-        await this._commandFlusher.flush(workspace);
+        await this._applyChanges(workspace);
         const verifyResult = await result.verify();
         await verifyResult?.rollback();
       }
@@ -52,8 +51,7 @@ export class Transformer {
 
     phase.done();
 
-    await workspace.tree.commit();
-    await this._commandFlusher.flush(workspace);
+    await this._applyChanges(workspace);
   }
 
   private async _applyTransform({
@@ -101,6 +99,11 @@ export class Transformer {
         ),
       );
     }
+  }
+
+  private async _applyChanges(workspace: Workspace): Promise<void> {
+    await workspace.tree.commit();
+    await this._commandFlusher.flush(workspace);
   }
 
   private _formatMessage(phase: string, detail?: string) {
