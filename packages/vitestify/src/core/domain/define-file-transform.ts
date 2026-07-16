@@ -40,8 +40,13 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
         const content = await tree.maybeReadFile(file.path);
 
         if (content != null) {
-          await tree.write(file.path, args.apply(content));
-          transformedCount++;
+          const updatedContent = args.apply(content);
+
+          /* Do not count unchanged files. */
+          if (updatedContent !== content) {
+            await tree.write(file.path, updatedContent);
+            transformedCount++;
+          }
         }
 
         /* Give a run opportunity to things like `clack` intercepting CTRL+C. */
