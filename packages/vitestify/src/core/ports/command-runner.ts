@@ -2,8 +2,6 @@ import type { RelativePath } from '../models/relative-path';
 
 export type Command = readonly string[];
 
-export type CommandResponse = readonly [command: Command, output: string];
-
 export interface CommandRunOptions {
   cwd?: RelativePath;
   ignoreExitCode?: boolean;
