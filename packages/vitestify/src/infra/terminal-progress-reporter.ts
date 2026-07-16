@@ -49,7 +49,7 @@ export class TerminalProgressReporter implements ProgressReporter {
       },
       done: (message: string) => {
         if (!started) {
-          return;
+          _render();
         }
 
         clackSpinner.stop(

@@ -8,6 +8,8 @@ export class Transformer {
   private readonly _progressReporter: ProgressReporter;
   private readonly _transforms: Transform[];
 
+  private _changesTotalCount = 0;
+
   constructor({
     commandRunner,
     transforms,
@@ -54,6 +56,17 @@ export class Transformer {
     }
 
     await this._applyChanges({ workspace, phase });
+
+    const reviewTimeSaved = this._changesTotalCount * 0.1;
+    const savings = this._changesTotalCount * 0.5;
+    if (savings > 10) {
+      phase
+        .createStep({ name: '💰 LLM budget saved' })
+        .done(`~$${savings.toFixed(2)}`);
+      phase
+        .createStep({ name: '⏱️ Review time saved' })
+        .done(`~${Number(reviewTimeSaved.toFixed(1))} hour(s)`);
+    }
 
     phase.done();
   }
@@ -124,6 +137,7 @@ export class Transformer {
     const progressStep = phase.createStep({ name: 'Applying changes' });
     const commitSubStep = progressStep.createSubStep('applying changes');
     const { count } = await workspace.tree.commit();
+    this._changesTotalCount += count;
     commitSubStep?.updateMessage(`applied ${count} changes`);
 
     for (const command of workspace.commands.drain()) {
