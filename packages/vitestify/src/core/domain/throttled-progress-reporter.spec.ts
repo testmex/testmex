@@ -19,7 +19,7 @@ describe(ThrottledProgressReporter, () => {
     await vi.advanceTimersByTimeAsync(90);
     progressStep.updateMessage('pending');
 
-    expect(inner.message()).toBe('[1/5] test · started');
+    expect(inner.phases()[0].steps[0].message).toBe('started');
   });
 
   it('throttled progress reporter forwards pending message after interval elapses', async () => {
@@ -38,7 +38,7 @@ describe(ThrottledProgressReporter, () => {
     progressStep.updateMessage('pending');
     await vi.advanceTimersByTimeAsync(10);
 
-    expect(inner.message()).toBe('[1/5] test · pending');
+    expect(inner.phases()[0].steps[0].message).toBe('pending');
   });
 
   it('throttled progress reporter flushes on done', () => {
@@ -55,6 +55,6 @@ describe(ThrottledProgressReporter, () => {
     progressStep.updateMessage('started');
     progressStep.done('completed');
 
-    expect(inner.message()).toBe('[1/5] test · completed');
+    expect(inner.phases()[0].steps[0].message).toBe('completed');
   });
 });

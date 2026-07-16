@@ -79,11 +79,27 @@ describe(CommandFlusher, () => {
 
     await commandFlusher.flush(workspace);
 
-    expect(progressReporter.messages()).toEqual([
-      '[1/2] command: npm install vitest · running',
-      '[1/2] command: npm install vitest · succeeded',
-      '[2/2] command: npx nx add @nx/vitest · running',
-      '[2/2] command: npx nx add @nx/vitest · succeeded',
+    expect(progressReporter.phases()).toMatchObject([
+      {
+        title: 'Commands',
+        status: 'done',
+        steps: [
+          {
+            name: 'command: npm install vitest',
+            stepNumber: 1,
+            stepCount: 2,
+            status: 'done',
+            message: 'succeeded',
+          },
+          {
+            name: 'command: npx nx add @nx/vitest',
+            stepNumber: 2,
+            stepCount: 2,
+            status: 'done',
+            message: 'succeeded',
+          },
+        ],
+      },
     ]);
   });
 
@@ -109,8 +125,9 @@ describe(CommandFlusher, () => {
 
     await commandFlusher.flush(workspace);
 
-    expect(progressReporter.errors()).toEqual([
-      '[1/1] command: npm install vitest · failed · install failed',
-    ]);
+    expect(progressReporter.phases()[0].steps[0]).toMatchObject({
+      status: 'error',
+      error: 'failed · install failed',
+    });
   });
 });

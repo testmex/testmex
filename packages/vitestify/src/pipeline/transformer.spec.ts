@@ -32,13 +32,21 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect(progressReporter.messages()).toEqual([
-      '[1/2] jest-mock · transforming',
-      '[1/2] jest-mock · transforming · 2 file(s) transformed',
-      '[1/2] jest-mock · transformed · 2 file(s) transformed',
-      '[2/2] jest-spy-on · transforming',
-      '[2/2] jest-spy-on · transforming · 0 file(s) transformed',
-      '[2/2] jest-spy-on · transformed · 0 file(s) transformed',
+    expect(progressReporter.phases()[0].steps).toMatchObject([
+      {
+        name: 'jest-mock',
+        stepNumber: 1,
+        stepCount: 2,
+        status: 'done',
+        message: 'transformed · 2 file(s) transformed',
+      },
+      {
+        name: 'jest-spy-on',
+        stepNumber: 2,
+        stepCount: 2,
+        status: 'done',
+        message: 'transformed · 0 file(s) transformed',
+      },
     ]);
   });
 
@@ -56,9 +64,10 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect(progressReporter.errors()).toEqual([
-      '[1/1] jest-mock · failed · parse failed',
-    ]);
+    expect(progressReporter.phases()[0].steps[0]).toMatchObject({
+      status: 'error',
+      error: 'failed · parse failed',
+    });
   });
 
   it('transformer continues to next transform after error', async () => {
@@ -82,16 +91,15 @@ describe(Transformer, () => {
     await transform();
 
     expect
-      .soft(progressReporter.errors())
-      .toEqual(['[1/2] jest-mock · failed · parse failed']);
-    expect
-      .soft(progressReporter.messages())
-      .toEqual([
-        '[1/2] jest-mock · transforming',
-        '[2/2] jest-spy-on · transforming',
-        '[2/2] jest-spy-on · transforming · 1 file(s) transformed',
-        '[2/2] jest-spy-on · transformed · 1 file(s) transformed',
-      ]);
+      .soft(progressReporter.phases()[0].steps[0])
+      .toMatchObject({ status: 'error', error: 'failed · parse failed' });
+    expect.soft(progressReporter.phases()[0].steps[1]).toMatchObject({
+      name: 'jest-spy-on',
+      stepNumber: 2,
+      stepCount: 2,
+      status: 'done',
+      message: 'transformed · 1 file(s) transformed',
+    });
   });
 
   it('non-verifying transform does not flush before the next transform runs', async () => {

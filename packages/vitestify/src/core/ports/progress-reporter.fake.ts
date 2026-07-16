@@ -7,55 +7,102 @@ import type {
 } from './progress-reporter';
 
 export class ProgressReporterFake implements ProgressReporter {
-  private readonly _errors: string[] = [];
-  private readonly _messages: string[] = [];
+  private readonly _phases: MutablePhaseState[] = [];
 
-  createPhase(_title: string): Phase {
+  phases(): readonly PhaseState[] {
+    return this._phases;
+  }
+
+  createPhase(title: string): Phase {
+    const phase: MutablePhaseState = {
+      title,
+      steps: [],
+      status: 'active',
+    };
+    this._phases.push(phase);
+
     return {
-      createStep: (args) => this._createStep(args),
-      done: () => undefined,
+      createStep: (args) => this._createStep(phase, args),
+      done: () => {
+        phase.status = 'done';
+      },
     };
   }
 
-  message(): string | undefined {
-    return this._messages.at(-1);
-  }
+  private _createStep(phase: MutablePhaseState, args: StepArgs): Step {
+    const step: MutableStepState = {
+      name: args.name,
+      status: 'active',
+      message: '',
+      subSteps: [],
+      ...('stepNumber' in args
+        ? { stepNumber: args.stepNumber, stepCount: args.stepCount }
+        : {}),
+    };
+    phase.steps.push(step);
 
-  messages(): readonly string[] {
-    return this._messages;
-  }
+    const recordUpdate = (body: string) => {
+      step.message = body;
+    };
 
-  errors(): readonly string[] {
-    return this._errors;
-  }
-
-  private _createStep(args: StepArgs): Step {
     return {
       createSubStep: (message: string): SubStep => {
-        this._messages.push(_formatStepMessage(args, message));
+        const subStep: SubStepState = { message };
+        step.subSteps.push(subStep);
+
         return {
           updateMessage: (body: string) => {
-            this._messages.push(_formatStepMessage(args, body));
+            subStep.message = body;
           },
         };
       },
-      updateMessage: (body: string) => {
-        this._messages.push(_formatStepMessage(args, body));
-      },
+      updateMessage: recordUpdate,
       done: (body: string) => {
-        this._messages.push(_formatStepMessage(args, body));
+        step.status = 'done';
+        recordUpdate(body);
       },
       error: (body: string) => {
-        this._errors.push(_formatStepMessage(args, body));
+        step.status = 'error';
+        step.error = body;
       },
     };
   }
 }
 
-function _formatStepMessage(args: StepArgs, body: string): string {
-  const prefix =
-    'stepNumber' in args
-      ? `[${args.stepNumber}/${args.stepCount}] ${args.name} · `
-      : `${args.name} · `;
-  return `${prefix}${body}`;
+export interface PhaseState {
+  title: string;
+  steps: readonly StepState[];
+  status: Status;
 }
+
+export interface StepState {
+  name: string;
+  stepNumber?: number;
+  stepCount?: number;
+  status: Status;
+  message: string;
+  subSteps: readonly SubStepState[];
+  error?: string;
+}
+
+export interface SubStepState {
+  message: string;
+}
+
+interface MutablePhaseState {
+  title: string;
+  steps: MutableStepState[];
+  status: Status;
+}
+
+interface MutableStepState {
+  name: string;
+  stepNumber?: number;
+  stepCount?: number;
+  status: Status;
+  message: string;
+  subSteps: SubStepState[];
+  error?: string;
+}
+
+type Status = 'active' | 'done' | 'error';
