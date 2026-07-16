@@ -20,7 +20,7 @@ export class Analyzer {
 
   async analyze(workspace: Workspace): Promise<void> {
     const stepCount = this._heuristics.length;
-    const phase = this._progressReporter.createPhase('Analyzing');
+    const phase = this._progressReporter.createPhase('Workspace analysis');
 
     for (const [index, heuristic] of this._heuristics.entries()) {
       const progressStep = phase.createStep({
