@@ -1,0 +1,88 @@
+# Scope
+
+## Supported
+
+Vitestify ships four packs — **core**, **jest**, **nx**, and **angular-cli**.
+
+### Core
+
+- [x] Generate `vitest.config.mts`, install dependencies, and pick environment (`jsdom`, `node`, etc.) from project heuristics.
+- [x] Clone Jest setup files for Vitest (strips `jest-preset-angular` usage).
+- [x] Set `tsconfig.spec.json` `module` to `preserve` when it was `commonjs`.
+- [x] Add framework setup when detected — Angular (Analog), React (`@vitejs/plugin-react`), Testing Library cleanup.
+- [x] Guard `@testing-library/jest-dom` imports so Jest and Vitest can share setup files.
+
+### Jest
+
+- [x] Rename Jest tests to `.jest.cts` / `.jest.tsx` so Vitest skips them while config is set up.
+- [x] Point Jest `testMatch` at `.jest` extensions.
+- [x] Rewrite common Jest APIs, mocks, snapshots, and types to Vitest.
+- [x] Rename migrated tests back to `.spec.*`, run Vitest, and roll back failures to `.jest.*`.
+
+### Nx
+
+- [x] Rename the `test` target to `jest` in `project.json`.
+- [x] Rename `@nx/jest/plugin`'s `test` target to `jest`, and add `@nx/vitest`.
+- [x] Remove the legacy `test` target from `project.json` once Vitest provides one.
+- [x] Set `watch: false` in generated Vitest config for Nx CI.
+
+### Angular CLI
+
+- [x] Swap `@angular-builders/jest:run` for `@analogjs/vitest-angular:test`.
+
+## 🚧 Future Work
+
+- [ ] [Issue #19 - Add check mode for CI migration gates](https://github.com/testmex/testmex/issues/19)
+- [ ] [Issue #20 - Allow include/exclude filters for files and transforms](https://github.com/testmex/testmex/issues/20)
+- [ ] [Issue #21 - Add agentic workflow for non-trivial migrations _(e.g. browser mode)_](https://github.com/testmex/testmex/issues/21)
+- [ ] [Issue #22 - Add transform to disable Vitest test isolation](https://github.com/testmex/testmex/issues/22)
+
+## Transform reference
+
+Internal transform ids, useful when reading CLI output or debugging a run:
+
+<details>
+<summary>Core</summary>
+
+- **setup-files** — clones Jest setup files for Vitest and strips `jest-preset-angular`
+- **testing-library-jest-dom** — wraps `@testing-library/jest-dom` imports so they only load under Jest
+- **rename-spec-to-jest** — renames Jest tests to `.jest.cts` / `.jest.tsx`
+- **tsconfig** — sets `tsconfig.spec.json` `module` to `preserve` when it was `commonjs`
+- **vitest-config** — generates `vitest.config.mts`, installs dependencies, and adds framework setup when detected
+
+</details>
+
+<details>
+<summary>Jest</summary>
+
+- **config-test-match** — points Jest `testMatch` at `.jest` extensions
+- **jest-test** — orchestrates test rewrites, runs Vitest, and rolls back on failure
+  - **jest-globals-import** — rewrites `@jest/globals` imports to `vitest`
+  - **jest-mock** — rewrites `jest.mock` and related mock APIs to `vi`
+  - **jest-set-mock** — rewrites `jest.setMock` to `vi.mock`
+  - **jest-set-timeout** — rewrites `jest.setTimeout` to `vi.setConfig({ testTimeout })`
+  - **jest-types** — rewrites Jest type references to Vitest equivalents
+  - **jest-vi** — rewrites `jest.*` calls to `vi.*`
+  - **jest-focus-skip-shorthand** — rewrites `fit` / `xit` shorthands to `it.only` / `it.skip`
+  - **snap** — normalizes Jest snapshot formatting to Vitest
+  - **vitest-imports** — adds missing `vitest` imports for globals in use
+  - **rename-jest-to-spec** — renames `.jest.*` tests back to `.spec.*` after rewrite
+
+</details>
+
+<details>
+<summary>Nx</summary>
+
+- **nx-jest-target** — renames the `test` target to `jest` in `project.json`
+- **nx-plugins** — renames `@nx/jest/plugin`'s target to `jest` and adds `@nx/vitest`
+- **nx-project-json** — removes the legacy `test` target from `project.json`
+- **nx-vitest-watch** — sets `watch: false` in Vitest config for Nx CI
+
+</details>
+
+<details>
+<summary>Angular CLI</summary>
+
+- **angular-builder-jest** — swaps the Angular Jest builder for Analog Vitest
+
+</details>
