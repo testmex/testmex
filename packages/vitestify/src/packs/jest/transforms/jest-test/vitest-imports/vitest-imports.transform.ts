@@ -2,7 +2,7 @@ import { defineFileTransform } from '../../../../../core/domain/define-file-tran
 import { SgEditor } from '../../../../../infra/ast/sg-editor';
 import { ensureVitestSymbol } from '../../../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../../../identifiers';
-import { isTransformable } from '../../../utils';
+import { isTransformable } from '../../../jest-core';
 import { JEST_GLOBALS } from './jest-globals';
 
 export const vitestImportsTransform = defineFileTransform({

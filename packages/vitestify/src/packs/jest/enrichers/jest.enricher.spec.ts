@@ -6,9 +6,11 @@ import {
   WorkspaceMother,
 } from '../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../core/ports/file-system.fake';
-import { JestEnricher } from './jest.enricher';
+import { CommandRunnerFake } from '../../../core/ports/command-runner.fake';
+import { NO_OP_STEP } from '../../../core/ports/progress-reporter';
+import { jestEnricher } from './jest.enricher';
 
-describe(JestEnricher.name, () => {
+describe(jestEnricher.name, () => {
   it('discovers .jest.cts files and tags them as test', async () => {
     const mother = WorkspaceMother.withApp('my-app').withFile(
       WorkspaceFileMother.testFile({
@@ -132,9 +134,9 @@ async function enrich(mother: WorkspaceMother) {
   fileSystem.configure(mother.buildFiles());
 
   const tree = new Tree({ fileSystem });
-  const enricher = new JestEnricher();
-
-  return enricher.enrich({
+  return jestEnricher.enrich({
+    commandRunner: new CommandRunnerFake(),
+    progressStep: NO_OP_STEP,
     workspace: new Workspace({
       state: mother.buildWorkspaceState(),
       tree,

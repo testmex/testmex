@@ -9,16 +9,17 @@ describe(ThrottledProgressReporter, () => {
     const inner = new ProgressReporterFake();
     const reporter = new ThrottledProgressReporter(inner, { duration: 100 });
 
-    const progressStep = reporter.createStep({
+    const phase = reporter.createPhase('test');
+    const progressStep = phase.createStep({
       name: 'test',
       stepNumber: 1,
       stepCount: 5,
     });
-    progressStep.message('started');
+    progressStep.updateMessage('started');
     await vi.advanceTimersByTimeAsync(90);
-    progressStep.message('pending');
+    progressStep.updateMessage('pending');
 
-    expect(inner.message()).toBe('[1/5] test · started');
+    expect(inner.phases()[0].steps[0].message).toBe('started');
   });
 
   it('throttled progress reporter forwards pending message after interval elapses', async () => {
@@ -26,17 +27,18 @@ describe(ThrottledProgressReporter, () => {
     const inner = new ProgressReporterFake();
     const reporter = new ThrottledProgressReporter(inner, { duration: 100 });
 
-    const progressStep = reporter.createStep({
+    const phase = reporter.createPhase('test');
+    const progressStep = phase.createStep({
       name: 'test',
       stepNumber: 1,
       stepCount: 5,
     });
-    progressStep.message('started');
+    progressStep.updateMessage('started');
     await vi.advanceTimersByTimeAsync(90);
-    progressStep.message('pending');
+    progressStep.updateMessage('pending');
     await vi.advanceTimersByTimeAsync(10);
 
-    expect(inner.message()).toBe('[1/5] test · pending');
+    expect(inner.phases()[0].steps[0].message).toBe('pending');
   });
 
   it('throttled progress reporter flushes on done', () => {
@@ -44,14 +46,15 @@ describe(ThrottledProgressReporter, () => {
     const inner = new ProgressReporterFake();
     const reporter = new ThrottledProgressReporter(inner, { duration: 100 });
 
-    const progressStep = reporter.createStep({
+    const phase = reporter.createPhase('test');
+    const progressStep = phase.createStep({
       name: 'test',
       stepNumber: 1,
       stepCount: 5,
     });
-    progressStep.message('started');
+    progressStep.updateMessage('started');
     progressStep.done('completed');
 
-    expect(inner.message()).toBe('[1/5] test · completed');
+    expect(inner.phases()[0].steps[0].message).toBe('completed');
   });
 });

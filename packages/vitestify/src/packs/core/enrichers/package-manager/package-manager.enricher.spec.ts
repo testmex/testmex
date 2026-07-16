@@ -7,9 +7,11 @@ import {
 } from '../../../../core/models/relative-path';
 import { WorkspaceState } from '../../../../core/models/workspace-state';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
-import { PackageManagerEnricher } from './package-manager.enricher';
+import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
+import { NO_OP_STEP } from '../../../../core/ports/progress-reporter';
+import { packageManagerEnricher } from './package-manager.enricher';
 
-describe(PackageManagerEnricher, () => {
+describe(packageManagerEnricher.name, () => {
   it('detects pnpm from package.json packageManager field', async () => {
     const result = await enrich({
       [relativePath('package.json')]: JSON.stringify({
@@ -105,9 +107,9 @@ async function enrich(files: Record<RelativePath, string>) {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(files);
 
-  const enricher = new PackageManagerEnricher();
-
-  return enricher.enrich({
+  return packageManagerEnricher.enrich({
+    commandRunner: new CommandRunnerFake(),
+    progressStep: NO_OP_STEP,
     workspace: new Workspace({
       state: new WorkspaceState(),
       tree: new Tree({ fileSystem }),

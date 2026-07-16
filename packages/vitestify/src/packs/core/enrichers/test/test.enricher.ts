@@ -1,11 +1,5 @@
-import type {
-  FileTag,
-  ReadonlyWorkspace,
-} from '../../../../core/domain/workspace';
-import {
-  Enricher,
-  type EnricherOptions,
-} from '../../../../core/models/enricher';
+import type { FileTag, ReadonlyWorkspace } from '../../../../core/domain/workspace';
+import { defineEnricher } from '../../../../core/models/enricher';
 import type { RelativePath } from '../../../../core/models/relative-path';
 import { fileTags } from '../../identifiers';
 import { isTestFile } from '../../utils';
@@ -20,14 +14,13 @@ interface TestDiscoveredFile {
   type: TestDiscoveredFileType;
 }
 
-export class TestEnricher implements Enricher {
-  readonly name = 'test';
-
-  async enrich({ onProgress, workspace }: EnricherOptions) {
+export const testEnricher = defineEnricher({
+  name: 'test',
+  async enrich({ progressStep, workspace }) {
     const files: Array<{ type: FileTag; path: RelativePath }> = [];
-    for await (const file of this._discoverTestFiles(workspace)) {
+    for await (const file of _discoverTestFiles(workspace)) {
       files.push(file);
-      onProgress?.(`${files.length} file(s) found`);
+      progressStep.updateMessage(`${files.length} file(s) found`);
     }
 
     const snapshotPaths = files
@@ -49,21 +42,21 @@ export class TestEnricher implements Enricher {
         })),
       ],
     };
-  }
+  },
+});
 
-  private async *_discoverTestFiles(
-    workspace: ReadonlyWorkspace,
-  ): AsyncGenerator<TestDiscoveredFile> {
-    for await (const path of workspace.tree.scanDirectory({
-      pattern: TEST_FILE_GLOB_PATTERN,
-    })) {
-      if (path.endsWith('.snap')) {
-        yield { path, type: fileTags.snapshot };
-      }
+async function* _discoverTestFiles(
+  workspace: ReadonlyWorkspace,
+): AsyncGenerator<TestDiscoveredFile> {
+  for await (const path of workspace.tree.scanDirectory({
+    pattern: TEST_FILE_GLOB_PATTERN,
+  })) {
+    if (path.endsWith('.snap')) {
+      yield { path, type: fileTags.snapshot };
+    }
 
-      if (isTestFile(path)) {
-        yield { path, type: fileTags.test };
-      }
+    if (isTestFile(path)) {
+      yield { path, type: fileTags.test };
     }
   }
 }

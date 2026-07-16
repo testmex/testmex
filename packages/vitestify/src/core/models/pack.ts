@@ -1,17 +1,17 @@
-import { EnricherFactory } from './enricher';
+import { Enricher } from './enricher';
 import { Heuristic } from './heuristic';
 import { Transform } from './transform';
 
 export interface Pack {
   name: string;
-  enricherFactories: EnricherFactory[];
+  enrichers: Enricher[];
   heuristics: Heuristic[];
   transforms: Transform[];
 }
 
 export interface DefinePackArgs {
   name: string;
-  enricherFactories?: EnricherFactory[];
+  enrichers?: Enricher[];
   heuristics?: Heuristic[];
   transforms?: Transform[];
 }
@@ -19,7 +19,7 @@ export interface DefinePackArgs {
 export function definePack(args: DefinePackArgs): Pack {
   return {
     name: args.name,
-    enricherFactories: args.enricherFactories ?? [],
+    enrichers: args.enrichers ?? [],
     heuristics: args.heuristics ?? [],
     transforms: args.transforms ?? [],
   };

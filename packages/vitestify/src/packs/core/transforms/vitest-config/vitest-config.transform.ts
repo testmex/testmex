@@ -40,7 +40,7 @@ const VITEST_CONFIG_ALTERNATIVE_FILE_NAMES = [
 
 export const vitestConfigTransform = defineTransform({
   name: 'vitest-config',
-  apply: async (workspace, { onProgress } = {}) => {
+  apply: async ({ workspace, progressStep }) => {
     const { commands, files, tree } = workspace;
     const devDependencies = new Set<string>(['vite-tsconfig-paths', 'vitest']);
     let transformedCount = 0;
@@ -80,7 +80,7 @@ export const vitestConfigTransform = defineTransform({
       commands.add([workspace.packageManager, 'add', '-D', ...devDependencies]);
     }
 
-    onProgress?.(`${transformedCount} file(s) transformed`);
+    progressStep.updateMessage(`${transformedCount} file(s) transformed`);
   },
 });
 

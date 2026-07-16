@@ -41,18 +41,6 @@ class TrackingCommandRunner implements CommandRunner {
   private _autoRunFirstCommands = 0;
   private _executedCommandsCount = 0;
   private _pendingCommandsCount = 0;
-  async run(): Promise<string> {
-    if (this._autoRunFirstCommands > 0) {
-      this._autoRunFirstCommands--;
-    } else {
-      this._pendingCommandsCount++;
-      await new Promise<void>(() => null);
-    }
-
-    this._executedCommandsCount++;
-
-    return '';
-  }
 
   configure({
     autoRunFirstCommands,
@@ -68,5 +56,18 @@ class TrackingCommandRunner implements CommandRunner {
 
   getExecutedCommandsCount(): number {
     return this._executedCommandsCount;
+  }
+
+  async run(): Promise<string> {
+    if (this._autoRunFirstCommands > 0) {
+      this._autoRunFirstCommands--;
+    } else {
+      this._pendingCommandsCount++;
+      await new Promise<void>(() => null);
+    }
+
+    this._executedCommandsCount++;
+
+    return '';
   }
 }

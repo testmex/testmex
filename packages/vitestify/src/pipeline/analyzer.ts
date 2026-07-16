@@ -20,19 +20,22 @@ export class Analyzer {
 
   async analyze(workspace: Workspace): Promise<void> {
     const stepCount = this._heuristics.length;
+    const phase = this._progressReporter.createPhase('Workspace analysis');
 
     for (const [index, heuristic] of this._heuristics.entries()) {
-      const progressStep = this._progressReporter.createStep({
+      const progressStep = phase.createStep({
         name: heuristic.name,
         stepNumber: index + 1,
         stepCount,
       });
 
-      progressStep.message('analyzing');
+      progressStep.updateMessage('analyzing');
       workspace.applyHeuristicResults(
         await heuristic.inspect(workspace.asReadonly()),
       );
       progressStep.done('analyzed');
     }
+
+    phase.done();
   }
 }

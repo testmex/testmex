@@ -8,7 +8,7 @@ import {
 import { SgEditor } from '../../../../../infra/ast/sg-editor';
 import { ensureVitestSymbol } from '../../../../../infra/ast/vitest-ast-utils';
 import { findingTypes } from '../../../identifiers';
-import { isTransformable } from '../../../utils';
+import { isTransformable } from '../../../jest-core';
 
 export const jestMockTransform = defineFileTransform({
   name: 'jest-mock',

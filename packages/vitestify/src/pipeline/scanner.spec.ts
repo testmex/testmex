@@ -95,15 +95,12 @@ describe(Scanner.name, () => {
 
     await scanner.scanWorkspace();
 
-    const messages = progressReporter.messages();
-    const testStart =
-      messages.indexOf('[6/7] test · scanning · 1 file(s) found') - 1;
-
-    expect(messages.slice(testStart, testStart + 3)).toEqual([
-      '[6/7] test · scanning',
-      '[6/7] test · scanning · 1 file(s) found',
-      '[6/7] test · scanned · 1 file(s) found',
-    ]);
+    expect(
+      progressReporter.phases()[0].steps.find((step) => step.name === 'test'),
+    ).toMatchObject({
+      status: 'done',
+      message: 'scanned · 1 file(s) found',
+    });
   });
 
   it('scanner calls done once per enricher', async () => {
@@ -114,18 +111,19 @@ describe(Scanner.name, () => {
 
     await scanner.scanWorkspace();
 
-    const doneMessages = progressReporter
-      .messages()
-      .filter((message) => message.includes(' · scanned'));
-
-    expect(doneMessages).toEqual([
-      '[1/7] angular-cli · scanned',
-      '[2/7] nx · scanned · 1 project(s) detected',
-      '[3/7] jest · scanned',
-      '[4/7] code · scanned',
-      '[5/7] package-manager · scanned · pnpm detected (good choice 😉)',
-      '[6/7] test · scanned',
-      '[7/7] vitest-config · scanned',
+    expect(
+      progressReporter
+        .phases()[0]
+        .steps.filter((step) => step.message.startsWith('scanned'))
+        .map((step) => ({ name: step.name, message: step.message })),
+    ).toEqual([
+      { name: 'angular-cli', message: 'scanned' },
+      { name: 'nx', message: 'scanned · 1 project(s) detected' },
+      { name: 'jest', message: 'scanned' },
+      { name: 'code', message: 'scanned' },
+      { name: 'package-manager', message: 'scanned · pnpm detected (good choice 😉)' },
+      { name: 'test', message: 'scanned' },
+      { name: 'vitest-config', message: 'scanned' },
     ]);
   });
 
@@ -137,16 +135,12 @@ describe(Scanner.name, () => {
 
     await scanner.scanWorkspace();
 
-    const messages = progressReporter.messages();
-    const nxStart =
-      messages.indexOf('[2/7] nx · scanning · loading nx graph') - 1;
-
-    expect(messages.slice(nxStart, nxStart + 4)).toEqual([
-      '[2/7] nx · scanning',
-      '[2/7] nx · scanning · loading nx graph',
-      '[2/7] nx · scanning · 1 project(s) detected',
-      '[2/7] nx · scanned · 1 project(s) detected',
-    ]);
+    expect(
+      progressReporter.phases()[0].steps.find((step) => step.name === 'nx'),
+    ).toMatchObject({
+      status: 'done',
+      message: 'scanned · 1 project(s) detected',
+    });
   });
 
   it('detects folder with jest.config.ts as project when no nx project exists at that path', async () => {
@@ -197,8 +191,8 @@ function setUp({
     },
     scanner: new Scanner({
       commandRunner,
-      enricherFactories: [angularCliPack, nxPack, jestPack, corePack].flatMap(
-        (pack) => pack.enricherFactories,
+      enrichers: [angularCliPack, nxPack, jestPack, corePack].flatMap(
+        (pack) => pack.enrichers,
       ),
       fileSystem,
       progressReporter,

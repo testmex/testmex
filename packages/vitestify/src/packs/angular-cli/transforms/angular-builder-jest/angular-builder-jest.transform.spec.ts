@@ -10,6 +10,7 @@ import {
   type AngularJson,
 } from '../../../core/angular-json';
 import { angularBuilderJestTransform } from './angular-builder-jest.transform';
+import { ExecutedCommand } from '../../../../core/ports/command-runner.fake';
 
 describe('angularBuilderJestTransform', () => {
   it('renames test target to jest when using @angular-builders/jest:run', async () => {
@@ -72,12 +73,10 @@ describe('angularBuilderJestTransform', () => {
       },
     });
 
-    expect(commands).toContainEqual([
-      'npm',
-      'add',
-      '-D',
-      '@analogjs/vitest-angular',
-    ]);
+    expect(
+      commands.find(({ command }) => command.join(' ').startsWith('npm add -D'))
+        ?.command,
+    ).toEqual(expect.arrayContaining(['@analogjs/vitest-angular']));
   });
 });
 
@@ -85,7 +84,7 @@ async function runAngularBuilderJestTransform(
   angularJson?: AngularJson,
 ): Promise<{
   angularJson: AngularJson | null;
-  commands: readonly (readonly string[])[];
+  commands: readonly ExecutedCommand[];
 }> {
   const appName = 'my-app';
   const mother = WorkspaceMother.withApp(appName);
@@ -102,10 +101,13 @@ async function runAngularBuilderJestTransform(
     tree: new Tree({ fileSystem }),
   });
 
-  await runTransform({ workspace, transforms: [angularBuilderJestTransform] });
+  const { commands } = await runTransform({
+    workspace,
+    transforms: [angularBuilderJestTransform],
+  });
 
   return {
     angularJson: await workspace.tree.maybeReadJsonFile(ANGULAR_JSON_PATH),
-    commands: workspace.commands.all(),
+    commands,
   };
 }

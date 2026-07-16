@@ -1,53 +1,55 @@
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
-import { EnricherFactory } from '../core/models/enricher';
+import type { Enricher } from '../core/models/enricher';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
+import { NO_OP_STEP } from '../core/ports/progress-reporter';
 import type { ProgressReporter } from '../core/ports/progress-reporter';
 
 export class Scanner {
   private readonly _commandRunner: CommandRunner;
-  private readonly _enricherFactories: EnricherFactory[];
+  private readonly _enrichers: Enricher[];
   private readonly _fileSystem: FileSystem;
   private readonly _progressReporter: ProgressReporter;
 
   constructor(args: {
     commandRunner: CommandRunner;
-    enricherFactories: EnricherFactory[];
+    enrichers: Enricher[];
     fileSystem: FileSystem;
     progressReporter: ProgressReporter;
   }) {
     this._commandRunner = args.commandRunner;
-    this._enricherFactories = args.enricherFactories;
+    this._enrichers = args.enrichers;
     this._fileSystem = args.fileSystem;
     this._progressReporter = args.progressReporter;
   }
 
   async scanWorkspace(): Promise<Workspace> {
     const tree = new Tree({ fileSystem: this._fileSystem });
-    const enrichers = this._enricherFactories.map((factory) =>
-      factory({ commandRunner: this._commandRunner }),
-    );
-
     const workspace = new Workspace({ tree });
 
-    const stepCount = enrichers.length;
+    const stepCount = this._enrichers.length;
+    const phase = this._progressReporter.createPhase('Scanning');
 
-    for (const [index, enricher] of enrichers.entries()) {
-      const progressStep = this._progressReporter.createStep({
+    for (const [index, enricher] of this._enrichers.entries()) {
+      const progressStep = phase.createStep({
         name: enricher.name,
         stepNumber: index + 1,
         stepCount,
       });
       let lastMessage: string | undefined;
 
-      progressStep.message('scanning');
+      progressStep.updateMessage('scanning');
 
       const result = await enricher.enrich({
         workspace: workspace.asReadonly(),
-        onProgress: (message) => {
-          lastMessage = message;
-          progressStep.message(_formatStepMessage('scanning', message));
+        commandRunner: this._commandRunner,
+        progressStep: {
+          ...NO_OP_STEP,
+          updateMessage: (detail) => {
+            lastMessage = detail;
+            progressStep.updateMessage(_formatStepMessage('scanning', detail));
+          },
         },
       });
 
@@ -55,6 +57,8 @@ export class Scanner {
 
       progressStep.done(_formatStepMessage('scanned', lastMessage));
     }
+
+    phase.done();
 
     return workspace;
   }

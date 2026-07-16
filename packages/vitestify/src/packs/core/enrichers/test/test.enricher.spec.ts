@@ -6,9 +6,11 @@ import {
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
-import { TestEnricher } from './test.enricher';
+import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
+import { NO_OP_STEP } from '../../../../core/ports/progress-reporter';
+import { testEnricher } from './test.enricher';
 
-describe(TestEnricher.name, () => {
+describe(testEnricher.name, () => {
   it('ignores non test files', async () => {
     const mother = WorkspaceMother.withApp('my-app').withFile(
       WorkspaceFileMother.file({
@@ -94,9 +96,9 @@ async function enrich(mother: WorkspaceMother) {
   fileSystem.configure(mother.buildFiles());
 
   const tree = new Tree({ fileSystem });
-  const enricher = new TestEnricher();
-
-  return enricher.enrich({
+  return testEnricher.enrich({
+    commandRunner: new CommandRunnerFake(),
+    progressStep: NO_OP_STEP,
     workspace: new Workspace({
       state: mother.buildWorkspaceState(),
       tree,

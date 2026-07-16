@@ -1,36 +1,65 @@
-import type { Command, CommandRunner } from './command-runner';
+import type { RelativePath } from '../models/relative-path';
+import type {
+  Command,
+  CommandRunner,
+  CommandRunOptions,
+} from './command-runner';
 
-export type CommandRunnerResult =
-  | { output: string }
-  | { error: Error };
+export type ExpectedCommand = {
+  command: Command;
+  cwd?: RelativePath;
+} & ({ output: string } | { error: Error });
+
+export interface ExecutedCommand {
+  command: Command;
+  options?: CommandRunOptions;
+}
 
 export class CommandRunnerFake implements CommandRunner {
-  private readonly _responses = new Map<string, CommandRunnerResult>();
-  private readonly _executedCommands: Command[] = [];
+  private _expectedCommands: ExpectedCommand[] = [];
+  private readonly _executedCommands: ExecutedCommand[] = [];
 
-  configure(entries: Record<string, CommandRunnerResult>): void {
-    this._responses.clear();
-    this._executedCommands.length = 0;
-    for (const [command, result] of Object.entries(entries)) {
-      this._responses.set(command, result);
-    }
+  configure(expectedCommands: ExpectedCommand[]): void {
+    this._assertCommandsAreUnique(expectedCommands);
+
+    this._expectedCommands = expectedCommands;
   }
 
-  executedCommands(): readonly Command[] {
+  executedCommands(): readonly ExecutedCommand[] {
     return this._executedCommands;
   }
 
-  async run(args: readonly string[]): Promise<string> {
-    this._executedCommands.push(args);
-    const result = this._responses.get(args.join(' '));
-    if (result === undefined) {
+  async run(command: Command, options?: CommandRunOptions): Promise<string> {
+    const expectedCommand = this._expectedCommands.find(
+      (expected) =>
+        expected.command.join(' ') === command.join(' ') &&
+        expected.cwd === options?.cwd,
+    );
+
+    this._executedCommands.push({ command, options });
+
+    if (expectedCommand === undefined) {
       throw new Error(
-        `CommandRunnerFake: Unexpected command: ${JSON.stringify(args)}`,
+        `CommandRunnerFake: Unexpected command: ${JSON.stringify(command)}` +
+          (options?.cwd === undefined ? '' : ` cwd:${options.cwd}`),
       );
     }
-    if ('error' in result) {
-      throw result.error;
+
+    if ('error' in expectedCommand) {
+      throw expectedCommand.error;
     }
-    return result.output;
+
+    return expectedCommand.output;
+  }
+
+  private _assertCommandsAreUnique(expectedCommands: ExpectedCommand[]): void {
+    const uniqueCommands = new Set<string>(
+      expectedCommands.map((expected) => JSON.stringify(expected)),
+    );
+    if (uniqueCommands.size !== expectedCommands.length) {
+      throw new Error(
+        `CommandRunnerFake: Duplicate command configuration: ${JSON.stringify(expectedCommands)}`,
+      );
+    }
   }
 }

@@ -27,10 +27,10 @@ export type DefineFileTransformArgs = DefineFileTransformBase &
 export function defineFileTransform(args: DefineFileTransformArgs): Transform {
   return defineTransform({
     name: args.name,
-    apply: async (workspace, { onProgress } = {}) => {
+    apply: async ({ workspace, progressStep }) => {
       const { tree } = workspace;
       let transformedCount = 0;
-      onProgress?.(`0 file(s) transformed`);
+      progressStep.updateMessage(`0 file(s) transformed`);
 
       for (const file of workspace.files) {
         if (!_shouldTransform(file, args)) {
@@ -40,15 +40,20 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
         const content = await tree.maybeReadFile(file.path);
 
         if (content != null) {
-          await tree.write(file.path, args.apply(content));
-          transformedCount++;
+          const updatedContent = args.apply(content);
+
+          /* Do not count unchanged files. */
+          if (updatedContent !== content) {
+            await tree.write(file.path, updatedContent);
+            transformedCount++;
+          }
         }
 
         /* Give a run opportunity to things like `clack` intercepting CTRL+C. */
         await yieldToEventLoop();
       }
 
-      onProgress?.(`${transformedCount} file(s) transformed`);
+      progressStep.updateMessage(`${transformedCount} file(s) transformed`);
     },
   });
 }

@@ -1,16 +1,12 @@
-import {
-  Enricher,
-  type EnricherOptions,
-} from '../../../../core/models/enricher';
+import { defineEnricher } from '../../../../core/models/enricher';
 import { fileTags } from '../../identifiers';
 import { isCodeFile } from '../../utils';
 
 const TYPESCRIPT_FILE_GLOB_PATTERN = '**/*.{ts,tsx}';
 
-export class CodeEnricher implements Enricher {
-  readonly name = 'code';
-
-  async enrich({ workspace, onProgress }: EnricherOptions) {
+export const codeEnricher = defineEnricher({
+  name: 'code',
+  async enrich({ workspace, progressStep }) {
     const files = [];
     for await (const path of workspace.tree.scanDirectory({
       pattern: TYPESCRIPT_FILE_GLOB_PATTERN,
@@ -20,11 +16,11 @@ export class CodeEnricher implements Enricher {
       }
 
       files.push(path);
-      onProgress?.(`${files.length} file(s) found`);
+      progressStep.updateMessage(`${files.length} file(s) found`);
     }
 
     return {
       fileInfos: files.map((path) => ({ path, tags: [fileTags.code] })),
     };
-  }
-}
+  },
+});
