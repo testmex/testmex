@@ -14,31 +14,25 @@ export type PhaseSnapshot =
   | AnalysisPhaseSnapshot
   | TransformingPhaseSnapshot;
 
-export interface PhaseSnapshotBase extends SnapshotBase {
-  readonly estimatedTotalSteps: number;
-}
-
-export interface ScanningPhaseSnapshot extends PhaseSnapshotBase {
+export interface ScanningPhaseSnapshot extends SnapshotBase {
   readonly kind: 'scanning';
+  readonly enricherCount: number;
   readonly steps: readonly EnricherStepSnapshot[];
 }
 
-export interface AnalysisPhaseSnapshot extends PhaseSnapshotBase {
+export interface AnalysisPhaseSnapshot extends SnapshotBase {
   readonly kind: 'analysis';
+  readonly heuristicsCount: number;
   readonly steps: readonly HeuristicStepSnapshot[];
 }
 
-export interface TransformingPhaseSnapshot extends PhaseSnapshotBase {
+export interface TransformingPhaseSnapshot extends SnapshotBase {
   readonly kind: 'transforming';
+  readonly transformCount: number;
   readonly steps: readonly (TransformStepSnapshot | ActivityStepSnapshot)[];
 }
 
-export interface StepSnapshotBase extends SnapshotBase {
-  readonly stepNumber?: number;
-  readonly stepCount?: number;
-}
-
-export interface EnricherStepSnapshot extends StepSnapshotBase {
+export interface EnricherStepSnapshot extends SnapshotBase {
   readonly kind: 'enricher';
   readonly name: string;
   readonly detectedFileCount: number;
@@ -50,12 +44,12 @@ export interface ActivityStepSnapshot extends SnapshotBase {
   readonly message: string;
 }
 
-export interface HeuristicStepSnapshot extends StepSnapshotBase {
+export interface HeuristicStepSnapshot extends SnapshotBase {
   readonly kind: 'heuristic';
   readonly name: string;
 }
 
-export interface TransformStepSnapshot extends StepSnapshotBase {
+export interface TransformStepSnapshot extends SnapshotBase {
   readonly kind: 'transform';
   readonly name: string;
   readonly transformedFileCount: number;
