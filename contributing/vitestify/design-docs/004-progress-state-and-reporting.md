@@ -29,7 +29,7 @@
 
 ## Terminal reporting (one sink)
 
-- [ ] A `TerminalProgressReporter` subscribes to progress state changes and renders via `@clack/prompts` — same general UX as today.
+- [ ] A `TerminalProgressListener` subscribes to progress state changes; a `TerminalProgressEngine` (used only by the listener) diffs consecutive snapshots into instructions, and the listener executes them via `@clack/prompts` — same general UX as today.
 - [ ] Terminal shows phase intro/outro, numbered steps, spinners, and sub-step lines for live feedback.
 - [ ] Terminal may summarize nested transform detail (top-level spinner + sub-steps) rather than listing every file on screen.
 - [ ] Throttling applies at the reporting layer and only to file-count changes (`detectedFileCount`, `transformedFileCount`) — not status, activity messages, or other snapshot fields.
@@ -56,7 +56,7 @@ Split progress into two layers:
 
 The existing `Phase` / `Step` handle pattern stays, but handles are **typed by phase and step kind** — thin facades over `ProgressTracker` nodes that update state and emit change events; they do not render.
 
-`ProgressReporterFake` is replaced by `ProgressTracker` (state + snapshot API). `TerminalProgressReporter` becomes a `ProgressListener` that maps snapshots to clack output.
+`ProgressReporterFake` is replaced by `ProgressTracker` (state + snapshot API). `TerminalProgressReporter` becomes a `TerminalProgressListener` that subscribes to snapshot updates and drives `@clack/prompts` via a **`TerminalProgressEngine`** — a pure diff/format module that compares the previous and new snapshot and returns terminal instructions (intro, outro, spinner start/update/stop/error). Only the listener uses the engine; nothing else in the codebase depends on it.
 
 ## Data model
 
@@ -133,7 +133,7 @@ interface TransformStepSnapshot extends SnapshotBase {
 - `SnapshotBase` — shared fields on every phase and step snapshot: `status`, optional `statusMessage` (set via `done()` / `fail()`).
 - **Immutable snapshots** — tracker emits a new readonly tree on each mutation; never mutates a prior snapshot in place.
 - **Phase step counts** — `enricherCount`, `heuristicsCount`, and `transformCount` are set when the phase starts (`enrichers.length`, `heuristics.length`, `transforms.length`). Activity steps during transform are extra and may exceed `transformCount`.
-- **Step position** — not stored on step snapshots. The listener derives `[n/total]` from the step's index in `steps` (or `childTransforms`) and the phase count (or parent `childTransforms.length`).
+- **Step position** — not stored on step snapshots. The engine derives `[n/total]` from the step's index in `steps` (or `childTransforms`) and the phase count (or parent `childTransforms.length`).
 - **Phase** `kind` **discriminant** — narrows `steps` to the valid step type(s) for that phase.
 - **Step** `kind` **discriminant** — within transforming phase, branch `steps` items on `transform` vs `activity`.
 - `ScanningPhaseSnapshot.steps` — `EnricherStepSnapshot[]`.
@@ -204,12 +204,12 @@ Only add an `updateMessage` handle if a real-life use case truly needs mid-step 
 
 Pipeline stages call the phase and step factory matching their work:
 
-| Stage                       | Phase factory                                      | Step factory          |
-| --------------------------- | -------------------------------------------------- | --------------------- |
-| `Scanner`                   | `beginScanning({ enricherCount: enrichers.length })`      | `createEnricherStep`  |
-| `Analyzer`                  | `beginAnalysis({ heuristicsCount: heuristics.length })`     | `createHeuristicStep` |
+| Stage                       | Phase factory                                              | Step factory          |
+| --------------------------- | ---------------------------------------------------------- | --------------------- |
+| `Scanner`                   | `beginScanning({ enricherCount: enrichers.length })`       | `createEnricherStep`  |
+| `Analyzer`                  | `beginAnalysis({ heuristicsCount: heuristics.length })`    | `createHeuristicStep` |
 | `Transformer`               | `beginTransforming({ transformCount: transforms.length })` | `createTransformStep` |
-| `Transformer._applyChanges` | (same `TransformingPhase`)                                      | `createActivityStep`  |
+| `Transformer._applyChanges` | (same `TransformingPhase`)                                 | `createActivityStep`  |
 
 `PipelineContext.progressStep` becomes `TransformStep` (transforms only receive transform handles).
 
@@ -223,17 +223,47 @@ export interface ProgressListener {
 }
 ```
 
-- `TerminalProgressListener` — `attach(tracker)` subscribes to snapshot updates and renders clack output from each emission. No-ops when `!process.stdout.isTTY`.
+- `TerminalProgressListener` — `attach(tracker)` subscribes to snapshot updates, delegates diff/format decisions to `TerminalProgressEngine`, and executes the returned instructions via a `switch` on instruction `kind` (calling clack `intro` / `outro` / `spinner`). No-ops when `!process.stdout.isTTY`.
 - `ThrottledProgressListener` — decorates a listener; **only throttles re-renders when the snapshot delta is a file-count change** (`detectedFileCount`, `transformedFileCount`). All other updates (status transitions, activity messages, `done` / `fail`) pass through immediately.
 
-### Rendering on snapshot updates
+### Terminal progress engine (listener-internal)
 
-`attach(tracker)` calls `tracker.subscribe(onSnapshot)`. On each immutable snapshot emission the listener:
+`TerminalProgressEngine` is a **pure** module used only by `TerminalProgressListener`. It owns snapshot diffing, display-string formatting, and the decision of what the terminal should do next — the listener does not format or reconcile snapshots itself.
 
-- Correlates nodes by **append-only index** (`phases[i].steps[j]`) — no explicit `id` on snapshots.
-- Renders phase intro/outro from phase `status`; one spinner per `phase.steps` item.
+On each emission the listener passes the **previous** and **new** immutable snapshots to the engine. The engine returns an ordered list of `TerminalProgressInstruction` values; the listener runs them through a `switch` to invoke clack.
+
+```typescript
+type TerminalProgressInstruction =
+  | { kind: 'intro'; message: string }
+  | { kind: 'outro'; message: string }
+  | { kind: 'spinnerStart'; path: StepPath; message: string }
+  | { kind: 'spinnerMessage'; path: StepPath; message: string }
+  | { kind: 'spinnerStop'; path: StepPath; message: string }
+  | { kind: 'spinnerError'; path: StepPath; message: string };
+
+/** Append-only index path — e.g. phase 0, step 2, child 1 */
+type StepPath = readonly number[];
+
+export class TerminalProgressEngine {
+  diff(
+    previous: ProgressSnapshot | null,
+    next: ProgressSnapshot,
+  ): TerminalProgressInstruction[];
+}
+```
+
+Engine responsibilities (given `previous` and `next`):
+
+- Correlates nodes by **append-only index** (`phases[i].steps[j]`, nested `activities[k]`, `childTransforms[l]`) — no explicit `id` on snapshots.
+- Emits `intro` / `outro` when a phase transitions to `started` / `done` / `failed`.
+- Emits `spinnerStart` when a step first needs a spinner; `spinnerMessage` when display text changes while the step is in flight; `spinnerStop` / `spinnerError` when the step reaches `done` / `failed`.
+- Formats typed step fields to display strings (e.g. enricher → `scanning · {detectedFileCount} file(s)`, activity → `message` as-is). Derives `[n/total]` prefixes from step index and phase count (`enricherCount`, `heuristicsCount`, `transformCount`) or `childTransforms.length`.
 - Folds nested `activities` and `childTransforms` into the parent step display (`| …` sub-lines).
-- Formats typed step fields to display strings (listener-only; e.g. enricher → `scanning · {detectedFileCount} file(s)`). Derives `[n/total]` prefixes from step index and phase count (`enricherCount`, `heuristicsCount`, `transformCount`) or `childTransforms.length`.
+
+`TerminalProgressListener` responsibilities:
+
+- Holds the last snapshot and clack spinner handles keyed by `StepPath`.
+- On `tracker.subscribe`: `instructions = engine.diff(previous, next)` → `for (const i of instructions) switch (i.kind) { … }` → update `previous = next`.
 
 `ThrottledProgressListener` sits in front of the inner listener and suppresses rapid consecutive emissions that differ only in file-count fields.
 
@@ -288,18 +318,20 @@ await commandRunner.run(command);
 activity.done();
 ```
 
-Terminal listener formats each `kind` for display (e.g. enricher → `scanning · 142 file(s)`, activity → message as-is, transform child → `[2/10] jest-mock · 5 file(s) transformed`). State holds typed fields; formatting lives in the listener.
+Terminal engine formats each `kind` for display (e.g. enricher → `scanning · 142 file(s)`, activity → message as-is, transform child → `[2/10] jest-mock · 5 file(s) transformed`). State holds typed fields; formatting and spinner lifecycle decisions live in `TerminalProgressEngine`; the listener only executes instructions.
 
 ## Diagram
 
 ```mermaid
 flowchart TD
   cli["cli.ts / Vitestify"] --> tracker(("ProgressTracker<br>[snapshot, subscribe]"))
-  cli --> terminalListener["TerminalProgressListener"]
-  terminalListener --> throttledListener(("ThrottledProgressListener"))
-  throttledListener --> clack["@clack/prompts<br>intro / spinner / outro"]
+  cli --> throttledListener(("ThrottledProgressListener"))
+  throttledListener --> terminalListener["TerminalProgressListener"]
+  terminalListener --> engine["TerminalProgressEngine<br>[diff, format, instructions]"]
+  engine -->|TerminalProgressInstruction[]| terminalListener
+  terminalListener --> clack["@clack/prompts<br>intro / spinner / outro"]
 
-  tracker -->|subscribe| terminalListener
+  tracker -->|subscribe| throttledListener
 
   vitestify["Vitestify<br>[progressTracker: ProgressTracker]"] --> scanner["Scanner"]
   vitestify --> analyzer["Analyzer"]
@@ -343,7 +375,6 @@ flowchart LR
   PR3 --> PR4
 ```
 
-
 <details>
 <summary>✅ PR#1 — ProgressTracker scaffold</summary>
 
@@ -385,22 +416,25 @@ flowchart LR
 ## Tasks
 
 - [ ] Add `ProgressListener` interface with `attach(tracker)`.
-- [ ] Refactor `TerminalProgressReporter` → `TerminalProgressListener` — `attach(tracker)` renders from snapshot updates.
+- [ ] Add `TerminalProgressEngine` — pure `diff(previous, next)` returning `TerminalProgressInstruction[]`; owns snapshot reconciliation, display formatting, and spinner/outro lifecycle decisions.
+- [ ] Refactor `TerminalProgressReporter` → `TerminalProgressListener` — `attach(tracker)` subscribes to snapshots, calls the engine, executes instructions via a `switch` on `kind` to drive clack.
 - [ ] Refactor `ThrottledProgressReporter` → `ThrottledProgressListener` — throttle file-count snapshot deltas only.
 - [ ] Update `Vitestify` constructor: accept `progressTracker`; wire terminal listener in CLI entry point.
 
 ## Testing Strategy
 
-### Attaches to snapshot updates
+Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / instructions-out — so tests do not mock `@clack/prompts`.
 
-- Create a `ProgressTracker` and mock clack `spinner` / `intro` / `outro`.
-- `attach(tracker)` and mutate tracker (begin phase, create step, `done`).
-- Assert inner clack methods called in response to snapshot emissions.
+### Engine diffs snapshots to instructions
 
-### Formats step display strings
+- Build `previous` and `next` `ProgressSnapshot` fixtures (or mutate a `ProgressTracker` and capture consecutive snapshots).
+- Call `engine.diff(previous, next)`.
+- Assert instruction sequence: e.g. `intro` on phase start, `spinnerStart` on new step, `spinnerMessage` on file-count change, `spinnerStop` + `outro` on phase `done`.
 
-- Call format helpers with typed snapshot fields (enricher `detectedFileCount`, nested activities, transform `childTransforms`).
-- Assert expected display strings (numbered prefix, `| …` sub-lines).
+### Engine formats step display strings
+
+- Diff snapshots where enricher `detectedFileCount`, nested `activities`, or transform `childTransforms` change.
+- Assert `spinnerStart` / `spinnerMessage` instructions carry expected display strings (numbered prefix, `| …` sub-lines).
 
 ### Throttles file-count snapshot updates only
 
@@ -500,15 +534,14 @@ flowchart LR
 
 ## Explicit `id` on every snapshot node
 
-- **Rejected** — pipeline is append-only; phase/step index is stable identity for listener reconciliation. Immutable snapshots do not need object ids.
+- **Rejected** — pipeline is append-only; phase/step index is stable identity for engine reconciliation. Immutable snapshots do not need object ids.
 
 ## Generic `Phase` / `Step` snapshots
 
-- **Rejected** — typed phase and step unions (`enricher`, `heuristic`, `transform`, `activity`) keep state queryable and listener formatting explicit.
+- **Rejected** — typed phase and step unions (`enricher`, `heuristic`, `transform`, `activity`) keep state queryable and engine formatting explicit.
 
 ## Keep `ProgressReporter` as the pipeline port
 
 - **Rejected** — port mixed state collection with terminal rendering; splitting `ProgressTracker` (core service) + `ProgressListener` (port) is the goal.
 
 # Kitchen Sink
-
