@@ -12,7 +12,11 @@
 - Changing enricher scan behavior or merging scan passes — progress refactor only.
 - Per-file terminal detail for every transform — terminal reporter may still summarize; full per-file detail lives in progress state, not necessarily on screen.
 
+
+
 # Desired Behavior
+
+
 
 ## Progress state (authoritative)
 
@@ -21,11 +25,13 @@
 - [ ] Progress state includes an **analyze** phase with one `heuristic` step per heuristic.
 - [ ] Progress state includes a **transform** phase with top-level `transform` steps (e.g. `jest-test`, `vitest-config`).
 - [ ] Every phase snapshot exposes `estimatedTotalSteps` (via `PhaseSnapshotBase`) and a `steps` array.
-- [ ] Transform groups (e.g. `jest-test`) record **child `transform` steps** nested under the parent transform step.
+- [ ] Transform groups (e.g. `jest-test`) record **child** `transform` **steps** nested under the parent transform step.
 - [ ] Child transforms can update the number of transformed files.
 - [ ] Progress state exposes roll-up counts (e.g. files transformed per child transform, per parent transform).
 - [ ] Observers can read the current snapshot at any time and subscribe to changes during the run.
 - [ ] When stdout is not a TTY, progress state is still collected; only terminal output is suppressed.
+
+
 
 ## Terminal reporting (one sink)
 
@@ -34,11 +40,15 @@
 - [ ] Terminal may summarize nested transform detail (top-level spinner + sub-steps) rather than listing every file on screen.
 - [ ] Throttling applies at the reporting layer (listener), not inside progress state or pipeline code.
 
+
+
 ## Nested `jest-test` transform group (primary motivating scenario)
 
 - [ ] While `jest-test` runs, progress state records each child transform as a nested `transform` step under `jest-test`.
 - [ ] Each child transform updates `transformedFileCount` on its `TransformStepSnapshot`.
 - [ ] After the run, state answers: how many files were transformed by each child transform.
+
+
 
 ## Unchanged user-visible CLI flow
 
@@ -47,12 +57,14 @@
 - [ ] Transform verify/rollback and apply-changes substeps still appear in terminal output.
 - [ ] Non-TTY runs stay silent on the terminal (same as today).
 
+
+
 # Design
 
 Split progress into two layers:
 
-1. **`ProgressTracker`** — authoritative in-memory state + mutation API (`createPhase` / `createStep` / …). Pipeline code writes here only.
-2. **`ProgressListener`** — subscribes to tracker changes and renders to a sink (terminal today; logs/CI later).
+1. `ProgressTracker` — authoritative in-memory state + mutation API (`createPhase` / `createStep` / …). Pipeline code writes here only.
+2. `ProgressListener` — subscribes to tracker changes and renders to a sink (terminal today; logs/CI later).
 
 The existing `Phase` / `Step` handle pattern stays, but handles are **typed by phase and step kind** — thin facades over `ProgressTracker` nodes that update state and emit change events; they do not render.
 
@@ -67,6 +79,7 @@ type ProgressStatus = 'started' | 'done' | 'failed';
 
 interface SnapshotBase {
   readonly status: ProgressStatus;
+  readonly statusMessage?: string;
 }
 
 interface ProgressSnapshot {
@@ -94,12 +107,10 @@ interface AnalysisPhaseSnapshot extends PhaseSnapshotBase {
   readonly steps: readonly HeuristicStepSnapshot[];
 }
 
-type TransformingStepSnapshot = TransformStepSnapshot | ActivityStepSnapshot;
-
 /** Transformer phase — `steps` contains transform and activity steps in pipeline order. */
 interface TransformingPhaseSnapshot extends PhaseSnapshotBase {
   readonly kind: 'transforming';
-  readonly steps: readonly TransformingStepSnapshot[];
+  readonly steps: readonly Array<TransformStepSnapshot | ActivityStepSnapshot>;
 }
 
 interface StepSnapshotBase extends SnapshotBase {
@@ -111,7 +122,7 @@ interface StepSnapshotBase extends SnapshotBase {
 interface EnricherStepSnapshot extends StepSnapshotBase {
   readonly kind: 'enricher';
   readonly name: string;
-  readonly filesDetected?: number;
+  readonly detectedFileCount: number;
   readonly activities: readonly ActivityStepSnapshot[];
 }
 
@@ -125,31 +136,32 @@ interface ActivityStepSnapshot extends SnapshotBase {
 interface HeuristicStepSnapshot extends StepSnapshotBase {
   readonly kind: 'heuristic';
   readonly name: string;
-  readonly message?: string;
 }
 
 /** Transformer — top-level and nested transforms (jest-test → jest-mock, …). */
 interface TransformStepSnapshot extends StepSnapshotBase {
   readonly kind: 'transform';
   readonly name: string;
-  readonly message?: string;
-  readonly transformedFileCount?: number;
+  readonly transformedFileCount: number;
   readonly childTransforms: readonly TransformStepSnapshot[];
 }
 ```
 
-- **Every phase has `steps`** — unified property name; element type depends on phase `kind`.
-- **`PhaseSnapshotBase`** — shared phase fields: `status` (from `SnapshotBase`) and `estimatedTotalSteps`.
-- **`estimatedTotalSteps`** — set when the phase starts; primary loop size (`enrichers.length`, `heuristics.length`, `transforms.length`). Activity steps during transform are extra and may exceed this.
-- **Phase `kind` discriminant** — narrows `steps` to the valid step type(s) for that phase.
-- **Step `kind` discriminant** — within transforming phase, branch `steps` items on `transform` vs `activity`.
-- **`ScanningPhaseSnapshot.steps`** — `EnricherStepSnapshot[]`.
-- **`AnalysisPhaseSnapshot.steps`** — `HeuristicStepSnapshot[]`.
-- **`TransformingPhaseSnapshot.steps`** — `(TransformStepSnapshot | ActivityStepSnapshot)[]` in pipeline order.
-- **`EnricherStepSnapshot.filesDetected`** — numeric file count for scanning enrichers; terminal formats as `scanning · {n} file(s)`.
-- **`EnricherStepSnapshot.activities`** — nested `activity` steps for non-count work during an enricher (e.g. `loading nx graph`).
-- **`ActivityStepSnapshot`** — generic step with only `message`; used for nx graph loading, apply-changes commands, and other free-form status.
-- **`TransformStepSnapshot.childTransforms`** — only transform steps nest (jest-test group).
+- **Every phase has** `steps` — unified property name; element type depends on phase `kind`.
+- `SnapshotBase` — shared fields on every phase and step snapshot: `status`, optional `statusMessage` (completion or failure summary, set via `done()` / `fail()`).
+- `PhaseSnapshotBase` — extends `SnapshotBase`; adds `estimatedTotalSteps`.
+- `estimatedTotalSteps` — set when the phase starts; primary loop size (`enrichers.length`, `heuristics.length`, `transforms.length`). Activity steps during transform are extra and may exceed this.
+- **Phase** `kind` **discriminant** — narrows `steps` to the valid step type(s) for that phase.
+- **Step** `kind` **discriminant** — within transforming phase, branch `steps` items on `transform` vs `activity`.
+- `ScanningPhaseSnapshot.steps` — `EnricherStepSnapshot[]`.
+- `AnalysisPhaseSnapshot.steps` — `HeuristicStepSnapshot[]`.
+- `TransformingPhaseSnapshot.steps` — `(TransformStepSnapshot | ActivityStepSnapshot)[]` in pipeline order.
+- `EnricherStepSnapshot.filesDetected` — numeric file count for scanning enrichers; terminal formats as `scanning · {n} file(s)`.
+- `EnricherStepSnapshot.activities` — nested `activity` steps for non-count work during an enricher (e.g. `loading nx graph`).
+- `ActivityStepSnapshot` — generic step with only `message`; used for nx graph loading, apply-changes commands, and other free-form status.
+- `TransformStepSnapshot.childTransforms` — only transform steps nest (jest-test group).
+
+
 
 ## Mutation port (pipeline-facing)
 
@@ -166,37 +178,37 @@ export interface ProgressTracker {
 
 export interface ScanningPhase {
   createEnricherStep(args: NumberedStepArgs & { name: string }): EnricherStep;
-  done(): void;
+  done(message?: string): void;
 }
 
 export interface AnalysisPhase {
   createHeuristicStep(args: NumberedStepArgs & { name: string }): HeuristicStep;
-  done(): void;
+  done(message?: string): void;
 }
 
 export interface TransformingPhase {
   createTransformStep(args: NumberedStepArgs & { name: string }): TransformStep;
   createActivityStep(): ActivityStep;
-  done(): void;
+  done(message?: string): void;
 }
 
 export interface EnricherStep {
   setFilesDetected(count: number): void;
-  createActivity(): ActivityStep;
-  done(): void;
-  error(message: string): void;
+  createActivityStep(message: string): ActivityStep;
+  done(message?: string): void;
+  fail(message?: string): void;
 }
 
 export interface ActivityStep {
   updateMessage(message: string): void;
   done(message?: string): void;
-  error(message: string): void;
+  fail(message?: string): void;
 }
 
 export interface HeuristicStep {
   updateMessage(message: string): void;
-  done(message: string): void;
-  error(message: string): void;
+  done(message?: string): void;
+  fail(message?: string): void;
 }
 
 export interface TransformStep {
@@ -205,8 +217,8 @@ export interface TransformStep {
   createChildTransform(
     args: NumberedStepArgs & { name: string },
   ): TransformStep;
-  done(message: string): void;
-  error(message: string): void;
+  done(message?: string): void;
+  fail(message?: string): void;
 }
 
 type NumberedStepArgs = { stepNumber: number; stepCount: number };
@@ -214,12 +226,14 @@ type NumberedStepArgs = { stepNumber: number; stepCount: number };
 
 Pipeline stages call the phase and step factory matching their work:
 
-| Stage                       | Phase factory                                         | Step factory          |
-| --------------------------- | ----------------------------------------------------- | --------------------- |
-| `Scanner`                   | `beginScanning({ estimatedTotalSteps: enrichers.length })` | `createEnricherStep`  |
-| `Analyzer`                  | `beginAnalysis({ estimatedTotalSteps: heuristics.length })` | `createHeuristicStep` |
+
+| Stage                       | Phase factory                                                   | Step factory          |
+| --------------------------- | --------------------------------------------------------------- | --------------------- |
+| `Scanner`                   | `beginScanning({ estimatedTotalSteps: enrichers.length })`      | `createEnricherStep`  |
+| `Analyzer`                  | `beginAnalysis({ estimatedTotalSteps: heuristics.length })`     | `createHeuristicStep` |
 | `Transformer`               | `beginTransforming({ estimatedTotalSteps: transforms.length })` | `createTransformStep` |
-| `Transformer._applyChanges` | (same `TransformingPhase`)                            | `createActivityStep`  |
+| `Transformer._applyChanges` | (same `TransformingPhase`)                                      | `createActivityStep`  |
+
 
 `PipelineContext.progressStep` becomes `TransformStep` (transforms only receive transform handles).
 
@@ -246,9 +260,11 @@ terminal.attach(tracker);
 new Vitestify({ progressTracker: tracker });
 ```
 
+
+
 ## Nested transform reporting
 
-**`jest-test` transform group** — create a child `TransformStep` per entry in `JEST_TEST_TRANSFORMS`:
+`jest-test` **transform group** — create a child `TransformStep` per entry in `JEST_TEST_TRANSFORMS`:
 
 ```typescript
 const childStep = progressStep.createChildTransform({
@@ -259,37 +275,37 @@ const childStep = progressStep.createChildTransform({
 await transform.apply({ ...options, progressStep: childStep });
 ```
 
-**`defineFileTransform`** — report structured count on the `TransformStep`:
+`defineFileTransform` — report structured count on the `TransformStep`:
 
 ```typescript
 progressStep.setTransformedFileCount(transformedCount);
-progressStep.done(`${transformedCount} file(s) transformed`);
+progressStep.done();
 ```
 
-**`Scanner` / file-scanning enrichers** — report numeric file count:
+`Scanner` **/ file-scanning enrichers** — report numeric file count:
 
 ```typescript
 progressStep.setFilesDetected(files.length);
 ```
 
-**`NxEnricher`** — non-count work via nested activity under the enricher step:
+`NxEnricher` — non-count work via nested activity under the enricher step:
 
 ```typescript
-const activity = progressStep.createActivity();
-activity.updateMessage('loading nx graph');
+const activity = progressStep.createActivity('loading nx graph');
 const graph = await _runNxGraphCommand(options);
 progressStep.setFilesDetected(projects.length);
 activity.done();
 ```
 
-**`Transformer._applyChanges`** — each drained command is an activity step:
+`Transformer._applyChanges` — each drained command is an activity step:
 
 ```typescript
-const activity = phase.createActivityStep();
-activity.updateMessage(`${command.join(' ')} · running`);
+const activity = phase.createActivityStep(command.join(' '));
 await commandRunner.run(command);
-activity.done(`${command.join(' ')} · succeeded`);
+activity.done();
 ```
+
+
 
 Terminal listener formats each `kind` for display (e.g. enricher → `scanning · 142 file(s)`, activity → message as-is, transform child → `[2/10] jest-mock · 5 file(s) transformed`). State holds typed fields; formatting lives in the listener.
 
@@ -332,6 +348,10 @@ flowchart TD
   setCount --> transformStep
 ```
 
+
+
+
+
 ## Implementation Details
 
 - [ ] Add `PhaseSnapshotBase extends SnapshotBase` with `estimatedTotalSteps`; all phase snapshots extend it.
@@ -355,10 +375,19 @@ flowchart TD
 - [ ] Update `defineFileTransform`: call `setTransformedFileCount` during and after the file loop.
 - [ ] Remove `ProgressReporterFake` and generic `SubStep` API once typed steps cover all cases.
 
+
+
 # Testing Strategy
+
+
 
 # PR Plan
 
+
+
 # Alternatives Considered
 
+
+
 # Kitchen Sink
+
