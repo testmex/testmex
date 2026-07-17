@@ -20,7 +20,7 @@
 - [ ] Pipeline stages (`Scanner`, `Analyzer`, `Transformer`) mutate progress state — they do not write to the terminal directly.
 - [ ] Progress state includes an **analyze** phase with one `heuristic` step per heuristic.
 - [ ] Progress state includes a **transform** phase with top-level `transform` steps (e.g. `jest-test`, `vitest-config`).
-- [ ] Every phase snapshot exposes `estimatedTotalSteps` (via `PhaseSnapshotBase`) and a `steps` array.
+- [ ] Every phase snapshot exposes its expected step count (`enricherCount`, `heuristicsCount`, or `transformCount`) and a `steps` array. Step position is derived from the step's index in that array — not stored on each step.
 - [ ] Transform groups (e.g. `jest-test`) record **child** `transform` **steps** nested under the parent transform step.
 - [ ] Child transforms can update the number of transformed files.
 - [ ] Progress state exposes roll-up counts (e.g. files transformed per child transform, per parent transform).
@@ -79,35 +79,29 @@ type PhaseSnapshot =
   | AnalysisPhaseSnapshot
   | TransformingPhaseSnapshot;
 
-interface PhaseSnapshotBase extends SnapshotBase {
-  readonly estimatedTotalSteps: number;
-}
-
 /** Scanner phase — `steps` contains enricher steps only. */
-interface ScanningPhaseSnapshot extends PhaseSnapshotBase {
+interface ScanningPhaseSnapshot extends SnapshotBase {
   readonly kind: 'scanning';
+  readonly enricherCount: number;
   readonly steps: readonly EnricherStepSnapshot[];
 }
 
 /** Analyzer phase — `steps` contains heuristic steps only. */
-interface AnalysisPhaseSnapshot extends PhaseSnapshotBase {
+interface AnalysisPhaseSnapshot extends SnapshotBase {
   readonly kind: 'analysis';
+  readonly heuristicsCount: number;
   readonly steps: readonly HeuristicStepSnapshot[];
 }
 
 /** Transformer phase — `steps` contains transform and activity steps in pipeline order. */
-interface TransformingPhaseSnapshot extends PhaseSnapshotBase {
+interface TransformingPhaseSnapshot extends SnapshotBase {
   readonly kind: 'transforming';
+  readonly transformCount: number;
   readonly steps: readonly Array<TransformStepSnapshot | ActivityStepSnapshot>;
 }
 
-interface StepSnapshotBase extends SnapshotBase {
-  readonly stepNumber?: number;
-  readonly stepCount?: number;
-}
-
 /** Scanner — one per enricher (code, jest, nx, …). */
-interface EnricherStepSnapshot extends StepSnapshotBase {
+interface EnricherStepSnapshot extends SnapshotBase {
   readonly kind: 'enricher';
   readonly name: string;
   readonly detectedFileCount: number;
@@ -121,13 +115,13 @@ interface ActivityStepSnapshot extends SnapshotBase {
 }
 
 /** Analyzer — one per heuristic. */
-interface HeuristicStepSnapshot extends StepSnapshotBase {
+interface HeuristicStepSnapshot extends SnapshotBase {
   readonly kind: 'heuristic';
   readonly name: string;
 }
 
 /** Transformer — top-level and nested transforms (jest-test → jest-mock, …). */
-interface TransformStepSnapshot extends StepSnapshotBase {
+interface TransformStepSnapshot extends SnapshotBase {
   readonly kind: 'transform';
   readonly name: string;
   readonly transformedFileCount: number;
@@ -138,8 +132,8 @@ interface TransformStepSnapshot extends StepSnapshotBase {
 - **Every phase has** `steps` — unified property name; element type depends on phase `kind`.
 - `SnapshotBase` — shared fields on every phase and step snapshot: `status`, optional `statusMessage` (set via `done()` / `fail()`).
 - **Immutable snapshots** — tracker emits a new readonly tree on each mutation; never mutates a prior snapshot in place.
-- `PhaseSnapshotBase` — extends `SnapshotBase`; adds `estimatedTotalSteps`.
-- `estimatedTotalSteps` — set when the phase starts; primary loop size (`enrichers.length`, `heuristics.length`, `transforms.length`). Activity steps during transform are extra and may exceed this.
+- **Phase step counts** — `enricherCount`, `heuristicsCount`, and `transformCount` are set when the phase starts (`enrichers.length`, `heuristics.length`, `transforms.length`). Activity steps during transform are extra and may exceed `transformCount`.
+- **Step position** — not stored on step snapshots. The listener derives `[n/total]` from the step's index in `steps` (or `childTransforms`) and the phase count (or parent `childTransforms.length`).
 - **Phase** `kind` **discriminant** — narrows `steps` to the valid step type(s) for that phase.
 - **Step** `kind` **discriminant** — within transforming phase, branch `steps` items on `transform` vs `activity`.
 - `ScanningPhaseSnapshot.steps` — `EnricherStepSnapshot[]`.
@@ -158,25 +152,25 @@ Replace generic `createPhase` / `createStep` with **typed phase and step factori
 
 ```typescript
 export class ProgressTracker {
-  beginScanning(args: { estimatedTotalSteps: number }): ScanningPhase;
-  beginAnalysis(args: { estimatedTotalSteps: number }): AnalysisPhase;
-  beginTransforming(args: { estimatedTotalSteps: number }): TransformingPhase;
+  beginScanning(args: { enricherCount: number }): ScanningPhase;
+  beginAnalysis(args: { heuristicsCount: number }): AnalysisPhase;
+  beginTransforming(args: { transformCount: number }): TransformingPhase;
   snapshot(): ProgressSnapshot;
   subscribe(listener: (snapshot: ProgressSnapshot) => void): Unsubscribe;
 }
 
 export interface ScanningPhase {
-  createEnricherStep(args: NumberedStepArgs & { name: string }): EnricherStep;
+  createEnricherStep(args: { name: string }): EnricherStep;
   done(message?: string): void;
 }
 
 export interface AnalysisPhase {
-  createHeuristicStep(args: NumberedStepArgs & { name: string }): HeuristicStep;
+  createHeuristicStep(args: { name: string }): HeuristicStep;
   done(message?: string): void;
 }
 
 export interface TransformingPhase {
-  createTransformStep(args: NumberedStepArgs & { name: string }): TransformStep;
+  createTransformStep(args: { name: string }): TransformStep;
   createActivityStep(): ActivityStep;
   done(message?: string): void;
 }
@@ -203,23 +197,19 @@ export interface HeuristicStep {
 export interface TransformStep {
   updateMessage(message: string): void;
   setTransformedFileCount(count: number): void;
-  createChildTransform(
-    args: NumberedStepArgs & { name: string },
-  ): TransformStep;
+  createChildTransform(args: { name: string }): TransformStep;
   done(message?: string): void;
   fail(message?: string): void;
 }
-
-type NumberedStepArgs = { stepNumber: number; stepCount: number };
 ```
 
 Pipeline stages call the phase and step factory matching their work:
 
-| Stage                       | Phase factory                                                   | Step factory          |
-| --------------------------- | --------------------------------------------------------------- | --------------------- |
-| `Scanner`                   | `beginScanning({ estimatedTotalSteps: enrichers.length })`      | `createEnricherStep`  |
-| `Analyzer`                  | `beginAnalysis({ estimatedTotalSteps: heuristics.length })`     | `createHeuristicStep` |
-| `Transformer`               | `beginTransforming({ estimatedTotalSteps: transforms.length })` | `createTransformStep` |
+| Stage                       | Phase factory                                      | Step factory          |
+| --------------------------- | -------------------------------------------------- | --------------------- |
+| `Scanner`                   | `beginScanning({ enricherCount: enrichers.length })`      | `createEnricherStep`  |
+| `Analyzer`                  | `beginAnalysis({ heuristicsCount: heuristics.length })`     | `createHeuristicStep` |
+| `Transformer`               | `beginTransforming({ transformCount: transforms.length })` | `createTransformStep` |
 | `Transformer._applyChanges` | (same `TransformingPhase`)                                      | `createActivityStep`  |
 
 `PipelineContext.progressStep` becomes `TransformStep` (transforms only receive transform handles).
@@ -244,7 +234,7 @@ export interface ProgressListener {
 - Correlates nodes by **append-only index** (`phases[i].steps[j]`) — no explicit `id` on snapshots.
 - Renders phase intro/outro from phase `status`; one spinner per `phase.steps` item.
 - Folds nested `activities` and `childTransforms` into the parent step display (`| …` sub-lines).
-- Formats typed step fields to display strings (listener-only; e.g. enricher → `scanning · {detectedFileCount} file(s)`).
+- Formats typed step fields to display strings (listener-only; e.g. enricher → `scanning · {detectedFileCount} file(s)`). Derives `[n/total]` prefixes from step index and phase count (`enricherCount`, `heuristicsCount`, `transformCount`) or `childTransforms.length`.
 
 `ThrottledProgressListener` sits in front of the inner listener and suppresses rapid consecutive emissions that differ only in file-count fields.
 
@@ -265,8 +255,6 @@ new Vitestify({ progressTracker: tracker });
 ```typescript
 const childStep = progressStep.createChildTransform({
   name: transform.name,
-  stepNumber: index + 1,
-  stepCount: total,
 });
 await transform.apply({ ...options, progressStep: childStep });
 ```
@@ -318,9 +306,9 @@ flowchart TD
   vitestify --> analyzer["Analyzer"]
   vitestify --> transformer["Transformer"]
 
-  scanner --> scanningPhase["beginScanning({ estimatedTotalSteps })"]
-  analyzer --> analysisPhase["beginAnalysis({ estimatedTotalSteps })"]
-  transformer --> transformingPhase["beginTransforming({ estimatedTotalSteps })"]
+  scanner --> scanningPhase["beginScanning({ enricherCount })"]
+  analyzer --> analysisPhase["beginAnalysis({ heuristicsCount })"]
+  transformer --> transformingPhase["beginTransforming({ transformCount })"]
 
   scanningPhase --> enricherStep["createEnricherStep()"]
   analysisPhase --> heuristicStep["createHeuristicStep()"]
@@ -362,8 +350,8 @@ flowchart LR
 
 ## Tasks
 
-- [ ] Add snapshot types in `core/models/progress-snapshot.ts`: `SnapshotBase`, `PhaseSnapshotBase` with `estimatedTotalSteps`; typed phase and step snapshots.
-- [ ] Add `ProgressTracker` core service in `core/domain/progress-tracker.ts` with immutable snapshots; phase factories accept `{ estimatedTotalSteps }`.
+- [ ] Add snapshot types in `core/models/progress-snapshot.ts`: typed phase and step snapshots with `enricherCount`, `heuristicsCount`, and `transformCount`.
+- [ ] Add `ProgressTracker` core service in `core/domain/progress-tracker.ts` with immutable snapshots; phase factories accept `{ enricherCount }`, `{ heuristicsCount }`, or `{ transformCount }`.
 - [ ] Add `subscribe(listener)` — listener receives the full `ProgressSnapshot` on every mutation.
 - [ ] Add typed phase and step mutation handles (see mutation API table).
 
@@ -372,7 +360,7 @@ flowchart LR
 ### Emits immutable snapshots on mutation
 
 - Create a `ProgressTracker`.
-- Call `beginScanning({ estimatedTotalSteps: 2 })`, create one enricher step, `setFilesDetected(5)`.
+- Call `beginScanning({ enricherCount: 2 })`, create one enricher step, `setFilesDetected(5)`.
 - Capture snapshots from `subscribe`.
 - Assert the first and last snapshot are different object references.
 - Assert prior snapshot still shows `detectedFileCount: 0` (unchanged).
@@ -381,7 +369,7 @@ flowchart LR
 
 - Begin scanning, analysis, and transforming phases in sequence.
 - Assert `snapshot().phases` has kinds `scanning`, `analysis`, `transforming` in order.
-- Assert each phase has `estimatedTotalSteps` and a typed `steps` array.
+- Assert each phase has its typed count (`enricherCount`, `heuristicsCount`, `transformCount`) and a typed `steps` array.
 
 ### Nested child transforms and activities
 

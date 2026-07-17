@@ -3,17 +3,13 @@ import type { ProgressSnapshot } from '../models/progress-snapshot';
 import { ProgressTracker } from './progress-tracker';
 
 describe(ProgressTracker, () => {
-  it.todo('emits immutable snapshots on mutation', () => {
+  it('emits immutable snapshots on mutation', () => {
     const tracker = new ProgressTracker();
     const snapshots: ProgressSnapshot[] = [];
     tracker.subscribe((snapshot) => snapshots.push(snapshot));
 
-    const phase = tracker.beginScanning({ estimatedTotalSteps: 2 });
-    const enricher = phase.createEnricherStep({
-      name: 'code',
-      stepNumber: 1,
-      stepCount: 2,
-    });
+    const phase = tracker.beginScanning({ enricherCount: 2 });
+    const enricher = phase.createEnricherStep({ name: 'code' });
     const priorSnapshot = snapshots[snapshots.length - 1];
     enricher.setFilesDetected(5);
 
@@ -24,31 +20,19 @@ describe(ProgressTracker, () => {
     });
   });
 
-  it.todo('records typed phase and step snapshots', () => {
+  it('records typed phase and step snapshots', () => {
     const tracker = new ProgressTracker();
 
-    const scanning = tracker.beginScanning({ estimatedTotalSteps: 1 });
-    scanning.createEnricherStep({
-      name: 'code',
-      stepNumber: 1,
-      stepCount: 1,
-    });
+    const scanning = tracker.beginScanning({ enricherCount: 1 });
+    scanning.createEnricherStep({ name: 'code' });
     scanning.done();
 
-    const analysis = tracker.beginAnalysis({ estimatedTotalSteps: 1 });
-    analysis.createHeuristicStep({
-      name: 'jest',
-      stepNumber: 1,
-      stepCount: 1,
-    });
+    const analysis = tracker.beginAnalysis({ heuristicsCount: 1 });
+    analysis.createHeuristicStep({ name: 'jest' });
     analysis.done();
 
-    const transforming = tracker.beginTransforming({ estimatedTotalSteps: 1 });
-    transforming.createTransformStep({
-      name: 'jest-test',
-      stepNumber: 1,
-      stepCount: 1,
-    });
+    const transforming = tracker.beginTransforming({ transformCount: 1 });
+    transforming.createTransformStep({ name: 'jest-test' });
     transforming.done();
 
     const phases = tracker.snapshot().phases;
@@ -57,42 +41,26 @@ describe(ProgressTracker, () => {
       'analysis',
       'transforming',
     ]);
-    expect.soft(phases[0].estimatedTotalSteps).toBe(1);
+    expect.soft(phases[0]).toMatchObject({ kind: 'scanning', enricherCount: 1 });
     expect.soft(phases[0].steps[0]).toMatchObject({ kind: 'enricher' });
-    expect.soft(phases[1].estimatedTotalSteps).toBe(1);
+    expect.soft(phases[1]).toMatchObject({ kind: 'analysis', heuristicsCount: 1 });
     expect.soft(phases[1].steps[0]).toMatchObject({ kind: 'heuristic' });
-    expect.soft(phases[2].estimatedTotalSteps).toBe(1);
+    expect.soft(phases[2]).toMatchObject({ kind: 'transforming', transformCount: 1 });
     expect.soft(phases[2].steps[0]).toMatchObject({ kind: 'transform' });
   });
 
-  it.todo('nested child transforms and activities', () => {
+  it('nested child transforms and activities', () => {
     const tracker = new ProgressTracker();
 
-    const transforming = tracker.beginTransforming({ estimatedTotalSteps: 1 });
-    const jestTest = transforming.createTransformStep({
-      name: 'jest-test',
-      stepNumber: 1,
-      stepCount: 1,
-    });
-    const jestMock = jestTest.createChildTransform({
-      name: 'jest-mock',
-      stepNumber: 1,
-      stepCount: 2,
-    });
-    const jestFn = jestTest.createChildTransform({
-      name: 'jest-fn',
-      stepNumber: 2,
-      stepCount: 2,
-    });
+    const transforming = tracker.beginTransforming({ transformCount: 1 });
+    const jestTest = transforming.createTransformStep({ name: 'jest-test' });
+    const jestMock = jestTest.createChildTransform({ name: 'jest-mock' });
+    const jestFn = jestTest.createChildTransform({ name: 'jest-fn' });
     jestMock.setTransformedFileCount(3);
     jestFn.setTransformedFileCount(7);
 
-    const scanning = tracker.beginScanning({ estimatedTotalSteps: 1 });
-    const nx = scanning.createEnricherStep({
-      name: 'nx',
-      stepNumber: 1,
-      stepCount: 1,
-    });
+    const scanning = tracker.beginScanning({ enricherCount: 1 });
+    const nx = scanning.createEnricherStep({ name: 'nx' });
     const activity = nx.createActivityStep('loading nx graph');
     activity.updateMessage('loading nx graph');
 
