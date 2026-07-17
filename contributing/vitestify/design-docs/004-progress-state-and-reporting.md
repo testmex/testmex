@@ -51,7 +51,7 @@
 
 Split progress into two layers:
 
-1. `ProgressTracker` — core domain service: authoritative in-memory state + mutation API. Pipeline code writes here only. Lives in `core/domain`; snapshot types live in `core/models`.
+1. `ProgressTracker` — core domain service: authoritative in-memory state + mutation API. Pipeline code writes here only. Lives in `core/models/progress-tracker`; aggregate snapshot types in `core/models/progress-tracker/progress-snapshot.ts`.
 2. `ProgressListener` — port in `core/ports`: subscribes to tracker changes and renders to a sink (terminal today; logs/CI later).
 
 The existing `Phase` / `Step` handle pattern stays, but handles are **typed by phase and step kind** — thin facades over `ProgressTracker` nodes that update state and emit change events; they do not render.
@@ -60,7 +60,7 @@ The existing `Phase` / `Step` handle pattern stays, but handles are **typed by p
 
 ## Data model
 
-Snapshot types live in `core/models/progress-snapshot.ts`. Snapshots use **discriminated unions** at both phase and step levels. Each type carries only fields relevant to that kind of work.
+Snapshot types live alongside their phase/step nodes in `core/models/progress-tracker/`. Snapshots use **discriminated unions** at both phase and step levels. Each type carries only fields relevant to that kind of work.
 
 ```typescript
 type ProgressStatus = 'started' | 'done' | 'failed';
@@ -146,7 +146,7 @@ interface TransformStepSnapshot extends SnapshotBase {
 
 ## Mutation API (core service)
 
-`ProgressTracker` is a **concrete core service** — not a port. There is one implementation in `core/domain/progress-tracker.ts`.
+`ProgressTracker` is a **concrete core service** — not a port. There is one implementation in `core/models/progress-tracker/progress-tracker.ts`.
 
 Replace generic `createPhase` / `createStep` with **typed phase and step factories**. Each phase handle exposes only the step factories valid for its kind:
 
@@ -183,25 +183,24 @@ export interface EnricherStep {
 }
 
 export interface ActivityStep {
-  updateMessage(message: string): void;
   done(message?: string): void;
   fail(message?: string): void;
 }
 
 export interface HeuristicStep {
-  updateMessage(message: string): void;
   done(message?: string): void;
   fail(message?: string): void;
 }
 
 export interface TransformStep {
-  updateMessage(message: string): void;
   setTransformedFileCount(count: number): void;
   createChildTransform(args: { name: string }): TransformStep;
   done(message?: string): void;
   fail(message?: string): void;
 }
 ```
+
+Only add an `updateMessage` handle if a real-life use case truly needs mid-step message changes — defer until then.
 
 Pipeline stages call the phase and step factory matching their work:
 
@@ -350,8 +349,8 @@ flowchart LR
 
 ## Tasks
 
-- [ ] Add snapshot types in `core/models/progress-snapshot.ts`: typed phase and step snapshots with `enricherCount`, `heuristicsCount`, and `transformCount`.
-- [ ] Add `ProgressTracker` core service in `core/domain/progress-tracker.ts` with immutable snapshots; phase factories accept `{ enricherCount }`, `{ heuristicsCount }`, or `{ transformCount }`.
+- [ ] Add snapshot types alongside phase/step nodes in `core/models/progress-tracker/`: typed phase and step snapshots with `enricherCount`, `heuristicsCount`, and `transformCount`.
+- [ ] Add `ProgressTracker` core service in `core/models/progress-tracker/progress-tracker.ts` with immutable snapshots; phase factories accept `{ enricherCount }`, `{ heuristicsCount }`, or `{ transformCount }`.
 - [ ] Add `subscribe(listener)` — listener receives the full `ProgressSnapshot` on every mutation.
 - [ ] Add typed phase and step mutation handles (see mutation API table).
 
@@ -375,7 +374,7 @@ flowchart LR
 
 - Begin transforming; create a `jest-test` transform step.
 - Create two `createChildTransform` children; set `transformedFileCount` on each.
-- Create an enricher step with a nested `createActivityStep`; update its message.
+- Create an enricher step with a nested `createActivityStep`.
 - Assert child transforms appear under `childTransforms` and activities under `activities`.
 
 </details>
