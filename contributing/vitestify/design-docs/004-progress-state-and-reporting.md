@@ -12,11 +12,7 @@
 - Changing enricher scan behavior or merging scan passes — progress refactor only.
 - Per-file terminal detail for every transform — terminal reporter may still summarize; full per-file detail lives in progress state, not necessarily on screen.
 
-
-
 # Desired Behavior
-
-
 
 ## Progress state (authoritative)
 
@@ -31,8 +27,6 @@
 - [ ] Observers can read the current snapshot at any time and subscribe to changes during the run.
 - [ ] When stdout is not a TTY, progress state is still collected; only terminal output is suppressed.
 
-
-
 ## Terminal reporting (one sink)
 
 - [ ] A `TerminalProgressReporter` subscribes to progress state changes and renders via `@clack/prompts` — same general UX as today.
@@ -40,15 +34,11 @@
 - [ ] Terminal may summarize nested transform detail (top-level spinner + sub-steps) rather than listing every file on screen.
 - [ ] Throttling applies at the reporting layer (listener), not inside progress state or pipeline code.
 
-
-
 ## Nested `jest-test` transform group (primary motivating scenario)
 
 - [ ] While `jest-test` runs, progress state records each child transform as a nested `transform` step under `jest-test`.
 - [ ] Each child transform updates `transformedFileCount` on its `TransformStepSnapshot`.
 - [ ] After the run, state answers: how many files were transformed by each child transform.
-
-
 
 ## Unchanged user-visible CLI flow
 
@@ -56,8 +46,6 @@
 - [ ] Scan enrichers report `filesDetected` count; non-scan work (e.g. nx graph loading) uses nested `activity` steps — not free-form strings on the enricher.
 - [ ] Transform verify/rollback and apply-changes substeps still appear in terminal output.
 - [ ] Non-TTY runs stay silent on the terminal (same as today).
-
-
 
 # Design
 
@@ -148,7 +136,8 @@ interface TransformStepSnapshot extends StepSnapshotBase {
 ```
 
 - **Every phase has** `steps` — unified property name; element type depends on phase `kind`.
-- `SnapshotBase` — shared fields on every phase and step snapshot: `status`, optional `statusMessage` (completion or failure summary, set via `done()` / `fail()`).
+- `SnapshotBase` — shared fields on every phase and step snapshot: `status`, optional `statusMessage` (set via `done()` / `fail()`).
+- **Immutable snapshots** — tracker emits a new readonly tree on each mutation; never mutates a prior snapshot in place.
 - `PhaseSnapshotBase` — extends `SnapshotBase`; adds `estimatedTotalSteps`.
 - `estimatedTotalSteps` — set when the phase starts; primary loop size (`enrichers.length`, `heuristics.length`, `transforms.length`). Activity steps during transform are extra and may exceed this.
 - **Phase** `kind` **discriminant** — narrows `steps` to the valid step type(s) for that phase.
@@ -160,8 +149,6 @@ interface TransformStepSnapshot extends StepSnapshotBase {
 - `EnricherStepSnapshot.activities` — nested `activity` steps for non-count work during an enricher (e.g. `loading nx graph`).
 - `ActivityStepSnapshot` — generic step with only `message`; used for nx graph loading, apply-changes commands, and other free-form status.
 - `TransformStepSnapshot.childTransforms` — only transform steps nest (jest-test group).
-
-
 
 ## Mutation port (pipeline-facing)
 
@@ -226,14 +213,12 @@ type NumberedStepArgs = { stepNumber: number; stepCount: number };
 
 Pipeline stages call the phase and step factory matching their work:
 
-
 | Stage                       | Phase factory                                                   | Step factory          |
 | --------------------------- | --------------------------------------------------------------- | --------------------- |
 | `Scanner`                   | `beginScanning({ estimatedTotalSteps: enrichers.length })`      | `createEnricherStep`  |
 | `Analyzer`                  | `beginAnalysis({ estimatedTotalSteps: heuristics.length })`     | `createHeuristicStep` |
 | `Transformer`               | `beginTransforming({ estimatedTotalSteps: transforms.length })` | `createTransformStep` |
 | `Transformer._applyChanges` | (same `TransformingPhase`)                                      | `createActivityStep`  |
-
 
 `PipelineContext.progressStep` becomes `TransformStep` (transforms only receive transform handles).
 
@@ -247,8 +232,25 @@ export interface ProgressListener {
 }
 ```
 
-- `TerminalProgressListener` — maps snapshot diffs to `@clack/prompts` intro/outro, spinners, sub-step lines. No-ops when `!process.stdout.isTTY`.
-- `ThrottledProgressListener` — decorates any listener; throttles re-renders on `updateMessage` / `setTransformedFileCount` (moves throttling out of the tracker).
+- `TerminalProgressListener` — subscribes to tracker snapshots and reconciles clack output. No-ops when `!process.stdout.isTTY`.
+- `ThrottledProgressListener` — decorates any listener; throttles `spinner.message()` only — `start` / `stop` / `fail` / intro / outro flush immediately.
+
+### Reconciliation
+
+Snapshots are immutable, but the listener still needs to correlate nodes across emissions. Vitestify's pipeline is **append-only** — phases and steps are never reordered or removed — so **array index is stable identity** (e.g. `phases[0].steps[2]`). No explicit `id` field on snapshots.
+
+The listener keeps **render state** (clack spinners, intro/outro shown) separate from the snapshot tree. On each `subscribe` callback:
+
+- **Phases** — keyed by phase index. `intro()` when a phase becomes `started`; `outro()` when `done` / `failed` (once per index).
+- **Spinner owners** — only items in `phase.steps` get a spinner. Nested `activities` and `childTransforms` are folded into the parent's display string (multiline `| …` sub-lines), not separate spinners.
+- **Per step path** — key `lastSeen` by `"${phaseIndex}:${stepIndex}"`. On each snapshot:
+  - `started` + new path → `spinner.start(format(step))`
+  - `started` + display changed → `spinner.message(display)`
+  - `started` → `done` → `spinner.stop(statusMessage ?? display)`
+  - `started` → `failed` → `spinner.error(statusMessage ?? display)`
+- **Formatting** — `format(step)` is listener-only; maps typed snapshot fields to display strings (e.g. enricher → `scanning · {detectedFileCount} file(s)`).
+
+No full tree diff — only touch clack when `status` transitions or `display` changes.
 
 CLI wiring:
 
@@ -259,8 +261,6 @@ terminal.attach(tracker);
 
 new Vitestify({ progressTracker: tracker });
 ```
-
-
 
 ## Nested transform reporting
 
@@ -305,8 +305,6 @@ await commandRunner.run(command);
 activity.done();
 ```
 
-
-
 Terminal listener formats each `kind` for display (e.g. enricher → `scanning · 142 file(s)`, activity → message as-is, transform child → `[2/10] jest-mock · 5 file(s) transformed`). State holds typed fields; formatting lives in the listener.
 
 ## Diagram
@@ -348,10 +346,6 @@ flowchart TD
   setCount --> transformStep
 ```
 
-
-
-
-
 ## Implementation Details
 
 - [ ] Add `PhaseSnapshotBase extends SnapshotBase` with `estimatedTotalSteps`; all phase snapshots extend it.
@@ -363,7 +357,7 @@ flowchart TD
 - [ ] Add `TransformStep.createChildTransform()` and `TransformStep.setTransformedFileCount()`.
 - [ ] Replace `NullProgressReporter` with `NullProgressTracker`; replace `ProgressReporterFake` with `ProgressTracker` + `snapshot()` assertions filtered by `kind`.
 - [ ] Add `ProgressListener` interface with `attach(tracker)`.
-- [ ] Refactor `TerminalProgressReporter` → `TerminalProgressListener` — format each step `kind` for clack output.
+- [ ] Refactor `TerminalProgressReporter` → `TerminalProgressListener` — reconcile immutable snapshots to clack via index-based paths (see Reconciliation).
 - [ ] Refactor `ThrottledProgressReporter` → `ThrottledProgressListener` — throttle listener re-renders, not tracker mutations.
 - [ ] Update `Vitestify` constructor: accept `progressTracker`; wire terminal listener in CLI entry point.
 - [ ] Update `Scanner`: `beginScanning()` + `createEnricherStep` + `setFilesDetected`.
@@ -375,19 +369,10 @@ flowchart TD
 - [ ] Update `defineFileTransform`: call `setTransformedFileCount` during and after the file loop.
 - [ ] Remove `ProgressReporterFake` and generic `SubStep` API once typed steps cover all cases.
 
-
-
 # Testing Strategy
-
-
 
 # PR Plan
 
-
-
 # Alternatives Considered
 
-
-
 # Kitchen Sink
-
