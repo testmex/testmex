@@ -1,7 +1,5 @@
 export type ProgressStatus = 'started' | 'done' | 'failed';
 
-export type Unsubscribe = () => void;
-
 export interface SnapshotBase {
   readonly status: ProgressStatus;
   readonly statusMessage?: string;
@@ -62,59 +60,4 @@ export interface TransformStepSnapshot extends StepSnapshotBase {
   readonly name: string;
   readonly transformedFileCount: number;
   readonly childTransforms: readonly TransformStepSnapshot[];
-}
-
-export type NumberedStepArgs = { stepNumber: number; stepCount: number };
-
-export interface ProgressTracker {
-  beginScanning(args: { estimatedTotalSteps: number }): ScanningPhase;
-  beginAnalysis(args: { estimatedTotalSteps: number }): AnalysisPhase;
-  beginTransforming(args: { estimatedTotalSteps: number }): TransformingPhase;
-  snapshot(): ProgressSnapshot;
-  subscribe(listener: (snapshot: ProgressSnapshot) => void): Unsubscribe;
-}
-
-export interface ScanningPhase {
-  createEnricherStep(args: NumberedStepArgs & { name: string }): EnricherStep;
-  done(message?: string): void;
-}
-
-export interface AnalysisPhase {
-  createHeuristicStep(args: NumberedStepArgs & { name: string }): HeuristicStep;
-  done(message?: string): void;
-}
-
-export interface TransformingPhase {
-  createTransformStep(args: NumberedStepArgs & { name: string }): TransformStep;
-  createActivityStep(): ActivityStep;
-  done(message?: string): void;
-}
-
-export interface EnricherStep {
-  setFilesDetected(count: number): void;
-  createActivityStep(message: string): ActivityStep;
-  done(message?: string): void;
-  fail(message?: string): void;
-}
-
-export interface ActivityStep {
-  updateMessage(message: string): void;
-  done(message?: string): void;
-  fail(message?: string): void;
-}
-
-export interface HeuristicStep {
-  updateMessage(message: string): void;
-  done(message?: string): void;
-  fail(message?: string): void;
-}
-
-export interface TransformStep {
-  updateMessage(message: string): void;
-  setTransformedFileCount(count: number): void;
-  createChildTransform(
-    args: NumberedStepArgs & { name: string },
-  ): TransformStep;
-  done(message?: string): void;
-  fail(message?: string): void;
 }

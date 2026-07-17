@@ -1,7 +1,7 @@
 import { describe, it } from 'vitest';
-import { InMemoryProgressTracker } from './progress-tracker';
+import { ProgressTracker } from './progress-tracker';
 
-describe(InMemoryProgressTracker, () => {
+describe(ProgressTracker, () => {
   it.todo('emits immutable snapshots on mutation', () => {
     // Create a ProgressTracker.
     // Call beginScanning({ estimatedTotalSteps: 2 }), create one enricher step, setFilesDetected(5).

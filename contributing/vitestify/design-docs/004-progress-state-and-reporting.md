@@ -51,8 +51,8 @@
 
 Split progress into two layers:
 
-1. `ProgressTracker` — authoritative in-memory state + mutation API (`createPhase` / `createStep` / …). Pipeline code writes here only.
-2. `ProgressListener` — subscribes to tracker changes and renders to a sink (terminal today; logs/CI later).
+1. `ProgressTracker` — core domain service: authoritative in-memory state + mutation API. Pipeline code writes here only. Lives in `core/domain`; snapshot types live in `core/models`.
+2. `ProgressListener` — port in `core/ports`: subscribes to tracker changes and renders to a sink (terminal today; logs/CI later).
 
 The existing `Phase` / `Step` handle pattern stays, but handles are **typed by phase and step kind** — thin facades over `ProgressTracker` nodes that update state and emit change events; they do not render.
 
@@ -60,7 +60,7 @@ The existing `Phase` / `Step` handle pattern stays, but handles are **typed by p
 
 ## Data model
 
-Snapshots use **discriminated unions** at both phase and step levels. Each type carries only fields relevant to that kind of work.
+Snapshot types live in `core/models/progress-snapshot.ts`. Snapshots use **discriminated unions** at both phase and step levels. Each type carries only fields relevant to that kind of work.
 
 ```typescript
 type ProgressStatus = 'started' | 'done' | 'failed';
@@ -145,17 +145,19 @@ interface TransformStepSnapshot extends StepSnapshotBase {
 - `ScanningPhaseSnapshot.steps` — `EnricherStepSnapshot[]`.
 - `AnalysisPhaseSnapshot.steps` — `HeuristicStepSnapshot[]`.
 - `TransformingPhaseSnapshot.steps` — `(TransformStepSnapshot | ActivityStepSnapshot)[]` in pipeline order.
-- `EnricherStepSnapshot.filesDetected` — numeric file count for scanning enrichers; terminal formats as `scanning · {n} file(s)`.
+- `EnricherStepSnapshot.detectedFileCount` — numeric file count for scanning enrichers; terminal formats as `scanning · {n} file(s)`.
 - `EnricherStepSnapshot.activities` — nested `activity` steps for non-count work during an enricher (e.g. `loading nx graph`).
 - `ActivityStepSnapshot` — generic step with only `message`; used for nx graph loading, apply-changes commands, and other free-form status.
 - `TransformStepSnapshot.childTransforms` — only transform steps nest (jest-test group).
 
-## Mutation port (pipeline-facing)
+## Mutation API (core service)
+
+`ProgressTracker` is a **concrete core service** — not a port. There is one implementation in `core/domain/progress-tracker.ts`.
 
 Replace generic `createPhase` / `createStep` with **typed phase and step factories**. Each phase handle exposes only the step factories valid for its kind:
 
 ```typescript
-export interface ProgressTracker {
+export class ProgressTracker {
   beginScanning(args: { estimatedTotalSteps: number }): ScanningPhase;
   beginAnalysis(args: { estimatedTotalSteps: number }): AnalysisPhase;
   beginTransforming(args: { estimatedTotalSteps: number }): TransformingPhase;
@@ -222,7 +224,7 @@ Pipeline stages call the phase and step factory matching their work:
 
 `PipelineContext.progressStep` becomes `TransformStep` (transforms only receive transform handles).
 
-`NullProgressTracker` no-ops all mutations (replaces `NullProgressReporter`). Tests inject `ProgressTracker` and assert via `snapshot()`, filtering steps by `kind`.
+Tests construct `ProgressTracker` and assert via `snapshot()`, filtering steps by `kind`.
 
 ## Listener port (sink-facing)
 
@@ -360,12 +362,10 @@ flowchart LR
 
 ## Tasks
 
-- [ ] Add `SnapshotBase`, `PhaseSnapshotBase` with `estimatedTotalSteps`; all phase snapshots extend it.
-- [ ] Add typed `PhaseSnapshot` discriminated union (`scanning` | `analysis` | `transforming`) and typed step snapshots.
-- [ ] Add `ProgressTracker` with immutable snapshots; phase factories accept `{ estimatedTotalSteps }`.
-- [ ] Add `subscribe(listener)` — emit full snapshot on every mutation.
-- [ ] Add typed phase and step mutation handles (see mutation port table).
-- [ ] Add `NullProgressTracker`.
+- [ ] Add snapshot types in `core/models/progress-snapshot.ts`: `SnapshotBase`, `PhaseSnapshotBase` with `estimatedTotalSteps`; typed phase and step snapshots.
+- [ ] Add `ProgressTracker` core service in `core/domain/progress-tracker.ts` with immutable snapshots; phase factories accept `{ estimatedTotalSteps }`.
+- [ ] Add `subscribe(listener)` — listener receives the full `ProgressSnapshot` on every mutation.
+- [ ] Add typed phase and step mutation handles (see mutation API table).
 
 ## Testing Strategy
 
@@ -521,7 +521,7 @@ flowchart LR
 
 ## Keep `ProgressReporter` as the pipeline port
 
-- **Rejected** — port mixed state collection with terminal rendering; splitting `ProgressTracker` + `ProgressListener` is the goal.
+- **Rejected** — port mixed state collection with terminal rendering; splitting `ProgressTracker` (core service) + `ProgressListener` (port) is the goal.
 
 # Kitchen Sink
 
