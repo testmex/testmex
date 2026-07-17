@@ -1,8 +1,15 @@
 {
   "name": "@testmex/vitestify",
   "version": "0.0.1",
-  "private": true,
   "type": "module",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
   "bin": {
     "vitestify": "./dist/cli.js"
   },

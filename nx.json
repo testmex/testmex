@@ -61,5 +61,21 @@
     "test": {
       "dependsOn": ["^build"]
     }
+  },
+  "release": {
+    "projects": ["packages/*"],
+    "projectsRelationship": "independent",
+    "conventionalCommits": {
+      "preset": "angular"
+    },
+    "version": {
+      "preVersionCommand": "pnpm nx run-many -t build"
+    },
+    "changelog": {
+      "projectChangelogs": true
+    },
+    "releaseTag": {
+      "pattern": "{projectName}@{version}"
+    }
   }
 }
