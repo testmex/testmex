@@ -1,6 +1,6 @@
 ---
 name: charted-loop
-description: Runs one Charted Coding iteration by routing through charted-continue, batching red or green work for an entire test file, then committing with Charted conventions. Infers design doc and PR number when omitted. Use when the user invokes charted loop, wants batch TDD for a PR test file, or asks to continue charted work with commits.
+description: Runs Charted Coding iterations in a loop — route via charted-continue, batch red or green work for an entire test file, commit, then repeat until the PR is complete. Infers design doc and PR number when omitted. Use when the user invokes charted loop, wants batch TDD for a PR test file, or asks to continue charted work with commits.
 ---
 
 # Context
@@ -10,7 +10,7 @@ description: Runs one Charted Coding iteration by routing through charted-contin
 
 # Goal
 
-Run one Charted Coding iteration: route via `charted-continue`, batch work for the current test file, then commit.
+Run Charted Coding iterations until the PR is complete: route via `charted-continue`, batch work for the current test file, commit, then **immediately start the next iteration** — without waiting for the user to invoke `/charted-loop` again.
 
 # Steps
 
@@ -78,7 +78,16 @@ When unsure whether green work is `refactor` or `feat`, use `refactor` unless th
 
 Do not push unless the user asks.
 
+## 4. Loop
+
+After step 3 finishes (commit succeeded, or there were no changes to commit), **go back to step 1** with the same resolved `${designDocPath}` and `${prNumber}`.
+
+Keep looping until step 1 reports the PR is complete. Do not tell the user to run `/charted-loop` again — that is this skill's job.
+
+When the PR is complete, report a short summary of iterations run and commits made.
+
 # Rules
 
-- One route per invocation — never scaffold, red, and green in the same turn.
+- One route per iteration — never scaffold, red, and green in the same iteration.
 - Do not skip ahead to a later test file while an earlier pending test in the PR order is unfinished.
+- Do not stop after a single iteration while the PR still has pending work.
