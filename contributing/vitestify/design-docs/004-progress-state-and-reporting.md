@@ -345,14 +345,14 @@ flowchart LR
 
 
 <details>
-<summary>🚧 PR#1 — ProgressTracker scaffold</summary>
+<summary>✅ PR#1 — ProgressTracker scaffold</summary>
 
 ## Tasks
 
-- [ ] Add snapshot types alongside phase/step nodes in `core/models/progress-tracker/`: typed phase and step snapshots with `enricherCount`, `heuristicsCount`, and `transformCount`.
-- [ ] Add `ProgressTracker` core service in `core/models/progress-tracker/progress-tracker.ts` with immutable snapshots; phase factories accept `{ enricherCount }`, `{ heuristicsCount }`, or `{ transformCount }`.
-- [ ] Add `subscribe(listener)` — listener receives the full `ProgressSnapshot` on every mutation.
-- [ ] Add typed phase and step mutation handles (see mutation API table).
+- [x] Add snapshot types alongside phase/step nodes in `core/models/progress-tracker/`: typed phase and step snapshots with `enricherCount`, `heuristicsCount`, and `transformCount`.
+- [x] Add `ProgressTracker` core service in `core/models/progress-tracker/progress-tracker.ts` with immutable snapshots; phase factories accept `{ enricherCount }`, `{ heuristicsCount }`, or `{ transformCount }`.
+- [x] Add `subscribe(listener)` — listener receives the full `ProgressSnapshot` on every mutation.
+- [x] Add typed phase and step mutation handles (see mutation API table).
 
 ## Testing Strategy
 
