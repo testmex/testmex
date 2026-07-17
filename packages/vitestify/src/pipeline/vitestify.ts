@@ -1,5 +1,6 @@
 import { CommandRunnerPooled } from '../core/domain/command-runner-pooled';
 import { ThrottledProgressReporter } from '../core/domain/throttled-progress-reporter';
+import type { ProgressTracker } from '../core/models/progress-tracker';
 import type { Pack } from '../core/models/pack';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
@@ -35,11 +36,16 @@ export class Vitestify {
     progressReporter = new ThrottledProgressReporter(
       new TerminalProgressReporter(),
     ),
+    progressTracker,
   }: {
     commandRunner?: CommandRunner;
     fileSystem?: FileSystem;
     progressReporter?: ProgressReporter;
+    progressTracker?: ProgressTracker;
   } = {}) {
+    if (progressTracker !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
     this._analyzer = new Analyzer({
       heuristics: this._packs.flatMap((pack) => pack.heuristics),
       progressReporter,
