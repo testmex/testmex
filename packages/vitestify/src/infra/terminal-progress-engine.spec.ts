@@ -25,6 +25,7 @@ describe(TerminalProgressEngine, () => {
     expect(instructions).toEqual([
       { kind: 'intro', message: 'Scanning started' },
       { kind: 'spinnerStart', message: 'code' },
+      { kind: 'spinnerMessage', message: 'code' },
       { kind: 'spinnerStop', message: 'code' },
       { kind: 'outro', message: 'Scanning finished' },
     ]);

@@ -1,11 +1,9 @@
 import type {
   ActivityStepSnapshot,
-  AnalysisPhaseSnapshot,
   EnricherStepSnapshot,
+  HeuristicStepSnapshot,
   PhaseSnapshot,
   ProgressSnapshot,
-  ScanningPhaseSnapshot,
-  TransformingPhaseSnapshot,
   TransformStepSnapshot,
 } from '../core/models/progress-tracker';
 
@@ -16,6 +14,12 @@ export type TerminalProgressInstruction =
   | { kind: 'spinnerMessage'; message: string }
   | { kind: 'spinnerStop'; message: string }
   | { kind: 'spinnerError'; message: string };
+
+type StepSnapshot =
+  | ActivityStepSnapshot
+  | EnricherStepSnapshot
+  | HeuristicStepSnapshot
+  | TransformStepSnapshot;
 
 export class TerminalProgressEngine {
   computeInstructions(
@@ -51,205 +55,51 @@ export class TerminalProgressEngine {
       return [];
     }
 
+    const previousSteps: readonly StepSnapshot[] =
+      previous?.kind === next.kind ? previous.steps : [];
+
     return [
       ...this._computePhaseStatusInstructions(previous, next),
-      ...this._computePhaseStepsInstructions(previous, next),
+      ...this._computeStepListInstructions(previousSteps, next.steps),
     ];
   }
 
   private _computePhaseStatusInstructions(
-    previous: PhaseSnapshot | undefined,
-    next: PhaseSnapshot,
-  ): TerminalProgressInstruction[] {
-    if (previous === undefined) {
-      return this._computeIntroPhaseInstructions(next);
-    }
-
-    const instructions: TerminalProgressInstruction[] = [];
-
-    if (previous.status !== 'done' && next.status === 'done') {
-      instructions.push({
-        kind: 'outro',
-        message: `${this._phaseTitle(next)} finished`,
-      });
-    }
-
-    if (previous.status !== 'failed' && next.status === 'failed') {
-      instructions.push({
-        kind: 'outro',
-        message: `${this._phaseTitle(next)} finished`,
-      });
-    }
-
-    return instructions;
-  }
-
-  private _computeIntroPhaseInstructions(
+    previousPhase: PhaseSnapshot | undefined,
     phase: PhaseSnapshot,
   ): TerminalProgressInstruction[] {
-    if (phase.status !== 'started') {
-      return [];
+    if (previousPhase === undefined && phase.status === 'started') {
+      return [{ kind: 'intro', message: `${this._phaseTitle(phase)} started` }];
     }
 
-    return [{ kind: 'intro', message: `${this._phaseTitle(phase)} started` }];
-  }
-
-  private _computePhaseStepsInstructions(
-    previous: PhaseSnapshot | undefined,
-    next: PhaseSnapshot,
-  ): TerminalProgressInstruction[] {
-    switch (next.kind) {
-      case 'scanning':
-        return this._computeScanningStepsInstructions(
-          previous?.kind === 'scanning' ? previous : undefined,
-          next,
-        );
-      case 'analysis':
-        return this._computeAnalysisStepsInstructions(
-          previous?.kind === 'analysis' ? previous : undefined,
-          next,
-        );
-      case 'transforming':
-        return this._computeTransformingStepsInstructions(
-          previous?.kind === 'transforming' ? previous : undefined,
-          next,
-        );
-    }
-  }
-
-  private _computeScanningStepsInstructions(
-    previous: ScanningPhaseSnapshot | undefined,
-    next: ScanningPhaseSnapshot,
-  ): TerminalProgressInstruction[] {
-    const instructions: TerminalProgressInstruction[] = [];
-    const prevSteps = previous?.steps ?? [];
-
-    for (let stepIndex = 0; stepIndex < next.steps.length; stepIndex++) {
-      const nextStep = next.steps[stepIndex];
-      const prevStep = prevSteps[stepIndex];
-
-      if (prevStep === nextStep) {
-        continue;
-      }
-
-      instructions.push(
-        ...this._computeStepSpinnerInstructions({
-          previous: prevStep,
-          next: nextStep,
-          format: (step) => step.name,
-          hasDisplayChange: this._enricherDisplayChanged,
-        }),
-      );
-    }
-
-    return instructions;
-  }
-
-  private _computeAnalysisStepsInstructions(
-    previous: AnalysisPhaseSnapshot | undefined,
-    next: AnalysisPhaseSnapshot,
-  ): TerminalProgressInstruction[] {
-    const instructions: TerminalProgressInstruction[] = [];
-    const prevSteps = previous?.steps ?? [];
-
-    for (let stepIndex = 0; stepIndex < next.steps.length; stepIndex++) {
-      const nextStep = next.steps[stepIndex];
-      const prevStep = prevSteps[stepIndex];
-
-      if (prevStep === nextStep) {
-        continue;
-      }
-
-      instructions.push(
-        ...this._computeStepSpinnerInstructions({
-          previous: prevStep,
-          next: nextStep,
-          format: (step) => step.name,
-        }),
-      );
-    }
-
-    return instructions;
-  }
-
-  private _computeTransformingStepsInstructions(
-    previous: TransformingPhaseSnapshot | undefined,
-    next: TransformingPhaseSnapshot,
-  ): TerminalProgressInstruction[] {
-    const instructions: TerminalProgressInstruction[] = [];
-    const prevSteps = previous?.steps ?? [];
-
-    for (let stepIndex = 0; stepIndex < next.steps.length; stepIndex++) {
-      const nextStep = next.steps[stepIndex];
-      const prevStep = prevSteps[stepIndex];
-
-      if (prevStep === nextStep) {
-        continue;
-      }
-
-      if (nextStep.kind === 'activity') {
-        instructions.push(
-          ...this._computeStepSpinnerInstructions({
-            previous: prevStep?.kind === 'activity' ? prevStep : undefined,
-            next: nextStep,
-            format: (step) => step.message,
-          }),
-        );
-        continue;
-      }
-
-      if (nextStep.kind === 'transform') {
-        instructions.push(
-          ...this._computeStepSpinnerInstructions({
-            previous: prevStep?.kind === 'transform' ? prevStep : undefined,
-            next: nextStep,
-            format: (step) => step.name,
-            hasDisplayChange: this._transformDisplayChanged,
-          }),
-        );
-      }
-    }
-
-    return instructions;
-  }
-
-  private _computeStepSpinnerInstructions<
-    T extends { readonly status: string },
-  >(args: {
-    previous: T | undefined;
-    next: T;
-    format: (step: T) => string;
-    hasDisplayChange?: (previous: T, next: T) => boolean;
-  }): TerminalProgressInstruction[] {
-    const { previous, next, format, hasDisplayChange = () => true } = args;
-
-    if (previous === next) {
-      return [];
-    }
-
-    if (previous === undefined) {
-      if (next.status === 'started') {
-        return [{ kind: 'spinnerStart', message: format(next) }];
-      }
-
-      return [];
-    }
-
-    if (previous.status === 'started' && next.status === 'done') {
-      return [{ kind: 'spinnerStop', message: format(next) }];
-    }
-
-    if (previous.status === 'started' && next.status === 'failed') {
-      return [{ kind: 'spinnerError', message: format(next) }];
-    }
-
-    if (previous.status === 'started' && next.status === 'started') {
-      if (hasDisplayChange(previous, next)) {
-        return [{ kind: 'spinnerMessage', message: format(next) }];
-      }
+    if (
+      (previousPhase?.status !== phase.status && phase.status === 'done') ||
+      phase.status === 'failed'
+    ) {
+      return [
+        { kind: 'outro', message: `${this._phaseTitle(phase)} finished` },
+      ];
     }
 
     return [];
+  }
+
+  private _computeStepListInstructions(
+    previousSteps: readonly StepSnapshot[],
+    steps: readonly StepSnapshot[],
+  ): TerminalProgressInstruction[] {
+    if (steps.length === 0) {
+      return [];
+    }
+
+    if (previousSteps.length !== steps.length) {
+      return [
+        ...this._computeStepInstructions(previousSteps.at(-1), steps.at(-2)),
+        ...this._computeStepInstructions(undefined, steps.at(-1)),
+      ];
+    }
+
+    return this._computeStepInstructions(previousSteps.at(-1), steps.at(-1));
   }
 
   private _phaseTitle(phase: PhaseSnapshot): string {
@@ -263,26 +113,53 @@ export class TerminalProgressEngine {
     }
   }
 
-  private _enricherDisplayChanged(
-    previous: EnricherStepSnapshot,
-    next: EnricherStepSnapshot,
-  ): boolean {
-    return (
-      previous.name !== next.name ||
-      previous.statusMessage !== next.statusMessage ||
-      previous.activities !== next.activities
-    );
+  private _computeStepInstructions(
+    previous: StepSnapshot | undefined,
+    next: StepSnapshot | undefined,
+  ): TerminalProgressInstruction[] {
+    if (next === undefined) {
+      return [];
+    }
+
+    if (previous != null && previous.kind !== next.kind) {
+      throw new Error('Inconsistent progress snapshot');
+    }
+
+    return this._computeStepSpinnerInstructions(previous, next);
   }
 
-  private _transformDisplayChanged(
-    previous: TransformStepSnapshot,
-    next: TransformStepSnapshot,
-  ): boolean {
-    return (
-      previous.name !== next.name ||
-      previous.statusMessage !== next.statusMessage ||
-      previous.childTransforms !== next.childTransforms
-    );
+  private _computeStepSpinnerInstructions(
+    previous: StepSnapshot | undefined,
+    next: StepSnapshot,
+  ): TerminalProgressInstruction[] {
+    if (previous === next) {
+      return [];
+    }
+
+    if (previous == null || previous?.status !== next.status) {
+      switch (next.status) {
+        case 'started':
+          return [
+            { kind: 'spinnerStart', message: this._stepSpinnerMessage(next) },
+          ];
+        case 'done':
+          return [
+            { kind: 'spinnerStop', message: this._stepSpinnerMessage(next) },
+          ];
+        case 'failed':
+          return [
+            { kind: 'spinnerError', message: this._stepSpinnerMessage(next) },
+          ];
+      }
+    }
+
+    return [
+      { kind: 'spinnerMessage', message: this._stepSpinnerMessage(next) },
+    ];
+  }
+
+  private _stepSpinnerMessage(step: StepSnapshot): string {
+    return step.kind === 'activity' ? step.message : step.name;
   }
 }
 
