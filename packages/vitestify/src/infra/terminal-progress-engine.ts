@@ -185,7 +185,7 @@ export class TerminalProgressEngine {
         let formatted = `${prefix}${step.name}`;
 
         if (step.detectedFileCount > 0) {
-          formatted += ` · ${step.detectedFileCount} file(s) detected`;
+          formatted += ` · ${this._formatDetectedFileCount(step.detectedFileCount)}`;
         }
 
         return formatted;
@@ -193,5 +193,9 @@ export class TerminalProgressEngine {
       case 'transform':
         return `${prefix}${step.name}`;
     }
+  }
+
+  private _formatDetectedFileCount(count: number): string {
+    return count === 1 ? '1 file detected' : `${count} files detected`;
   }
 }

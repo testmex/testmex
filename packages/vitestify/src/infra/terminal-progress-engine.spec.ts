@@ -25,15 +25,65 @@ describe(TerminalProgressEngine, () => {
     expect(instructions).toEqual([
       { kind: 'intro', message: 'Scanning started' },
       { kind: 'spinnerStart', message: 'code' },
-      { kind: 'spinnerMessage', message: 'code · 5 file(s) detected' },
-      { kind: 'spinnerStop', message: 'code · 5 file(s) detected' },
+      { kind: 'spinnerMessage', message: 'code · 5 files detected' },
+      { kind: 'spinnerStop', message: 'code · 5 files detected' },
       { kind: 'outro', message: 'Scanning finished' },
     ]);
   });
 
-  it.todo('engine formats step display strings', () => {
-    // Diff snapshots where enricher `detectedFileCount`, nested `activities`, or transform `childTransforms` change.
-    // Assert `spinnerStart` / `spinnerMessage` instructions carry expected display strings (numbered prefix, `| …` sub-lines).
+  it.todo('engine formats enricher step display with numbered prefix', () => {
+    const tracker = new ProgressTracker();
+    const snapshots: ProgressSnapshot[] = [];
+    tracker.subscribe((snapshot) => snapshots.push(snapshot));
+
+    const scanning = tracker.beginScanning({ enricherCount: 2 });
+    scanning.createEnricherStep({ name: 'code' });
+
+    const instructions = _computeInstructions(snapshots);
+
+    expect(instructions.at(-1)).toEqual({
+      kind: 'spinnerStart',
+      message: '[1/2] code',
+    });
+  });
+
+  it.todo('engine formats nx graph activity sub-lines in display', () => {
+    const tracker = new ProgressTracker();
+    const snapshots: ProgressSnapshot[] = [];
+    tracker.subscribe((snapshot) => snapshots.push(snapshot));
+
+    const phase = tracker.beginScanning({ enricherCount: 1 });
+    const nx = phase.createEnricherStep({ name: 'nx' });
+    nx.createActivityStep('loading nx graph');
+
+    const instructions = _computeInstructions(snapshots);
+
+    expect(instructions.at(-1)).toEqual({
+      kind: 'spinnerMessage',
+      message: `\
+nx
+| loading nx graph`,
+    });
+  });
+
+  it.todo('engine formats child transform progress in display', () => {
+    const tracker = new ProgressTracker();
+    const snapshots: ProgressSnapshot[] = [];
+    tracker.subscribe((snapshot) => snapshots.push(snapshot));
+
+    const transforming = tracker.beginTransforming({ transformCount: 1 });
+    const jestTest = transforming.createTransformStep({ name: 'jest-test' });
+    jestTest
+      .createChildTransform({ name: 'jest-mock' })
+      .setTransformedFileCount(3);
+
+    const instructions = _computeInstructions(snapshots);
+
+    expect(instructions.at(-1)).toEqual({
+      kind: 'spinnerMessage',
+      message: `jest-test
+| jest-mock · 3 files transformed`,
+    });
   });
 });
 
