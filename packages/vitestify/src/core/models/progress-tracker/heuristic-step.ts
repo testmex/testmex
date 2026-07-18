@@ -4,6 +4,8 @@ import type { SnapshotChangeListener } from './snapshot-change-listener';
 export interface HeuristicStepSnapshot extends SnapshotBase {
   readonly kind: 'heuristic';
   readonly name: string;
+  readonly stepNumber: number;
+  readonly stepCount: number;
 }
 
 export interface HeuristicStep {
@@ -17,10 +19,16 @@ export class HeuristicStepNode implements HeuristicStep {
 
   constructor(args: {
     name: string;
+    stepNumber: number;
+    stepCount: number;
     onSnapshotChange: SnapshotChangeListener;
   }) {
     this._onSnapshotChange = args.onSnapshotChange;
-    this._snapshot = _createHeuristicStepSnapshot({ name: args.name });
+    this._snapshot = _createHeuristicStepSnapshot({
+      name: args.name,
+      stepNumber: args.stepNumber,
+      stepCount: args.stepCount,
+    });
   }
 
   get snapshot(): HeuristicStepSnapshot {
@@ -49,12 +57,16 @@ export class HeuristicStepNode implements HeuristicStep {
 
 function _createHeuristicStepSnapshot(args: {
   name: string;
+  stepNumber: number;
+  stepCount: number;
   status?: ProgressStatus;
   statusMessage?: string;
 }): HeuristicStepSnapshot {
   return {
     kind: 'heuristic',
     name: args.name,
+    stepNumber: args.stepNumber,
+    stepCount: args.stepCount,
     status: args.status ?? 'started',
     ...(args.statusMessage !== undefined ? { statusMessage: args.statusMessage } : {}),
   };

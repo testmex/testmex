@@ -42,32 +42,22 @@ export class TransformingPhaseNode implements TransformingPhase {
   createTransformStep(args: { name: string }): TransformStep {
     const step = new TransformStepNode({
       name: args.name,
-      onSnapshotChange: () => {
-        this._updateSnapshot({
-          steps: this._steps.map((child) => child.snapshot),
-        });
-      },
+      stepNumber: this._steps.length + 1,
+      stepCount: this._snapshot.transformCount,
+      onSnapshotChange: () => this._syncSteps(),
     });
     this._steps.push(step);
-    this._updateSnapshot({
-      steps: this._steps.map((child) => child.snapshot),
-    });
+    this._syncSteps();
     return step;
   }
 
   createActivityStep(): ActivityStep {
     const step = new ActivityStepNode({
       message: '',
-      onSnapshotChange: () => {
-        this._updateSnapshot({
-          steps: this._steps.map((child) => child.snapshot),
-        });
-      },
+      onSnapshotChange: () => this._syncSteps(),
     });
     this._steps.push(step);
-    this._updateSnapshot({
-      steps: this._steps.map((child) => child.snapshot),
-    });
+    this._syncSteps();
     return step;
   }
 
@@ -75,6 +65,12 @@ export class TransformingPhaseNode implements TransformingPhase {
     this._updateSnapshot({
       status: 'done',
       ...(message !== undefined ? { statusMessage: message } : {}),
+    });
+  }
+
+  private _syncSteps(): void {
+    this._updateSnapshot({
+      steps: this._steps.map((child) => child.snapshot),
     });
   }
 

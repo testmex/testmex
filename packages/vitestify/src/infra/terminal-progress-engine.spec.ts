@@ -24,14 +24,14 @@ describe(TerminalProgressEngine, () => {
 
     expect(instructions).toEqual([
       { kind: 'intro', message: 'Scanning started' },
-      { kind: 'spinnerStart', message: 'code' },
-      { kind: 'spinnerMessage', message: 'code · 5 files detected' },
-      { kind: 'spinnerStop', message: 'code · 5 files detected' },
+      { kind: 'spinnerStart', message: '[1/1] code' },
+      { kind: 'spinnerMessage', message: '[1/1] code · 5 files detected' },
+      { kind: 'spinnerStop', message: '[1/1] code · 5 files detected' },
       { kind: 'outro', message: 'Scanning finished' },
     ]);
   });
 
-  it.todo('engine formats enricher step display with numbered prefix', () => {
+  it('engine formats enricher step display with numbered prefix', () => {
     const tracker = new ProgressTracker();
     const snapshots: ProgressSnapshot[] = [];
     tracker.subscribe((snapshot) => snapshots.push(snapshot));

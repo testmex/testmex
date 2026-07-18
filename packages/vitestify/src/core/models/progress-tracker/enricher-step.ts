@@ -8,6 +8,8 @@ export interface EnricherStepSnapshot extends SnapshotBase {
   readonly name: string;
   readonly detectedFileCount: number;
   readonly activities: readonly ActivityStepSnapshot[];
+  readonly stepNumber: number;
+  readonly stepCount: number;
 }
 
 export interface EnricherStep {
@@ -24,10 +26,16 @@ export class EnricherStepNode implements EnricherStep {
 
   constructor(args: {
     name: string;
+    stepNumber: number;
+    stepCount: number;
     onSnapshotChange: SnapshotChangeListener;
   }) {
     this._onSnapshotChange = args.onSnapshotChange;
-    this._snapshot = _createEnricherStepSnapshot({ name: args.name });
+    this._snapshot = _createEnricherStepSnapshot({
+      name: args.name,
+      stepNumber: args.stepNumber,
+      stepCount: args.stepCount,
+    });
   }
 
   get snapshot(): EnricherStepSnapshot {
@@ -76,6 +84,8 @@ export class EnricherStepNode implements EnricherStep {
 
 function _createEnricherStepSnapshot(args: {
   name: string;
+  stepNumber: number;
+  stepCount: number;
   detectedFileCount?: number;
   activities?: readonly ActivityStepSnapshot[];
   status?: ProgressStatus;
@@ -84,6 +94,8 @@ function _createEnricherStepSnapshot(args: {
   return {
     kind: 'enricher',
     name: args.name,
+    stepNumber: args.stepNumber,
+    stepCount: args.stepCount,
     status: args.status ?? 'started',
     detectedFileCount: args.detectedFileCount ?? 0,
     activities: args.activities ?? [],

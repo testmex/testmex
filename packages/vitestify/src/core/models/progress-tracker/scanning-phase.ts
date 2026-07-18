@@ -37,6 +37,8 @@ export class ScanningPhaseNode implements ScanningPhase {
   createEnricherStep(args: { name: string }): EnricherStep {
     const step = new EnricherStepNode({
       name: args.name,
+      stepNumber: this._steps.length + 1,
+      stepCount: this._snapshot.enricherCount,
       onSnapshotChange: () => this._syncSteps(),
     });
     this._steps.push(step);

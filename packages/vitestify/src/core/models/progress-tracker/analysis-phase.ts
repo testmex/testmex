@@ -36,16 +36,12 @@ export class AnalysisPhaseNode implements AnalysisPhase {
   createHeuristicStep(args: { name: string }): HeuristicStep {
     const step = new HeuristicStepNode({
       name: args.name,
-      onSnapshotChange: () => {
-        this._updateSnapshot({
-          steps: this._steps.map((child) => child.snapshot),
-        });
-      },
+      stepNumber: this._steps.length + 1,
+      stepCount: this._snapshot.heuristicsCount,
+      onSnapshotChange: () => this._syncSteps(),
     });
     this._steps.push(step);
-    this._updateSnapshot({
-      steps: this._steps.map((child) => child.snapshot),
-    });
+    this._syncSteps();
     return step;
   }
 
@@ -53,6 +49,12 @@ export class AnalysisPhaseNode implements AnalysisPhase {
     this._updateSnapshot({
       status: 'done',
       ...(message !== undefined ? { statusMessage: message } : {}),
+    });
+  }
+
+  private _syncSteps(): void {
+    this._updateSnapshot({
+      steps: this._steps.map((child) => child.snapshot),
     });
   }
 

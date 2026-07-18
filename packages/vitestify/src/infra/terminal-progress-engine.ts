@@ -168,21 +168,12 @@ export class TerminalProgressEngine {
 
   private _formatStepDisplay(
     step: EnricherStepSnapshot | TransformStepSnapshot | ActivityStepSnapshot,
-    args: {
-      stepNumber?: number;
-      stepCount?: number;
-    } = {},
   ): string {
-    const prefix =
-      args.stepNumber !== undefined && args.stepCount !== undefined
-        ? `[${args.stepNumber}/${args.stepCount}] `
-        : '';
-
     switch (step.kind) {
       case 'activity':
         return step.message;
       case 'enricher': {
-        let formatted = `${prefix}${step.name}`;
+        let formatted = `${this._stepIndexPrefix(step)}${step.name}`;
 
         if (step.detectedFileCount > 0) {
           formatted += ` · ${this._formatDetectedFileCount(step.detectedFileCount)}`;
@@ -191,8 +182,15 @@ export class TerminalProgressEngine {
         return formatted;
       }
       case 'transform':
-        return `${prefix}${step.name}`;
+        return `${this._stepIndexPrefix(step)}${step.name}`;
     }
+  }
+
+  private _stepIndexPrefix(step: {
+    readonly stepNumber: number;
+    readonly stepCount: number;
+  }): string {
+    return `[${step.stepNumber}/${step.stepCount}] `;
   }
 
   private _formatDetectedFileCount(count: number): string {
