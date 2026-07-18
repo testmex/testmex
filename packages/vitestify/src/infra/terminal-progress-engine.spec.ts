@@ -44,7 +44,7 @@ describe(TerminalProgressEngine, () => {
     });
   });
 
-  it.todo('engine formats nx graph activity sub-lines in display', () => {
+  it('engine formats nx graph activity sub-lines in display', () => {
     const { tracker, computeInstructions } = setUp();
 
     tracker
@@ -62,7 +62,7 @@ nx
     });
   });
 
-  it.todo('engine formats child transform progress in display', () => {
+  it('engine formats child transform progress in display', () => {
     const { tracker, computeInstructions } = setUp();
 
     const transforming = tracker.beginTransforming({ transformCount: 1 });

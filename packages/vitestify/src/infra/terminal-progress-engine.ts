@@ -173,16 +173,37 @@ export class TerminalProgressEngine {
       case 'activity':
         return step.message;
       case 'enricher': {
-        let formatted = `${this._stepIndexPrefix(step)}${step.name}`;
+        const subLines = step.activities.map((activity) => activity.message);
+        let formatted =
+          subLines.length > 0
+            ? step.name
+            : `${this._stepIndexPrefix(step)}${step.name}`;
 
         if (step.detectedFileCount > 0) {
           formatted += ` · ${this._formatDetectedFileCount(step.detectedFileCount)}`;
         }
 
-        return formatted;
+        if (subLines.length === 0) {
+          return formatted;
+        }
+
+        return `${formatted}\n${subLines.map((message) => `| ${message}`).join('\n')}`;
       }
-      case 'transform':
-        return `${this._stepIndexPrefix(step)}${step.name}`;
+      case 'transform': {
+        const subLines = step.childTransforms.map((child) =>
+          this._formatChildTransformLine(child),
+        );
+        const formatted =
+          subLines.length > 0
+            ? step.name
+            : `${this._stepIndexPrefix(step)}${step.name}`;
+
+        if (subLines.length === 0) {
+          return formatted;
+        }
+
+        return `${formatted}\n${subLines.map((message) => `| ${message}`).join('\n')}`;
+      }
     }
   }
 
@@ -195,5 +216,19 @@ export class TerminalProgressEngine {
 
   private _formatDetectedFileCount(count: number): string {
     return count === 1 ? '1 file detected' : `${count} files detected`;
+  }
+
+  private _formatChildTransformLine(child: TransformStepSnapshot): string {
+    let formatted = child.name;
+
+    if (child.transformedFileCount > 0) {
+      formatted += ` · ${this._formatTransformedFileCount(child.transformedFileCount)}`;
+    }
+
+    return formatted;
+  }
+
+  private _formatTransformedFileCount(count: number): string {
+    return count === 1 ? '1 file transformed' : `${count} files transformed`;
   }
 }
