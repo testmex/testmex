@@ -32,7 +32,7 @@
 - [ ] A `TerminalProgressListener` receives snapshot updates via `notify(snapshot)`; a `TerminalProgressEngine` (used only by the listener) diffs consecutive snapshots into instructions, and the listener executes them via `@clack/prompts` — same general UX as today.
 - [ ] Terminal shows phase intro/outro, numbered steps, spinners, and sub-step lines for live feedback.
 - [ ] Terminal may summarize nested transform detail (top-level spinner + sub-steps) rather than listing every file on screen.
-- [ ] Throttling applies at the reporting layer and only to file-count changes (`detectedFileCount`, `transformedFileCount`) — not status, activity messages, or other snapshot fields.
+- [ ] Throttling applies at the reporting layer via `throttleProgressSnapshot(duration)` on `snapshot$` — only file-count changes (`detectedFileCount`, `transformedFileCount`) are throttled; status, activity messages, and other snapshot fields pass through immediately.
 
 ## Nested `jest-test` transform group (primary motivating scenario)
 
@@ -224,7 +224,7 @@ export interface ProgressListener {
 ```
 
 - `TerminalProgressListener` — `notify(snapshot)` diffs against the previous snapshot via `TerminalProgressEngine`, executes returned instructions via a `switch` on instruction `kind` (calling clack `intro` / `outro` / `spinner`). No-ops when `!process.stdout.isTTY`.
-- `ThrottledProgressListener` — decorates a listener; **only throttles re-renders when the snapshot delta is a file-count change** (`detectedFileCount`, `transformedFileCount`). All other updates (status transitions, activity messages, `done` / `fail`) pass through immediately.
+- `throttleProgressSnapshot(duration)` — RxJS operator on `snapshot$`; **only throttles emissions when the snapshot delta is a file-count change** (`detectedFileCount`, `transformedFileCount`). All other updates (status transitions, activity messages, `done` / `fail`) pass through immediately.
 
 ### Terminal progress engine (listener-internal)
 
@@ -265,16 +265,16 @@ Engine responsibilities (given `previous` and `next`):
 - Holds the last snapshot and clack spinner handles keyed by `StepPath`.
 - On `notify(snapshot)`: `instructions = engine.diff(previous, next)` → `for (const i of instructions) switch (i.kind) { … }` → update `previous = next`.
 
-`ThrottledProgressListener` sits in front of the inner listener and suppresses rapid consecutive `notify` calls that differ only in file-count fields.
+`ThrottledProgressListener` is replaced by `throttleProgressSnapshot(duration)` in the `snapshot$` pipe — it suppresses rapid consecutive file-count-only emissions while passing other snapshot changes through immediately.
 
 CLI wiring (composition root):
 
 ```typescript
 const tracker = new ProgressTracker();
-const listener = new ThrottledProgressListener(new TerminalProgressListener());
-const subscription = tracker.snapshot$.subscribe((snapshot) =>
-  listener.notify(snapshot),
-);
+const listener = new TerminalProgressListener();
+const subscription = tracker.snapshot$
+  .pipe(throttleProgressSnapshot(100))
+  .subscribe((snapshot) => listener.notify(snapshot));
 
 new Vitestify({ progressTracker: tracker });
 // subscription.unsubscribe() on teardown if needed
@@ -328,8 +328,7 @@ Terminal engine formats each `kind` for display (e.g. enricher → `scanning · 
 ```mermaid
 flowchart TD
   cli["cli.ts / Vitestify"] --> tracker(("ProgressTracker<br>[snapshot, snapshot$]"))
-  cli -->|"snapshot$.subscribe"| throttledListener(("ThrottledProgressListener"))
-  throttledListener -->|notify| terminalListener["TerminalProgressListener"]
+  cli -->|"snapshot$.pipe(throttleProgressSnapshot)"| terminalListener["TerminalProgressListener"]
   terminalListener --> engine["TerminalProgressEngine<br>[diff, format, instructions]"]
   engine -->|TerminalProgressInstruction[]| terminalListener
   terminalListener --> clack["@clack/prompts<br>intro / spinner / outro"]
@@ -419,8 +418,8 @@ flowchart LR
 - [x] Add `ProgressListener` interface with `notify(snapshot)`.
 - [x] Add `TerminalProgressEngine` — pure `diff(previous, next)` returning `TerminalProgressInstruction[]`; owns snapshot reconciliation, display formatting, and spinner/outro lifecycle decisions.
 - [ ] Refactor `TerminalProgressReporter` → `TerminalProgressListener` — `notify(snapshot)` diffs via the engine, executes instructions via a `switch` on `kind` to drive clack.
-- [ ] Refactor `ThrottledProgressReporter` → `ThrottledProgressListener` — throttle file-count snapshot deltas only.
-- [ ] Update `Vitestify` constructor: accept `progressTracker`; wire `snapshot$.subscribe(listener.notify)` in CLI entry point.
+- [ ] Add `throttleProgressSnapshot(duration)` — RxJS operator; throttle file-count snapshot deltas only.
+- [ ] Update `Vitestify` constructor: accept `progressTracker`; wire `snapshot$.pipe(throttleProgressSnapshot).subscribe(listener.notify)` in CLI entry point.
 
 ## Testing Strategy
 
@@ -439,8 +438,8 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 
 ### Throttles file-count snapshot updates only
 
-- Subscribe `snapshot$` through throttled listener; call `setDetectedFileCount` / `setTransformedFileCount` rapidly within the throttle window.
-- Assert inner listener receives fewer `notify` calls than tracker emissions.
+- Pipe `snapshot$` through `throttleProgressSnapshot`; call `setDetectedFileCount` / `setTransformedFileCount` rapidly within the throttle window.
+- Assert downstream receives fewer emissions than tracker mutations.
 
 ### Passes through non-file-count updates immediately
 
