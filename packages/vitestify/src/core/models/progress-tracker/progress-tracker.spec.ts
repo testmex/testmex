@@ -10,7 +10,7 @@ describe(ProgressTracker, () => {
     const phase = tracker.beginScanning({ enricherCount: 2 });
     const enricher = phase.createEnricherStep({ name: 'code' });
     const priorSnapshot = snapshots[snapshots.length - 1];
-    enricher.setFilesDetected(5);
+    enricher.setDetectedFileCount(5);
 
     expect(snapshots[0]).not.toBe(snapshots[snapshots.length - 1]);
     expect(priorSnapshot.phases[0].steps[0]).toMatchObject({

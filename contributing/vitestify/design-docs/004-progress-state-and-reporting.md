@@ -176,7 +176,7 @@ export interface TransformingPhase {
 }
 
 export interface EnricherStep {
-  setFilesDetected(count: number): void;
+  setDetectedFileCount(count: number): void;
   createActivityStep(message: string): ActivityStep;
   done(message?: string): void;
   fail(message?: string): void;
@@ -298,7 +298,7 @@ progressStep.done();
 `Scanner` **/ file-scanning enrichers** — report numeric file count:
 
 ```typescript
-progressStep.setFilesDetected(files.length);
+progressStep.setDetectedFileCount(files.length);
 ```
 
 `NxEnricher` — non-count work via nested activity under the enricher step:
@@ -306,7 +306,7 @@ progressStep.setFilesDetected(files.length);
 ```typescript
 const activity = progressStep.createActivity('loading nx graph');
 const graph = await _runNxGraphCommand(options);
-progressStep.setFilesDetected(projects.length);
+progressStep.setDetectedFileCount(projects.length);
 activity.done();
 ```
 
@@ -390,7 +390,7 @@ flowchart LR
 ### Emits immutable snapshots on mutation
 
 - Create a `ProgressTracker`.
-- Call `beginScanning({ enricherCount: 2 })`, create one enricher step, `setFilesDetected(5)`.
+- Call `beginScanning({ enricherCount: 2 })`, create one enricher step, `setDetectedFileCount(5)`.
 - Capture snapshots from `subscribe`.
 - Assert the first and last snapshot are different object references.
 - Assert prior snapshot still shows `detectedFileCount: 0` (unchanged).
@@ -438,7 +438,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 
 ### Throttles file-count snapshot updates only
 
-- Attach throttled listener to a tracker; call `setFilesDetected` / `setTransformedFileCount` rapidly within the throttle window.
+- Attach throttled listener to a tracker; call `setDetectedFileCount` / `setTransformedFileCount` rapidly within the throttle window.
 - Assert inner listener receives fewer render calls than tracker emissions.
 
 ### Passes through non-file-count updates immediately
@@ -459,8 +459,8 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 ## Tasks
 
 - [ ] Replace `ProgressReporter` with `ProgressTracker` in `Scanner`, `Analyzer`, `Transformer`.
-- [ ] Update `Scanner`: `beginScanning()` + `createEnricherStep` + `setFilesDetected`.
-- [ ] Update enrichers: file scanners call `setFilesDetected`; `NxEnricher` uses `createActivityStep` for graph loading.
+- [ ] Update `Scanner`: `beginScanning()` + `createEnricherStep` + `setDetectedFileCount`.
+- [ ] Update enrichers: file scanners call `setDetectedFileCount`; `NxEnricher` uses `createActivityStep` for graph loading.
 - [ ] Update `Analyzer`: `beginAnalysis()` + `createHeuristicStep`.
 - [ ] Update `Transformer`: `beginTransforming()` + `createTransformStep` / `createActivityStep` for apply-changes commands.
 - [ ] Add `TransformStep.createChildTransform()` and `TransformStep.setTransformedFileCount()`.

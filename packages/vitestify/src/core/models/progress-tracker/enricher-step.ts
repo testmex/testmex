@@ -13,7 +13,7 @@ export interface EnricherStepSnapshot extends SnapshotBase {
 }
 
 export interface EnricherStep {
-  setFilesDetected(count: number): void;
+  setDetectedFileCount(count: number): void;
   createActivityStep(message: string): ActivityStep;
   done(message?: string): void;
   fail(message?: string): void;
@@ -42,7 +42,7 @@ export class EnricherStepNode implements EnricherStep {
     return this._snapshot;
   }
 
-  setFilesDetected(count: number): void {
+  setDetectedFileCount(count: number): void {
     this._updateSnapshot({ detectedFileCount: count });
   }
 

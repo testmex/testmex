@@ -14,7 +14,7 @@ describe(TerminalProgressEngine, () => {
 
     const phase = tracker.beginScanning({ enricherCount: 1 });
     const enricher = phase.createEnricherStep({ name: 'code' });
-    enricher.setFilesDetected(5);
+    enricher.setDetectedFileCount(5);
     enricher.done();
     phase.done();
 
