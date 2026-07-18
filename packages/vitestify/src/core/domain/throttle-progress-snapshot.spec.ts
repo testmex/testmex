@@ -8,9 +8,7 @@ import { throttleProgressSnapshot } from './throttle-progress-snapshot';
 
 describe(throttleProgressSnapshot, () => {
   it.todo('throttles detected file count updates', async () => {
-    useFakeTimers();
-    const tracker = new ProgressTracker();
-    const snapshots = _subscribeThrottledSnapshots(tracker);
+    const { tracker, snapshots } = setUp();
 
     const enricher = tracker
       .beginScanning({ enricherCount: 1 })
@@ -26,9 +24,7 @@ describe(throttleProgressSnapshot, () => {
   });
 
   it.todo('throttles transformed file count updates', async () => {
-    useFakeTimers();
-    const tracker = new ProgressTracker();
-    const snapshots = _subscribeThrottledSnapshots(tracker);
+    const { tracker, snapshots } = setUp();
 
     const transform = tracker
       .beginTransforming({ transformCount: 1 })
@@ -54,15 +50,15 @@ describe(throttleProgressSnapshot, () => {
   });
 });
 
-function _subscribeThrottledSnapshots(
-  tracker: ProgressTracker,
-  duration = 100,
-): ProgressSnapshot[] {
+function setUp() {
+  useFakeTimers();
+  const tracker = new ProgressTracker();
   const snapshots: ProgressSnapshot[] = [];
 
-  tracker.snapshot$
-    .pipe(throttleProgressSnapshot(duration))
+  const sub = tracker.snapshot$
+    .pipe(throttleProgressSnapshot(100))
     .subscribe((snapshot) => snapshots.push(snapshot));
+  onTestFinished(() => sub.unsubscribe());
 
-  return snapshots;
+  return { tracker, snapshots };
 }
