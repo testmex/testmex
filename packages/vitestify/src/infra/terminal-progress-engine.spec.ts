@@ -10,9 +10,7 @@ import {
 
 describe(TerminalProgressEngine, () => {
   it('engine diffs snapshots to instructions', () => {
-    const tracker = new ProgressTracker();
-    const snapshots: ProgressSnapshot[] = [];
-    tracker.subscribe((snapshot) => snapshots.push(snapshot));
+    const { tracker, computeInstructions } = setUp();
 
     const phase = tracker.beginScanning({ enricherCount: 1 });
     const enricher = phase.createEnricherStep({ name: 'code' });
@@ -20,7 +18,7 @@ describe(TerminalProgressEngine, () => {
     enricher.done();
     phase.done();
 
-    const instructions = _computeInstructions(snapshots);
+    const instructions = computeInstructions();
 
     expect(instructions).toEqual([
       { kind: 'intro', message: 'Scanning started' },
@@ -32,14 +30,13 @@ describe(TerminalProgressEngine, () => {
   });
 
   it('engine formats enricher step display with numbered prefix', () => {
-    const tracker = new ProgressTracker();
-    const snapshots: ProgressSnapshot[] = [];
-    tracker.subscribe((snapshot) => snapshots.push(snapshot));
+    const { tracker, computeInstructions } = setUp();
 
-    const scanning = tracker.beginScanning({ enricherCount: 2 });
-    scanning.createEnricherStep({ name: 'code' });
+    tracker
+      .beginScanning({ enricherCount: 2 })
+      .createEnricherStep({ name: 'code' });
 
-    const instructions = _computeInstructions(snapshots);
+    const instructions = computeInstructions();
 
     expect(instructions.at(-1)).toEqual({
       kind: 'spinnerStart',
@@ -48,15 +45,14 @@ describe(TerminalProgressEngine, () => {
   });
 
   it.todo('engine formats nx graph activity sub-lines in display', () => {
-    const tracker = new ProgressTracker();
-    const snapshots: ProgressSnapshot[] = [];
-    tracker.subscribe((snapshot) => snapshots.push(snapshot));
+    const { tracker, computeInstructions } = setUp();
 
-    const phase = tracker.beginScanning({ enricherCount: 1 });
-    const nx = phase.createEnricherStep({ name: 'nx' });
-    nx.createActivityStep('loading nx graph');
+    tracker
+      .beginScanning({ enricherCount: 1 })
+      .createEnricherStep({ name: 'nx' })
+      .createActivityStep('loading nx graph');
 
-    const instructions = _computeInstructions(snapshots);
+    const instructions = computeInstructions();
 
     expect(instructions.at(-1)).toEqual({
       kind: 'spinnerMessage',
@@ -67,9 +63,7 @@ nx
   });
 
   it.todo('engine formats child transform progress in display', () => {
-    const tracker = new ProgressTracker();
-    const snapshots: ProgressSnapshot[] = [];
-    tracker.subscribe((snapshot) => snapshots.push(snapshot));
+    const { tracker, computeInstructions } = setUp();
 
     const transforming = tracker.beginTransforming({ transformCount: 1 });
     const jestTest = transforming.createTransformStep({ name: 'jest-test' });
@@ -77,7 +71,7 @@ nx
       .createChildTransform({ name: 'jest-mock' })
       .setTransformedFileCount(3);
 
-    const instructions = _computeInstructions(snapshots);
+    const instructions = computeInstructions();
 
     expect(instructions.at(-1)).toEqual({
       kind: 'spinnerMessage',
@@ -86,6 +80,17 @@ nx
     });
   });
 });
+
+function setUp() {
+  const tracker = new ProgressTracker();
+  const snapshots: ProgressSnapshot[] = [];
+  tracker.subscribe((snapshot) => snapshots.push(snapshot));
+
+  return {
+    tracker,
+    computeInstructions: () => _computeInstructions(snapshots),
+  };
+}
 
 function _computeInstructions(
   snapshots: readonly ProgressSnapshot[],
