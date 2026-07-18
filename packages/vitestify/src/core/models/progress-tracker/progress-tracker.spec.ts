@@ -78,6 +78,37 @@ describe(ProgressTracker, () => {
     });
   });
 
+  it('keeps explicit transform step file count over child roll-up', () => {
+    const tracker = new ProgressTracker();
+
+    const jestTest = tracker
+      .beginTransforming({ transformCount: 1 })
+      .createTransformStep({ name: 'jest-test' });
+    jestTest
+      .createChildTransform({ name: 'jest-mock' })
+      .setTransformedFileCount(3);
+    jestTest
+      .createChildTransform({ name: 'jest-fn' })
+      .setTransformedFileCount(7);
+    jestTest.setTransformedFileCount(42);
+
+    const transformStep = tracker
+      .snapshot()
+      .phases.find((phase) => phase.kind === 'transforming')
+      ?.steps.find(
+        (step) => step.kind === 'transform' && step.name === 'jest-test',
+      );
+    expect(transformStep).toMatchObject({
+      kind: 'transform',
+      name: 'jest-test',
+      transformedFileCount: 42,
+      childTransforms: [
+        { name: 'jest-mock', transformedFileCount: 3 },
+        { name: 'jest-fn', transformedFileCount: 7 },
+      ],
+    });
+  });
+
   it('records enricher activity steps', () => {
     const tracker = new ProgressTracker();
 

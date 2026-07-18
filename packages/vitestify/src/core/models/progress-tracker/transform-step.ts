@@ -21,6 +21,7 @@ export class TransformStepNode implements TransformStep {
   private readonly _childTransforms: TransformStepNode[] = [];
   private _snapshot: TransformStepSnapshot;
   private readonly _onSnapshotChange: SnapshotChangeListener;
+  private _transformedFileCount?: number;
 
   constructor(args: {
     name: string;
@@ -42,7 +43,9 @@ export class TransformStepNode implements TransformStep {
   }
 
   setTransformedFileCount(count: number): void {
-    this._updateSnapshot({ transformedFileCount: count });
+    this._updateSnapshot({
+      transformedFileCount: (this._transformedFileCount = count),
+    });
   }
 
   createChildTransform(args: { name: string }): TransformStep {
@@ -88,10 +91,12 @@ export class TransformStepNode implements TransformStep {
 
     this._updateSnapshot({
       childTransforms,
-      transformedFileCount: childTransforms.reduce(
-        (total, child) => total + child.transformedFileCount,
-        0,
-      ),
+      transformedFileCount:
+        this._transformedFileCount ??
+        childTransforms.reduce(
+          (total, child) => total + child.transformedFileCount,
+          0,
+        ),
     });
   }
 
