@@ -187,6 +187,10 @@ export class TerminalProgressEngine {
           subLines: step.childTransforms.map((child) =>
             this._formatChildTransformLine(child),
           ),
+          headlineSuffix:
+            step.childTransforms.length > 1 && step.transformedFileCount > 0
+              ? ` · ${this._formatTransformedFileCount(step.transformedFileCount)}`
+              : undefined,
         });
     }
   }

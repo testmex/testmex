@@ -84,8 +84,14 @@ export class TransformStepNode implements TransformStep {
   }
 
   private _syncChildTransforms(): void {
+    const childTransforms = this._childTransforms.map((step) => step.snapshot);
+
     this._updateSnapshot({
-      childTransforms: this._childTransforms.map((step) => step.snapshot),
+      childTransforms,
+      transformedFileCount: childTransforms.reduce(
+        (total, child) => total + child.transformedFileCount,
+        0,
+      ),
     });
   }
 
