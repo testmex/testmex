@@ -5,21 +5,19 @@ import type {
   TransformStepSnapshot,
 } from '../core/models/progress-tracker';
 
-export type StepPath = readonly number[];
-
 export type TerminalProgressInstruction =
   | { kind: 'intro'; message: string }
   | { kind: 'outro'; message: string }
-  | { kind: 'spinnerStart'; path: StepPath; message: string }
-  | { kind: 'spinnerMessage'; path: StepPath; message: string }
-  | { kind: 'spinnerStop'; path: StepPath; message: string }
-  | { kind: 'spinnerError'; path: StepPath; message: string };
+  | { kind: 'spinnerStart'; message: string }
+  | { kind: 'spinnerMessage'; message: string }
+  | { kind: 'spinnerStop'; message: string }
+  | { kind: 'spinnerError'; message: string };
 
 /**
  * @deprecated 🚧 work in progress
  */
 export class TerminalProgressEngine {
-  diff(
+  computeInstructions(
     _previous: ProgressSnapshot | null,
     _next: ProgressSnapshot,
   ): TerminalProgressInstruction[] {
@@ -31,10 +29,7 @@ export class TerminalProgressEngine {
  * @deprecated 🚧 work in progress
  */
 export function formatStepDisplay(
-  _step:
-    | EnricherStepSnapshot
-    | TransformStepSnapshot
-    | ActivityStepSnapshot,
+  _step: EnricherStepSnapshot | TransformStepSnapshot | ActivityStepSnapshot,
   _args: {
     stepNumber?: number;
     stepCount?: number;

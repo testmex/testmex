@@ -1,11 +1,34 @@
-import { describe, it } from 'vitest';
-import { TerminalProgressEngine } from './terminal-progress-engine';
+import { describe, expect, it } from 'vitest';
+import {
+  ProgressTracker,
+  type ProgressSnapshot,
+} from '../core/models/progress-tracker';
+import {
+  TerminalProgressEngine,
+  type TerminalProgressInstruction,
+} from './terminal-progress-engine';
 
 describe(TerminalProgressEngine, () => {
   it.todo('engine diffs snapshots to instructions', () => {
-    // Build `previous` and `next` `ProgressSnapshot` fixtures (or mutate a `ProgressTracker` and capture consecutive snapshots).
-    // Call `engine.diff(previous, next)`.
-    // Assert instruction sequence: e.g. `intro` on phase start, `spinnerStart` on new step, `spinnerMessage` on file-count change, `spinnerStop` + `outro` on phase `done`.
+    const tracker = new ProgressTracker();
+    const snapshots: ProgressSnapshot[] = [];
+    tracker.subscribe((snapshot) => snapshots.push(snapshot));
+
+    const phase = tracker.beginScanning({ enricherCount: 1 });
+    const enricher = phase.createEnricherStep({ name: 'code' });
+    enricher.setFilesDetected(5);
+    enricher.done();
+    phase.done();
+
+    const instructions = _computeInstructions(snapshots);
+
+    expect(instructions.map((instruction) => instruction.kind)).toEqual([
+      'intro',
+      'spinnerStart',
+      'spinnerMessage',
+      'spinnerStop',
+      'outro',
+    ]);
   });
 
   it.todo('engine formats step display strings', () => {
@@ -13,3 +36,23 @@ describe(TerminalProgressEngine, () => {
     // Assert `spinnerStart` / `spinnerMessage` instructions carry expected display strings (numbered prefix, `| …` sub-lines).
   });
 });
+
+function _computeInstructions(
+  snapshots: readonly ProgressSnapshot[],
+): TerminalProgressInstruction[] {
+  const engine = new TerminalProgressEngine();
+
+  return snapshots.reduce<{
+    previous: ProgressSnapshot | null;
+    instructions: TerminalProgressInstruction[];
+  }>(
+    (state, next) => ({
+      previous: next,
+      instructions: [
+        ...state.instructions,
+        ...engine.computeInstructions(state.previous, next),
+      ],
+    }),
+    { previous: null, instructions: [] },
+  ).instructions;
+}
