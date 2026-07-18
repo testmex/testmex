@@ -24,12 +24,12 @@
 - [ ] Transform groups (e.g. `jest-test`) record **child** `transform` **steps** nested under the parent transform step.
 - [ ] Child transforms can update the number of transformed files.
 - [ ] Progress state exposes roll-up counts (e.g. files transformed per child transform, per parent transform).
-- [ ] Observers can read the current snapshot at any time and subscribe to changes during the run.
+- [ ] Observers can read the current snapshot at any time (`snapshot()` / `snapshot$.value`) and subscribe to changes during the run (`snapshot$`).
 - [ ] When stdout is not a TTY, progress state is still collected; only terminal output is suppressed.
 
 ## Terminal reporting (one sink)
 
-- [ ] A `TerminalProgressListener` subscribes to progress state changes; a `TerminalProgressEngine` (used only by the listener) diffs consecutive snapshots into instructions, and the listener executes them via `@clack/prompts` — same general UX as today.
+- [ ] A `TerminalProgressListener` receives snapshot updates via `notify(snapshot)`; a `TerminalProgressEngine` (used only by the listener) diffs consecutive snapshots into instructions, and the listener executes them via `@clack/prompts` — same general UX as today.
 - [ ] Terminal shows phase intro/outro, numbered steps, spinners, and sub-step lines for live feedback.
 - [ ] Terminal may summarize nested transform detail (top-level spinner + sub-steps) rather than listing every file on screen.
 - [ ] Throttling applies at the reporting layer and only to file-count changes (`detectedFileCount`, `transformedFileCount`) — not status, activity messages, or other snapshot fields.
@@ -52,11 +52,11 @@
 Split progress into two layers:
 
 1. `ProgressTracker` — core domain service: authoritative in-memory state + mutation API. Pipeline code writes here only. Lives in `core/models/progress-tracker`; aggregate snapshot types in `core/models/progress-tracker/progress-snapshot.ts`.
-2. `ProgressListener` — port in `core/ports`: subscribes to tracker changes and renders to a sink (terminal today; logs/CI later).
+2. `ProgressListener` — port in `core/ports`: receives snapshot updates via `notify(snapshot)` and renders to a sink (terminal today; logs/CI later). Wiring to `ProgressTracker` happens at the composition root (CLI), not inside the listener.
 
 The existing `Phase` / `Step` handle pattern stays, but handles are **typed by phase and step kind** — thin facades over `ProgressTracker` nodes that update state and emit change events; they do not render.
 
-`ProgressReporterFake` is replaced by `ProgressTracker` (state + snapshot API). `TerminalProgressReporter` becomes a `TerminalProgressListener` that subscribes to snapshot updates and drives `@clack/prompts` via a **`TerminalProgressEngine`** — a pure diff/format module that compares the previous and new snapshot and returns terminal instructions (intro, outro, spinner start/update/stop/error). Only the listener uses the engine; nothing else in the codebase depends on it.
+`ProgressReporterFake` is replaced by `ProgressTracker` (state + snapshot API). `TerminalProgressReporter` becomes a `TerminalProgressListener` that receives snapshots via `notify(snapshot)` and drives `@clack/prompts` via a **`TerminalProgressEngine`** — a pure diff/format module that compares the previous and new snapshot and returns terminal instructions (intro, outro, spinner start/update/stop/error). Only the listener uses the engine; nothing else in the codebase depends on it.
 
 ## Data model
 
@@ -152,11 +152,11 @@ Replace generic `createPhase` / `createStep` with **typed phase and step factori
 
 ```typescript
 export class ProgressTracker {
+  readonly snapshot$: Observable<ProgressSnapshot>; // BehaviorSubject — emits current value on subscribe
   beginScanning(args: { enricherCount: number }): ScanningPhase;
   beginAnalysis(args: { heuristicsCount: number }): AnalysisPhase;
   beginTransforming(args: { transformCount: number }): TransformingPhase;
-  snapshot(): ProgressSnapshot;
-  subscribe(listener: (snapshot: ProgressSnapshot) => void): Unsubscribe;
+  snapshot(): ProgressSnapshot; // snapshot$.value
 }
 
 export interface ScanningPhase {
@@ -219,11 +219,11 @@ Tests construct `ProgressTracker` and assert via `snapshot()`, filtering steps b
 
 ```typescript
 export interface ProgressListener {
-  attach(tracker: ProgressTracker): Unsubscribe;
+  notify(snapshot: ProgressSnapshot): void;
 }
 ```
 
-- `TerminalProgressListener` — `attach(tracker)` subscribes to snapshot updates, delegates diff/format decisions to `TerminalProgressEngine`, and executes the returned instructions via a `switch` on instruction `kind` (calling clack `intro` / `outro` / `spinner`). No-ops when `!process.stdout.isTTY`.
+- `TerminalProgressListener` — `notify(snapshot)` diffs against the previous snapshot via `TerminalProgressEngine`, executes returned instructions via a `switch` on instruction `kind` (calling clack `intro` / `outro` / `spinner`). No-ops when `!process.stdout.isTTY`.
 - `ThrottledProgressListener` — decorates a listener; **only throttles re-renders when the snapshot delta is a file-count change** (`detectedFileCount`, `transformedFileCount`). All other updates (status transitions, activity messages, `done` / `fail`) pass through immediately.
 
 ### Terminal progress engine (listener-internal)
@@ -263,18 +263,21 @@ Engine responsibilities (given `previous` and `next`):
 `TerminalProgressListener` responsibilities:
 
 - Holds the last snapshot and clack spinner handles keyed by `StepPath`.
-- On `tracker.subscribe`: `instructions = engine.diff(previous, next)` → `for (const i of instructions) switch (i.kind) { … }` → update `previous = next`.
+- On `notify(snapshot)`: `instructions = engine.diff(previous, next)` → `for (const i of instructions) switch (i.kind) { … }` → update `previous = next`.
 
-`ThrottledProgressListener` sits in front of the inner listener and suppresses rapid consecutive emissions that differ only in file-count fields.
+`ThrottledProgressListener` sits in front of the inner listener and suppresses rapid consecutive `notify` calls that differ only in file-count fields.
 
-CLI wiring:
+CLI wiring (composition root):
 
 ```typescript
 const tracker = new ProgressTracker();
-const terminal = new ThrottledProgressListener(new TerminalProgressListener());
-terminal.attach(tracker);
+const listener = new ThrottledProgressListener(new TerminalProgressListener());
+const subscription = tracker.snapshot$.subscribe((snapshot) =>
+  listener.notify(snapshot),
+);
 
 new Vitestify({ progressTracker: tracker });
+// subscription.unsubscribe() on teardown if needed
 ```
 
 ## Nested transform reporting
@@ -324,14 +327,12 @@ Terminal engine formats each `kind` for display (e.g. enricher → `scanning · 
 
 ```mermaid
 flowchart TD
-  cli["cli.ts / Vitestify"] --> tracker(("ProgressTracker<br>[snapshot, subscribe]"))
-  cli --> throttledListener(("ThrottledProgressListener"))
-  throttledListener --> terminalListener["TerminalProgressListener"]
+  cli["cli.ts / Vitestify"] --> tracker(("ProgressTracker<br>[snapshot, snapshot$]"))
+  cli -->|"snapshot$.subscribe"| throttledListener(("ThrottledProgressListener"))
+  throttledListener -->|notify| terminalListener["TerminalProgressListener"]
   terminalListener --> engine["TerminalProgressEngine<br>[diff, format, instructions]"]
   engine -->|TerminalProgressInstruction[]| terminalListener
   terminalListener --> clack["@clack/prompts<br>intro / spinner / outro"]
-
-  tracker -->|subscribe| throttledListener
 
   vitestify["Vitestify<br>[progressTracker: ProgressTracker]"] --> scanner["Scanner"]
   vitestify --> analyzer["Analyzer"]
@@ -382,7 +383,7 @@ flowchart LR
 
 - [x] Add snapshot types alongside phase/step nodes in `core/models/progress-tracker/`: typed phase and step snapshots with `enricherCount`, `heuristicsCount`, and `transformCount`.
 - [x] Add `ProgressTracker` core service in `core/models/progress-tracker/progress-tracker.ts` with immutable snapshots; phase factories accept `{ enricherCount }`, `{ heuristicsCount }`, or `{ transformCount }`.
-- [x] Add `subscribe(listener)` — listener receives the full `ProgressSnapshot` on every mutation.
+- [x] Add `snapshot$` (`BehaviorSubject` exposed as `Observable`) — emits current snapshot on subscribe, then on every mutation; `snapshot()` reads `snapshot$.value`.
 - [x] Add typed phase and step mutation handles (see mutation API table).
 
 ## Testing Strategy
@@ -391,7 +392,7 @@ flowchart LR
 
 - Create a `ProgressTracker`.
 - Call `beginScanning({ enricherCount: 2 })`, create one enricher step, `setDetectedFileCount(5)`.
-- Capture snapshots from `subscribe`.
+- Capture snapshots from `snapshot$.subscribe`.
 - Assert the first and last snapshot are different object references.
 - Assert prior snapshot still shows `detectedFileCount: 0` (unchanged).
 
@@ -415,11 +416,11 @@ flowchart LR
 
 ## Tasks
 
-- [ ] Add `ProgressListener` interface with `attach(tracker)`.
+- [x] Add `ProgressListener` interface with `notify(snapshot)`.
 - [x] Add `TerminalProgressEngine` — pure `diff(previous, next)` returning `TerminalProgressInstruction[]`; owns snapshot reconciliation, display formatting, and spinner/outro lifecycle decisions.
-- [ ] Refactor `TerminalProgressReporter` → `TerminalProgressListener` — `attach(tracker)` subscribes to snapshots, calls the engine, executes instructions via a `switch` on `kind` to drive clack.
+- [ ] Refactor `TerminalProgressReporter` → `TerminalProgressListener` — `notify(snapshot)` diffs via the engine, executes instructions via a `switch` on `kind` to drive clack.
 - [ ] Refactor `ThrottledProgressReporter` → `ThrottledProgressListener` — throttle file-count snapshot deltas only.
-- [ ] Update `Vitestify` constructor: accept `progressTracker`; wire terminal listener in CLI entry point.
+- [ ] Update `Vitestify` constructor: accept `progressTracker`; wire `snapshot$.subscribe(listener.notify)` in CLI entry point.
 
 ## Testing Strategy
 
@@ -438,8 +439,8 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 
 ### Throttles file-count snapshot updates only
 
-- Attach throttled listener to a tracker; call `setDetectedFileCount` / `setTransformedFileCount` rapidly within the throttle window.
-- Assert inner listener receives fewer render calls than tracker emissions.
+- Subscribe `snapshot$` through throttled listener; call `setDetectedFileCount` / `setTransformedFileCount` rapidly within the throttle window.
+- Assert inner listener receives fewer `notify` calls than tracker emissions.
 
 ### Passes through non-file-count updates immediately
 
@@ -539,6 +540,10 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 ## Generic `Phase` / `Step` snapshots
 
 - **Rejected** — typed phase and step unions (`enricher`, `heuristic`, `transform`, `activity`) keep state queryable and engine formatting explicit.
+
+## `ProgressListener#attach(tracker)`
+
+- **Rejected** — couples the sink to `ProgressTracker`. Prefer `snapshot$.subscribe(snapshot => listener.notify(snapshot))` at the composition root so listeners are plain snapshot consumers and wiring stays explicit.
 
 ## Keep `ProgressReporter` as the pipeline port
 

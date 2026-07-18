@@ -5,7 +5,7 @@ describe(ProgressTracker, () => {
   it('emits immutable snapshots on mutation', () => {
     const tracker = new ProgressTracker();
     const snapshots: ProgressSnapshot[] = [];
-    tracker.subscribe((snapshot) => snapshots.push(snapshot));
+    tracker.snapshot$.subscribe((snapshot) => snapshots.push(snapshot));
 
     const phase = tracker.beginScanning({ enricherCount: 2 });
     const enricher = phase.createEnricherStep({ name: 'code' });

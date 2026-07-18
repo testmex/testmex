@@ -1,3 +1,4 @@
+import { BehaviorSubject, type Observable } from 'rxjs';
 import { AnalysisPhaseNode } from './analysis-phase';
 import type { AnalysisPhase, AnalysisPhaseSnapshot } from './analysis-phase';
 import { ScanningPhaseNode } from './scanning-phase';
@@ -7,8 +8,6 @@ import type {
   TransformingPhase,
   TransformingPhaseSnapshot,
 } from './transforming-phase';
-
-export type Unsubscribe = () => void;
 
 export type PhaseSnapshot =
   | ScanningPhaseSnapshot
@@ -25,8 +24,14 @@ interface PhaseNode {
 
 export class ProgressTracker {
   private readonly _phases: PhaseNode[] = [];
-  private readonly _listeners = new Set<(snapshot: ProgressSnapshot) => void>();
-  private _snapshot = _createProgressSnapshot();
+  private readonly _snapshot$ = new BehaviorSubject<ProgressSnapshot>(
+    _createProgressSnapshot(),
+  );
+
+  /** Emits the current snapshot immediately, then on every mutation. */
+  get snapshot$(): Observable<ProgressSnapshot> {
+    return this._snapshot$.asObservable();
+  }
 
   beginScanning(args: { enricherCount: number }): ScanningPhase {
     return this._addPhase(
@@ -56,13 +61,7 @@ export class ProgressTracker {
   }
 
   snapshot(): ProgressSnapshot {
-    return this._snapshot;
-  }
-
-  subscribe(listener: (snapshot: ProgressSnapshot) => void): Unsubscribe {
-    this._listeners.add(listener);
-    listener(this._snapshot);
-    return () => this._listeners.delete(listener);
+    return this._snapshot$.value;
   }
 
   private _addPhase<T extends PhaseNode>(phase: T): T {
@@ -72,16 +71,10 @@ export class ProgressTracker {
   }
 
   private _emit(): void {
-    this._updateSnapshot({
+    this._snapshot$.next({
+      ...this._snapshot$.value,
       phases: this._phases.map((phase) => phase.snapshot),
     });
-    for (const listener of this._listeners) {
-      listener(this._snapshot);
-    }
-  }
-
-  private _updateSnapshot(partial: Partial<ProgressSnapshot>): void {
-    this._snapshot = { ...this._snapshot, ...partial };
   }
 }
 

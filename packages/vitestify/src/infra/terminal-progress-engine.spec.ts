@@ -107,7 +107,7 @@ nx
 function setUp() {
   const tracker = new ProgressTracker();
   const snapshots: ProgressSnapshot[] = [];
-  tracker.subscribe((snapshot) => snapshots.push(snapshot));
+  tracker.snapshot$.subscribe((snapshot) => snapshots.push(snapshot));
 
   return {
     tracker,

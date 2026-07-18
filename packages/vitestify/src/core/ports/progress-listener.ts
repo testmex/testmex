@@ -1,8 +1,5 @@
-import type {
-  ProgressTracker,
-  Unsubscribe,
-} from '../models/progress-tracker';
+import type { ProgressSnapshot } from '../models/progress-tracker';
 
 export interface ProgressListener {
-  attach(tracker: ProgressTracker): Unsubscribe;
+  notify(snapshot: ProgressSnapshot): void;
 }

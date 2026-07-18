@@ -1,5 +1,5 @@
 export { ProgressTracker } from './progress-tracker';
-export type { PhaseSnapshot, ProgressSnapshot, Unsubscribe } from './progress-tracker';
+export type { PhaseSnapshot, ProgressSnapshot } from './progress-tracker';
 export type { ActivityStep, ActivityStepSnapshot } from './activity-step';
 export type { AnalysisPhase, AnalysisPhaseSnapshot } from './analysis-phase';
 export type { EnricherStep, EnricherStepSnapshot } from './enricher-step';

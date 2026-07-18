@@ -16,7 +16,7 @@ describe(ThrottledProgressListener, () => {
     });
     const tracker = new ProgressTracker();
 
-    throttled.attach(tracker);
+    tracker.snapshot$.subscribe((snapshot) => throttled.notify(snapshot));
 
     const enricher = tracker
       .beginScanning({ enricherCount: 1 })
@@ -39,7 +39,7 @@ describe(ThrottledProgressListener, () => {
     });
     const tracker = new ProgressTracker();
 
-    throttled.attach(tracker);
+    tracker.snapshot$.subscribe((snapshot) => throttled.notify(snapshot));
 
     const transform = tracker
       .beginTransforming({ transformCount: 1 })
@@ -68,10 +68,8 @@ describe(ThrottledProgressListener, () => {
 function _createInnerListener() {
   const snapshots: ProgressSnapshot[] = [];
   const listener: ProgressListener = {
-    attach(tracker: ProgressTracker) {
-      return tracker.subscribe((snapshot) => {
-        snapshots.push(snapshot);
-      });
+    notify(snapshot: ProgressSnapshot) {
+      snapshots.push(snapshot);
     },
   };
 
