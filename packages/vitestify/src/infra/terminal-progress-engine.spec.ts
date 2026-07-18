@@ -79,6 +79,32 @@ nx
 | jest-mock · 3 files transformed`,
     });
   });
+
+  it.todo(
+    'engine formats transform group with rolled-up file count in display',
+    () => {
+      const { tracker, computeInstructions } = setUp();
+
+      const jestTest = tracker
+        .beginTransforming({ transformCount: 1 })
+        .createTransformStep({ name: 'jest-test' });
+      jestTest
+        .createChildTransform({ name: 'jest-mock' })
+        .setTransformedFileCount(3);
+      jestTest
+        .createChildTransform({ name: 'jest-fn' })
+        .setTransformedFileCount(7);
+
+      const instructions = computeInstructions();
+
+      expect(instructions.at(-1)).toEqual({
+        kind: 'spinnerMessage',
+        message: `jest-test · 10 files transformed
+| jest-mock · 3 files transformed
+| jest-fn · 7 files transformed`,
+      });
+    },
+  );
 });
 
 function setUp() {
