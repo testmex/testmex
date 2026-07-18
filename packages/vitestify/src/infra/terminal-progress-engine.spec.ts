@@ -9,7 +9,7 @@ import {
 } from './terminal-progress-engine';
 
 describe(TerminalProgressEngine, () => {
-  it.todo('engine diffs snapshots to instructions', () => {
+  it('engine diffs snapshots to instructions', () => {
     const tracker = new ProgressTracker();
     const snapshots: ProgressSnapshot[] = [];
     tracker.subscribe((snapshot) => snapshots.push(snapshot));
@@ -22,12 +22,11 @@ describe(TerminalProgressEngine, () => {
 
     const instructions = _computeInstructions(snapshots);
 
-    expect(instructions.map((instruction) => instruction.kind)).toEqual([
-      'intro',
-      'spinnerStart',
-      'spinnerMessage',
-      'spinnerStop',
-      'outro',
+    expect(instructions).toEqual([
+      { kind: 'intro', message: 'Scanning started' },
+      { kind: 'spinnerStart', message: 'code' },
+      { kind: 'spinnerStop', message: 'code' },
+      { kind: 'outro', message: 'Scanning finished' },
     ]);
   });
 

@@ -416,7 +416,7 @@ flowchart LR
 ## Tasks
 
 - [ ] Add `ProgressListener` interface with `attach(tracker)`.
-- [ ] Add `TerminalProgressEngine` — pure `diff(previous, next)` returning `TerminalProgressInstruction[]`; owns snapshot reconciliation, display formatting, and spinner/outro lifecycle decisions.
+- [x] Add `TerminalProgressEngine` — pure `diff(previous, next)` returning `TerminalProgressInstruction[]`; owns snapshot reconciliation, display formatting, and spinner/outro lifecycle decisions.
 - [ ] Refactor `TerminalProgressReporter` → `TerminalProgressListener` — `attach(tracker)` subscribes to snapshots, calls the engine, executes instructions via a `switch` on `kind` to drive clack.
 - [ ] Refactor `ThrottledProgressReporter` → `ThrottledProgressListener` — throttle file-count snapshot deltas only.
 - [ ] Update `Vitestify` constructor: accept `progressTracker`; wire terminal listener in CLI entry point.
