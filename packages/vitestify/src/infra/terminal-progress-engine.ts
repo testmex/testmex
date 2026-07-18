@@ -172,39 +172,48 @@ export class TerminalProgressEngine {
     switch (step.kind) {
       case 'activity':
         return step.message;
-      case 'enricher': {
-        const subLines = step.activities.map((activity) => activity.message);
-        let formatted =
-          subLines.length > 0
-            ? step.name
-            : `${this._stepIndexPrefix(step)}${step.name}`;
-
-        if (step.detectedFileCount > 0) {
-          formatted += ` · ${this._formatDetectedFileCount(step.detectedFileCount)}`;
-        }
-
-        if (subLines.length === 0) {
-          return formatted;
-        }
-
-        return `${formatted}\n${subLines.map((message) => `| ${message}`).join('\n')}`;
-      }
-      case 'transform': {
-        const subLines = step.childTransforms.map((child) =>
-          this._formatChildTransformLine(child),
-        );
-        const formatted =
-          subLines.length > 0
-            ? step.name
-            : `${this._stepIndexPrefix(step)}${step.name}`;
-
-        if (subLines.length === 0) {
-          return formatted;
-        }
-
-        return `${formatted}\n${subLines.map((message) => `| ${message}`).join('\n')}`;
-      }
+      case 'enricher':
+        return this._formatStepWithSubLines({
+          step,
+          subLines: step.activities.map((activity) => activity.message),
+          headlineSuffix:
+            step.detectedFileCount > 0
+              ? ` · ${this._formatDetectedFileCount(step.detectedFileCount)}`
+              : undefined,
+        });
+      case 'transform':
+        return this._formatStepWithSubLines({
+          step,
+          subLines: step.childTransforms.map((child) =>
+            this._formatChildTransformLine(child),
+          ),
+        });
     }
+  }
+
+  private _formatStepWithSubLines(args: {
+    step: {
+      readonly name: string;
+      readonly stepNumber: number;
+      readonly stepCount: number;
+    };
+    subLines: readonly string[];
+    headlineSuffix?: string;
+  }): string {
+    let formatted =
+      args.subLines.length > 0
+        ? args.step.name
+        : `${this._stepIndexPrefix(args.step)}${args.step.name}`;
+
+    if (args.headlineSuffix !== undefined) {
+      formatted += args.headlineSuffix;
+    }
+
+    if (args.subLines.length === 0) {
+      return formatted;
+    }
+
+    return `${formatted}\n${args.subLines.map((message) => `| ${message}`).join('\n')}`;
   }
 
   private _stepIndexPrefix(step: {
