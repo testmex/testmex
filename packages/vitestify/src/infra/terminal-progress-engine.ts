@@ -159,19 +159,39 @@ export class TerminalProgressEngine {
   }
 
   private _stepSpinnerMessage(step: StepSnapshot): string {
-    return step.kind === 'activity' ? step.message : step.name;
-  }
-}
+    if (step.kind === 'heuristic') {
+      return step.name;
+    }
 
-/**
- * @deprecated 🚧 work in progress
- */
-export function formatStepDisplay(
-  _step: EnricherStepSnapshot | TransformStepSnapshot | ActivityStepSnapshot,
-  _args: {
-    stepNumber?: number;
-    stepCount?: number;
-  } = {},
-): string {
-  throw new Error('🚧 work in progress');
+    return this._formatStepDisplay(step);
+  }
+
+  private _formatStepDisplay(
+    step: EnricherStepSnapshot | TransformStepSnapshot | ActivityStepSnapshot,
+    args: {
+      stepNumber?: number;
+      stepCount?: number;
+    } = {},
+  ): string {
+    const prefix =
+      args.stepNumber !== undefined && args.stepCount !== undefined
+        ? `[${args.stepNumber}/${args.stepCount}] `
+        : '';
+
+    switch (step.kind) {
+      case 'activity':
+        return step.message;
+      case 'enricher': {
+        let formatted = `${prefix}${step.name}`;
+
+        if (step.detectedFileCount > 0) {
+          formatted += ` · ${step.detectedFileCount} file(s) detected`;
+        }
+
+        return formatted;
+      }
+      case 'transform':
+        return `${prefix}${step.name}`;
+    }
+  }
 }
