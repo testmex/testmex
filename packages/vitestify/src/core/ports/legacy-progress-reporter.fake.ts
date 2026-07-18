@@ -1,19 +1,19 @@
 import type {
-  Phase,
-  ProgressReporter,
-  Step,
-  StepArgs,
-  SubStep,
-} from './progress-reporter';
+  LegacyPhase,
+  LegacyProgressReporter,
+  LegacyStep,
+  LegacyStepArgs,
+  LegacySubStep,
+} from './legacy-progress-reporter';
 
-export class ProgressReporterFake implements ProgressReporter {
+export class LegacyProgressReporterFake implements LegacyProgressReporter {
   private readonly _phases: MutablePhaseState[] = [];
 
   phases(): readonly PhaseState[] {
     return this._phases;
   }
 
-  createPhase(title: string): Phase {
+  createPhase(title: string): LegacyPhase {
     const phase: MutablePhaseState = {
       title,
       steps: [],
@@ -29,7 +29,7 @@ export class ProgressReporterFake implements ProgressReporter {
     };
   }
 
-  private _createStep(phase: MutablePhaseState, args: StepArgs): Step {
+  private _createStep(phase: MutablePhaseState, args: LegacyStepArgs): LegacyStep {
     const step: MutableStepState = {
       name: args.name,
       status: 'active',
@@ -46,7 +46,7 @@ export class ProgressReporterFake implements ProgressReporter {
     };
 
     return {
-      createSubStep: (message: string): SubStep => {
+      createSubStep: (message: string): LegacySubStep => {
         const subStep: SubStepState = { message };
         step.subSteps.push(subStep);
 

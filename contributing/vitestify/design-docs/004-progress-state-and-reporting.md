@@ -29,7 +29,7 @@
 
 ## Terminal reporting (one sink)
 
-- [ ] A `TerminalProgressListener` receives snapshot updates via `notify(snapshot)`; a `TerminalProgressEngine` (used only by the listener) diffs consecutive snapshots into instructions, and the listener executes them via `@clack/prompts` — same general UX as today.
+- [ ] A `TerminalProgressReporter` receives snapshot updates via `notify(snapshot)`; a `TerminalProgressEngine` (used only by the reporter) diffs consecutive snapshots into instructions, and the reporter executes them via `@clack/prompts` — same general UX as today.
 - [ ] Terminal shows phase intro/outro, numbered steps, spinners, and sub-step lines for live feedback.
 - [ ] Terminal may summarize nested transform detail (top-level spinner + sub-steps) rather than listing every file on screen.
 - [ ] Throttling applies at the reporting layer via `throttleProgressSnapshot(duration)` on `snapshot$` — only file-count changes (`detectedFileCount`, `transformedFileCount`) are throttled; status, activity messages, and other snapshot fields pass through immediately.
@@ -52,11 +52,11 @@
 Split progress into two layers:
 
 1. `ProgressTracker` — core domain service: authoritative in-memory state + mutation API. Pipeline code writes here only. Lives in `core/models/progress-tracker`; aggregate snapshot types in `core/models/progress-tracker/progress-snapshot.ts`.
-2. `ProgressListener` — port in `core/ports`: receives snapshot updates via `notify(snapshot)` and renders to a sink (terminal today; logs/CI later). Wiring to `ProgressTracker` happens at the composition root (CLI), not inside the listener.
+2. `ProgressReporter` — port in `core/ports/progress-reporter.ts`: receives snapshot updates via `notify(snapshot)` and renders to a sink (terminal today; logs/CI later). Wiring to `ProgressTracker` happens at the composition root (CLI), not inside the reporter.
 
-The existing `Phase` / `Step` handle pattern stays, but handles are **typed by phase and step kind** — thin facades over `ProgressTracker` nodes that update state and emit change events; they do not render.
+The existing legacy `LegacyPhase` / `LegacyStep` handle pattern (on `LegacyProgressReporter`) stays during migration, but new pipeline code uses **typed phase and step factories** on `ProgressTracker` — thin facades over tracker nodes that update state and emit change events; they do not render.
 
-`ProgressReporterFake` is replaced by `ProgressTracker` (state + snapshot API). `TerminalProgressReporter` becomes a `TerminalProgressListener` that receives snapshots via `notify(snapshot)` and drives `@clack/prompts` via a **`TerminalProgressEngine`** — a pure diff/format module that compares the previous and new snapshot and returns terminal instructions (intro, outro, spinner start/update/stop/error). Only the listener uses the engine; nothing else in the codebase depends on it.
+`LegacyProgressReporterFake` is replaced by `ProgressTracker` (state + snapshot API). `LegacyTerminalProgressReporter` becomes a `TerminalProgressReporter` that receives snapshots via `notify(snapshot)` and drives `@clack/prompts` via a **`TerminalProgressEngine`** — a pure diff/format module that compares the previous and new snapshot and returns terminal instructions (intro, outro, spinner start/update/stop/error). Only the reporter uses the engine; nothing else in the codebase depends on it.
 
 ## Data model
 
@@ -215,22 +215,22 @@ Pipeline stages call the phase and step factory matching their work:
 
 Tests construct `ProgressTracker` and assert via `snapshot()`, filtering steps by `kind`.
 
-## Listener port (sink-facing)
+## Reporter port (sink-facing)
 
 ```typescript
-export interface ProgressListener {
+export interface ProgressReporter {
   notify(snapshot: ProgressSnapshot): void;
 }
 ```
 
-- `TerminalProgressListener` — `notify(snapshot)` diffs against the previous snapshot via `TerminalProgressEngine`, executes returned instructions via a `switch` on instruction `kind` (calling clack `intro` / `outro` / `spinner`). No-ops when `!process.stdout.isTTY`.
+- `TerminalProgressReporter` — `notify(snapshot)` diffs against the previous snapshot via `TerminalProgressEngine`, executes returned instructions via a `switch` on instruction `kind` (calling clack `intro` / `outro` / `spinner`). No-ops when `!process.stdout.isTTY`.
 - `throttleProgressSnapshot(duration)` — RxJS operator on `snapshot$`; **only throttles emissions when the snapshot delta is a file-count change** (`detectedFileCount`, `transformedFileCount`). All other updates (status transitions, activity messages, `done` / `fail`) pass through immediately.
 
-### Terminal progress engine (listener-internal)
+### Terminal progress engine (reporter-internal)
 
-`TerminalProgressEngine` is a **pure** module used only by `TerminalProgressListener`. It owns snapshot diffing, display-string formatting, and the decision of what the terminal should do next — the listener does not format or reconcile snapshots itself.
+`TerminalProgressEngine` is a **pure** module used only by `TerminalProgressReporter`. It owns snapshot diffing, display-string formatting, and the decision of what the terminal should do next — the reporter does not format or reconcile snapshots itself.
 
-On each emission the listener passes the **previous** and **new** immutable snapshots to the engine. The engine returns an ordered list of `TerminalProgressInstruction` values; the listener runs them through a `switch` to invoke clack.
+On each emission the reporter passes the **previous** and **new** immutable snapshots to the engine. The engine returns an ordered list of `TerminalProgressInstruction` values; the reporter runs them through a `switch` to invoke clack.
 
 ```typescript
 type TerminalProgressInstruction =
@@ -260,21 +260,21 @@ Engine responsibilities (given `previous` and `next`):
 - Formats typed step fields to display strings (e.g. enricher → `scanning · {detectedFileCount} file(s)`, activity → `message` as-is). Derives `[n/total]` prefixes from step index and phase count (`enricherCount`, `heuristicsCount`, `transformCount`) or `childTransforms.length`.
 - Folds nested `activities` and `childTransforms` into the parent step display (`| …` sub-lines).
 
-`TerminalProgressListener` responsibilities:
+`TerminalProgressReporter` responsibilities:
 
 - Holds the last snapshot and clack spinner handles keyed by `StepPath`.
 - On `notify(snapshot)`: `instructions = engine.diff(previous, next)` → `for (const i of instructions) switch (i.kind) { … }` → update `previous = next`.
 
-`ThrottledProgressListener` is replaced by `throttleProgressSnapshot(duration)` in the `snapshot$` pipe — it suppresses rapid consecutive file-count-only emissions while passing other snapshot changes through immediately.
+`LegacyThrottledProgressReporter` is replaced by `throttleProgressSnapshot(duration)` in the `snapshot$` pipe — it suppresses rapid consecutive file-count-only emissions while passing other snapshot changes through immediately.
 
 CLI wiring (composition root):
 
 ```typescript
 const tracker = new ProgressTracker();
-const listener = new TerminalProgressListener();
+const progressReporter = new TerminalProgressReporter();
 const subscription = tracker.snapshot$
   .pipe(throttleProgressSnapshot(100))
-  .subscribe((snapshot) => listener.notify(snapshot));
+  .subscribe((snapshot) => progressReporter.notify(snapshot));
 
 new Vitestify({ progressTracker: tracker });
 // subscription.unsubscribe() on teardown if needed
@@ -328,10 +328,10 @@ Terminal engine formats each `kind` for display (e.g. enricher → `scanning · 
 ```mermaid
 flowchart TD
   cli["cli.ts / Vitestify"] --> tracker(("ProgressTracker<br>[snapshot, snapshot$]"))
-  cli -->|"snapshot$.pipe(throttleProgressSnapshot)"| terminalListener["TerminalProgressListener"]
-  terminalListener --> engine["TerminalProgressEngine<br>[diff, format, instructions]"]
-  engine -->|TerminalProgressInstruction[]| terminalListener
-  terminalListener --> clack["@clack/prompts<br>intro / spinner / outro"]
+  cli -->|"snapshot$.pipe(throttleProgressSnapshot)"| terminalReporter["TerminalProgressReporter"]
+  terminalReporter --> engine["TerminalProgressEngine<br>[diff, format, instructions]"]
+  engine -->|TerminalProgressInstruction[]| terminalReporter
+  terminalReporter --> clack["@clack/prompts<br>intro / spinner / outro"]
 
   vitestify["Vitestify<br>[progressTracker: ProgressTracker]"] --> scanner["Scanner"]
   vitestify --> analyzer["Analyzer"]
@@ -411,15 +411,15 @@ flowchart LR
 </details>
 
 <details>
-<summary>🚧 PR#2 — Terminal listener + CLI</summary>
+<summary>🚧 PR#2 — Terminal reporter + CLI</summary>
 
 ## Tasks
 
-- [x] Add `ProgressListener` interface with `notify(snapshot)`.
+- [x] Add `ProgressReporter` interface with `notify(snapshot)`.
 - [x] Add `TerminalProgressEngine` — pure `diff(previous, next)` returning `TerminalProgressInstruction[]`; owns snapshot reconciliation, display formatting, and spinner/outro lifecycle decisions.
-- [ ] Refactor `TerminalProgressReporter` → `TerminalProgressListener` — `notify(snapshot)` diffs via the engine, executes instructions via a `switch` on `kind` to drive clack.
+- [ ] Refactor `LegacyTerminalProgressReporter` → `TerminalProgressReporter` — `notify(snapshot)` diffs via the engine, executes instructions via a `switch` on `kind` to drive clack.
 - [ ] Add `throttleProgressSnapshot(duration)` — RxJS operator; throttle file-count snapshot deltas only.
-- [ ] Update `Vitestify` constructor: accept `progressTracker`; wire `snapshot$.pipe(throttleProgressSnapshot).subscribe(listener.notify)` in CLI entry point.
+- [ ] Update `Vitestify` constructor: accept `progressTracker`; wire `snapshot$.pipe(throttleProgressSnapshot).subscribe(progressReporter.notify)` in CLI entry point.
 
 ## Testing Strategy
 
@@ -458,7 +458,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 
 ## Tasks
 
-- [ ] Replace `ProgressReporter` with `ProgressTracker` in `Scanner`, `Analyzer`, `Transformer`.
+- [ ] Replace `LegacyProgressReporter` with `ProgressTracker` in `Scanner`, `Analyzer`, `Transformer`.
 - [ ] Update `Scanner`: `beginScanning()` + `createEnricherStep` + `setDetectedFileCount`.
 - [ ] Update enrichers: file scanners call `setDetectedFileCount`; `NxEnricher` uses `createActivityStep` for graph loading.
 - [ ] Update `Analyzer`: `beginAnalysis()` + `createHeuristicStep`.
@@ -467,7 +467,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 - [ ] Update `TransformOptions.progressStep` type to `TransformStep`.
 - [ ] Update `jest-test` transform: `createChildTransform` per child transform.
 - [ ] Update `defineFileTransform`: call `setTransformedFileCount` during and after the file loop.
-- [ ] Replace `ProgressReporterFake` assertions with `ProgressTracker` + `snapshot()`.
+- [ ] Replace `LegacyProgressReporterFake` assertions with `ProgressTracker` + `snapshot()`.
 
 ## Testing Strategy
 
@@ -514,12 +514,12 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 
 ## Tasks
 
-- [ ] Remove `ProgressReporter` port, `NullProgressReporter`, `ProgressReporterFake`.
-- [ ] Remove `TerminalProgressReporter`, `ThrottledProgressReporter`, and generic `SubStep` API.
+- [ ] Remove `LegacyProgressReporter` port, `LegacyNullProgressReporter`, `LegacyProgressReporterFake`.
+- [ ] Remove `LegacyTerminalProgressReporter`, `LegacyThrottledProgressReporter`, and generic `LegacySubStep` API.
 
 ## Testing Strategy
 
-### Existing pipeline and listener tests still pass
+### Existing pipeline and reporter tests still pass
 
 - Run full vitestify test suite after port removal.
 - Assert no remaining imports of removed symbols.
@@ -540,12 +540,12 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 
 - **Rejected** — typed phase and step unions (`enricher`, `heuristic`, `transform`, `activity`) keep state queryable and engine formatting explicit.
 
-## `ProgressListener#attach(tracker)`
+## `ProgressReporter#attach(tracker)`
 
-- **Rejected** — couples the sink to `ProgressTracker`. Prefer `snapshot$.subscribe(snapshot => listener.notify(snapshot))` at the composition root so listeners are plain snapshot consumers and wiring stays explicit.
+- **Rejected** — couples the sink to `ProgressTracker`. Prefer `snapshot$.subscribe(snapshot => progressReporter.notify(snapshot))` at the composition root so reporters are plain snapshot consumers and wiring stays explicit.
 
-## Keep `ProgressReporter` as the pipeline port
+## Keep `LegacyProgressReporter` as the pipeline port
 
-- **Rejected** — port mixed state collection with terminal rendering; splitting `ProgressTracker` (core service) + `ProgressListener` (port) is the goal.
+- **Rejected** — port mixed state collection with terminal rendering; splitting `ProgressTracker` (core service) + `ProgressReporter` (sink port) is the goal.
 
 # Kitchen Sink

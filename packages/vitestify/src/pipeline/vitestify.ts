@@ -1,11 +1,11 @@
 import { CommandRunnerPooled } from '../core/domain/command-runner-pooled';
-import { ThrottledProgressReporter } from '../core/domain/throttled-progress-reporter';
+import { LegacyThrottledProgressReporter } from '../core/domain/legacy-throttled-progress-reporter';
 import type { ProgressTracker } from '../core/models/progress-tracker';
 import type { Pack } from '../core/models/pack';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
-import type { ProgressReporter } from '../core/ports/progress-reporter';
-import { TerminalProgressReporter } from '../infra/terminal-progress-reporter';
+import type { LegacyProgressReporter } from '../core/ports/legacy-progress-reporter';
+import { LegacyTerminalProgressReporter } from '../infra/legacy-terminal-progress-reporter';
 import { FileSystemImpl } from '../infra/file-system.impl';
 import angularCliPack from '../packs/angular-cli';
 import corePack from '../packs/core';
@@ -33,14 +33,14 @@ export class Vitestify {
   constructor({
     commandRunner = new CommandRunnerPooled({ maxConcurrent: 10 }),
     fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
-    progressReporter = new ThrottledProgressReporter(
-      new TerminalProgressReporter(),
+    legacyProgressReporter = new LegacyThrottledProgressReporter(
+      new LegacyTerminalProgressReporter(),
     ),
     progressTracker,
   }: {
     commandRunner?: CommandRunner;
     fileSystem?: FileSystem;
-    progressReporter?: ProgressReporter;
+    legacyProgressReporter?: LegacyProgressReporter;
     progressTracker?: ProgressTracker;
   } = {}) {
     if (progressTracker !== undefined) {
@@ -48,18 +48,18 @@ export class Vitestify {
     }
     this._analyzer = new Analyzer({
       heuristics: this._packs.flatMap((pack) => pack.heuristics),
-      progressReporter,
+      legacyProgressReporter,
     });
     this._scanner = new Scanner({
       commandRunner,
       enrichers: this._packs.flatMap((pack) => pack.enrichers),
       fileSystem,
-      progressReporter,
+      legacyProgressReporter,
     });
     this._transformer = new Transformer({
       commandRunner,
       transforms: this._packs.flatMap((pack) => pack.transforms),
-      progressReporter,
+      legacyProgressReporter,
     });
   }
 

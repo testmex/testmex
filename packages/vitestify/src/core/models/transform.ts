@@ -1,5 +1,5 @@
 import type { WritableWorkspace } from '../domain/workspace';
-import type { Step } from '../ports/progress-reporter';
+import type { LegacyStep } from '../ports/legacy-progress-reporter';
 import type { PipelineContext } from './pipeline-context';
 
 export interface TransformOptions extends PipelineContext {
@@ -12,11 +12,11 @@ export interface Transform {
 }
 
 export interface TransformResult {
-  verify(options: { progressStep: Step }): Promise<void | VerifyResult>;
+  verify(options: { progressStep: LegacyStep }): Promise<void | VerifyResult>;
 }
 
 export interface VerifyResult {
-  rollback(options: { progressStep: Step }): Promise<void>;
+  rollback(options: { progressStep: LegacyStep }): Promise<void>;
 }
 
 export function defineTransform(args: Transform): Transform {

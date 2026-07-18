@@ -7,7 +7,7 @@ import {
 } from '../../../../core/models/workspace.mother';
 import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
 import { Analyzer } from '../../../../pipeline/analyzer';
-import { NO_OP_STEP } from '../../../../core/ports/progress-reporter';
+import { LEGACY_NO_OP_STEP } from '../../../../core/ports/legacy-progress-reporter';
 import { runTransform } from '../../../../testing/run-transform';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
@@ -33,9 +33,9 @@ jest.mock('./foo');
     const result = await jestTestTransform.apply({
       workspace,
       commandRunner,
-      progressStep: NO_OP_STEP,
+      progressStep: LEGACY_NO_OP_STEP,
     });
-    const verifyResult = await result?.verify({ progressStep: NO_OP_STEP });
+    const verifyResult = await result?.verify({ progressStep: LEGACY_NO_OP_STEP });
 
     expect(verifyResult?.rollback).toBeDefined();
   });
@@ -46,11 +46,11 @@ jest.mock('./foo');
     const result = await jestTestTransform.apply({
       workspace,
       commandRunner,
-      progressStep: NO_OP_STEP,
+      progressStep: LEGACY_NO_OP_STEP,
     });
 
-    const verifyResult = await result?.verify({ progressStep: NO_OP_STEP });
-    await verifyResult?.rollback({ progressStep: NO_OP_STEP });
+    const verifyResult = await result?.verify({ progressStep: LEGACY_NO_OP_STEP });
+    await verifyResult?.rollback({ progressStep: LEGACY_NO_OP_STEP });
 
     expect
       .soft(

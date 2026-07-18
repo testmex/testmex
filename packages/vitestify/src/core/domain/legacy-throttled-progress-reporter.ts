@@ -1,22 +1,27 @@
 import { Subscription, Subject, throttleTime } from 'rxjs';
 import type {
-  Phase,
-  ProgressReporter,
-  Step,
-  SubStep,
-} from '../ports/progress-reporter';
+  LegacyPhase,
+  LegacyProgressReporter,
+  LegacyStep,
+  LegacySubStep,
+} from '../ports/legacy-progress-reporter';
 
-export class ThrottledProgressReporter implements ProgressReporter {
+/**
+ * @deprecated 🚧 work in progress — legacy `LegacyProgressReporter` decorator; replaced by
+ * `throttleProgressSnapshot` on `ProgressTracker.snapshot$`. Kept until PR#4 removes
+ * the old reporter port.
+ */
+export class LegacyThrottledProgressReporter implements LegacyProgressReporter {
   private readonly _duration: number;
 
   constructor(
-    private readonly _inner: ProgressReporter,
+    private readonly _inner: LegacyProgressReporter,
     options: { duration?: number } = {},
   ) {
     this._duration = options.duration ?? 100;
   }
 
-  createPhase(title: string): Phase {
+  createPhase(title: string): LegacyPhase {
     const innerPhase = this._inner.createPhase(title);
 
     return {
@@ -25,11 +30,11 @@ export class ThrottledProgressReporter implements ProgressReporter {
     };
   }
 
-  private _wrapStep(inner: Step): Step {
+  private _wrapStep(inner: LegacyStep): LegacyStep {
     const subscription = new Subscription();
 
     return {
-      createSubStep: (message: string): SubStep => {
+      createSubStep: (message: string): LegacySubStep => {
         const innerSubStep = inner.createSubStep(message);
 
         return {

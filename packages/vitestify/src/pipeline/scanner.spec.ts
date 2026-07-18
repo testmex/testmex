@@ -9,9 +9,9 @@ import corePack from '../packs/core';
 import jestPack from '../packs/jest';
 import nxPack from '../packs/nx';
 import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
-import type { ProgressReporter } from '../core/ports/progress-reporter';
-import { NullProgressReporter } from '../core/ports/null-progress-reporter';
-import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
+import type { LegacyProgressReporter } from '../core/ports/legacy-progress-reporter';
+import { LegacyNullProgressReporter } from '../core/ports/legacy-null-progress-reporter';
+import { LegacyProgressReporterFake } from '../core/ports/legacy-progress-reporter.fake';
 import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {
@@ -84,8 +84,8 @@ describe(Scanner.name, () => {
   });
 
   it('scanner reports enricher name and file count from enricher callbacks', async () => {
-    const progressReporter = new ProgressReporterFake();
-    const { configureWorkspace, scanner } = setUp({ progressReporter });
+    const legacyProgressReporter = new LegacyProgressReporterFake();
+    const { configureWorkspace, scanner } = setUp({ legacyProgressReporter });
 
     configureWorkspace(
       nxWorkspaceMother
@@ -96,7 +96,7 @@ describe(Scanner.name, () => {
     await scanner.scanWorkspace();
 
     expect(
-      progressReporter.phases()[0].steps.find((step) => step.name === 'test'),
+      legacyProgressReporter.phases()[0].steps.find((step) => step.name === 'test'),
     ).toMatchObject({
       status: 'done',
       message: 'scanned · 1 file(s) found',
@@ -104,15 +104,15 @@ describe(Scanner.name, () => {
   });
 
   it('scanner calls done once per enricher', async () => {
-    const progressReporter = new ProgressReporterFake();
-    const { configureWorkspace, scanner } = setUp({ progressReporter });
+    const legacyProgressReporter = new LegacyProgressReporterFake();
+    const { configureWorkspace, scanner } = setUp({ legacyProgressReporter });
 
     configureWorkspace(nxWorkspaceMother.withApp('my-app'));
 
     await scanner.scanWorkspace();
 
     expect(
-      progressReporter
+      legacyProgressReporter
         .phases()[0]
         .steps.filter((step) => step.message.startsWith('scanned'))
         .map((step) => ({ name: step.name, message: step.message })),
@@ -128,15 +128,15 @@ describe(Scanner.name, () => {
   });
 
   it('non-scanning enricher reports contextual status', async () => {
-    const progressReporter = new ProgressReporterFake();
-    const { configureWorkspace, scanner } = setUp({ progressReporter });
+    const legacyProgressReporter = new LegacyProgressReporterFake();
+    const { configureWorkspace, scanner } = setUp({ legacyProgressReporter });
 
     configureWorkspace(nxWorkspaceMother.withApp('my-app'));
 
     await scanner.scanWorkspace();
 
     expect(
-      progressReporter.phases()[0].steps.find((step) => step.name === 'nx'),
+      legacyProgressReporter.phases()[0].steps.find((step) => step.name === 'nx'),
     ).toMatchObject({
       status: 'done',
       message: 'scanned · 1 project(s) detected',
@@ -175,8 +175,8 @@ describe(Scanner.name, () => {
 });
 
 function setUp({
-  progressReporter = new NullProgressReporter(),
-}: { progressReporter?: ProgressReporter } = {}) {
+  legacyProgressReporter = new LegacyNullProgressReporter(),
+}: { legacyProgressReporter?: LegacyProgressReporter } = {}) {
   const commandRunner = new CommandRunnerFake();
   const fileSystem = new FileSystemFake();
 
@@ -195,7 +195,7 @@ function setUp({
         (pack) => pack.enrichers,
       ),
       fileSystem,
-      progressReporter,
+      legacyProgressReporter,
     }),
   };
 }

@@ -1,26 +1,26 @@
 import type { Workspace } from '../core/domain/workspace';
 import type { Heuristic } from '../core/models/heuristic';
-import { NullProgressReporter } from '../core/ports/null-progress-reporter';
-import type { ProgressReporter } from '../core/ports/progress-reporter';
+import { LegacyNullProgressReporter } from '../core/ports/legacy-null-progress-reporter';
+import type { LegacyProgressReporter } from '../core/ports/legacy-progress-reporter';
 
 export class Analyzer {
   private readonly _heuristics: Heuristic[];
-  private readonly _progressReporter: ProgressReporter;
+  private readonly _legacyProgressReporter: LegacyProgressReporter;
 
   constructor({
     heuristics,
-    progressReporter = new NullProgressReporter(),
+    legacyProgressReporter = new LegacyNullProgressReporter(),
   }: {
     heuristics: Heuristic[];
-    progressReporter?: ProgressReporter;
+    legacyProgressReporter?: LegacyProgressReporter;
   }) {
     this._heuristics = heuristics;
-    this._progressReporter = progressReporter;
+    this._legacyProgressReporter = legacyProgressReporter;
   }
 
   async analyze(workspace: Workspace): Promise<void> {
     const stepCount = this._heuristics.length;
-    const phase = this._progressReporter.createPhase('Workspace analysis');
+    const phase = this._legacyProgressReporter.createPhase('Workspace analysis');
 
     for (const [index, heuristic] of this._heuristics.entries()) {
       const progressStep = phase.createStep({

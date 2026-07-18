@@ -3,25 +3,25 @@ import { Workspace } from '../core/domain/workspace';
 import type { Enricher } from '../core/models/enricher';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
-import { NO_OP_STEP } from '../core/ports/progress-reporter';
-import type { ProgressReporter } from '../core/ports/progress-reporter';
+import { LEGACY_NO_OP_STEP } from '../core/ports/legacy-progress-reporter';
+import type { LegacyProgressReporter } from '../core/ports/legacy-progress-reporter';
 
 export class Scanner {
   private readonly _commandRunner: CommandRunner;
   private readonly _enrichers: Enricher[];
   private readonly _fileSystem: FileSystem;
-  private readonly _progressReporter: ProgressReporter;
+  private readonly _legacyProgressReporter: LegacyProgressReporter;
 
   constructor(args: {
     commandRunner: CommandRunner;
     enrichers: Enricher[];
     fileSystem: FileSystem;
-    progressReporter: ProgressReporter;
+    legacyProgressReporter: LegacyProgressReporter;
   }) {
     this._commandRunner = args.commandRunner;
     this._enrichers = args.enrichers;
     this._fileSystem = args.fileSystem;
-    this._progressReporter = args.progressReporter;
+    this._legacyProgressReporter = args.legacyProgressReporter;
   }
 
   async scanWorkspace(): Promise<Workspace> {
@@ -29,7 +29,7 @@ export class Scanner {
     const workspace = new Workspace({ tree });
 
     const stepCount = this._enrichers.length;
-    const phase = this._progressReporter.createPhase('Scanning');
+    const phase = this._legacyProgressReporter.createPhase('Scanning');
 
     for (const [index, enricher] of this._enrichers.entries()) {
       const progressStep = phase.createStep({
@@ -45,7 +45,7 @@ export class Scanner {
         workspace: workspace.asReadonly(),
         commandRunner: this._commandRunner,
         progressStep: {
-          ...NO_OP_STEP,
+          ...LEGACY_NO_OP_STEP,
           updateMessage: (detail) => {
             lastMessage = detail;
             progressStep.updateMessage(_formatStepMessage('scanning', detail));

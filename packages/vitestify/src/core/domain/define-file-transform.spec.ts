@@ -5,7 +5,7 @@ import {
   WorkspaceMother,
 } from '../models/workspace.mother';
 import { CommandRunnerFake } from '../ports/command-runner.fake';
-import { ProgressReporterFake } from '../ports/progress-reporter.fake';
+import { LegacyProgressReporterFake } from '../ports/legacy-progress-reporter.fake';
 import { defineFileTransform } from './define-file-transform';
 import { fileTag } from './workspace';
 
@@ -22,8 +22,8 @@ describe(defineFileTransform, () => {
       ),
     );
 
-    const progressReporter = new ProgressReporterFake();
-    const progressStep = progressReporter
+    const legacyProgressReporter = new LegacyProgressReporterFake();
+    const progressStep = legacyProgressReporter
       .createPhase('transform')
       .createStep({ name: 'identity' });
 
@@ -38,7 +38,7 @@ describe(defineFileTransform, () => {
     });
 
     expect
-      .soft(progressReporter.phases()[0].steps[0].message)
+      .soft(legacyProgressReporter.phases()[0].steps[0].message)
       .toBe('0 file(s) transformed');
   });
 });

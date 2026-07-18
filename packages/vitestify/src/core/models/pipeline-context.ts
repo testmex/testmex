@@ -1,7 +1,7 @@
 import type { CommandRunner } from '../ports/command-runner';
-import type { Step } from '../ports/progress-reporter';
+import type { LegacyStep } from '../ports/legacy-progress-reporter';
 
 export interface PipelineContext {
   commandRunner: CommandRunner;
-  progressStep: Step;
+  progressStep: LegacyStep;
 }

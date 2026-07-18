@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { _renderStepMessage } from './terminal-progress-reporter';
+import { _renderStepMessage } from './legacy-terminal-progress-reporter';
 
 describe(_renderStepMessage, () => {
   it('formats step without message', () => {

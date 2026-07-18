@@ -1,11 +1,14 @@
 import type { Workspace } from '../core/domain/workspace';
 import type { Transform, TransformResult } from '../core/models/transform';
 import type { CommandRunner } from '../core/ports/command-runner';
-import { NullProgressReporter } from '../core/ports/null-progress-reporter';
-import type { Phase, ProgressReporter } from '../core/ports/progress-reporter';
+import { LegacyNullProgressReporter } from '../core/ports/legacy-null-progress-reporter';
+import type {
+  LegacyPhase,
+  LegacyProgressReporter,
+} from '../core/ports/legacy-progress-reporter';
 export class Transformer {
   private readonly _commandRunner: CommandRunner;
-  private readonly _progressReporter: ProgressReporter;
+  private readonly _legacyProgressReporter: LegacyProgressReporter;
   private readonly _transforms: Transform[];
 
   private _changesTotalCount = 0;
@@ -13,20 +16,20 @@ export class Transformer {
   constructor({
     commandRunner,
     transforms,
-    progressReporter = new NullProgressReporter(),
+    legacyProgressReporter = new LegacyNullProgressReporter(),
   }: {
     commandRunner: CommandRunner;
     transforms: Transform[];
-    progressReporter?: ProgressReporter;
+    legacyProgressReporter?: LegacyProgressReporter;
   }) {
     this._commandRunner = commandRunner;
-    this._progressReporter = progressReporter;
+    this._legacyProgressReporter = legacyProgressReporter;
     this._transforms = transforms;
   }
 
   async transform(workspace: Workspace): Promise<void> {
     const stepCount = this._transforms.length;
-    const phase = this._progressReporter.createPhase('Transforming');
+    const phase = this._legacyProgressReporter.createPhase('Transforming');
 
     for (const [index, transform] of this._transforms.entries()) {
       const result = await this._applyTransform({
@@ -78,7 +81,7 @@ export class Transformer {
     transform,
     workspace,
   }: {
-    phase: Phase;
+    phase: LegacyPhase;
     stepCount: number;
     stepNumber: number;
     transform: Transform;
@@ -131,7 +134,7 @@ export class Transformer {
     phase,
     workspace,
   }: {
-    phase: Phase;
+    phase: LegacyPhase;
     workspace: Workspace;
   }): Promise<void> {
     const progressStep = phase.createStep({ name: 'Applying changes' });

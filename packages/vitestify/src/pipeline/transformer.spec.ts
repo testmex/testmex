@@ -8,12 +8,12 @@ import { WorkspaceState } from '../core/models/workspace-state';
 import type { CommandRunner } from '../core/ports/command-runner';
 import { CommandRunnerFake } from '../core/ports/command-runner.fake';
 import { FileSystemFake } from '../core/ports/file-system.fake';
-import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
+import { LegacyProgressReporterFake } from '../core/ports/legacy-progress-reporter.fake';
 import { Transformer } from './transformer';
 
 describe(Transformer, () => {
   it('transformer reports transform name during apply', async () => {
-    const { progressReporter, transform } = setUpTransformer({
+    const { legacyProgressReporter, transform } = setUpTransformer({
       transforms: [
         defineTransform({
           name: 'jest-mock',
@@ -32,7 +32,7 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect(progressReporter.phases()[0].steps).toMatchObject([
+    expect(legacyProgressReporter.phases()[0].steps).toMatchObject([
       {
         name: 'jest-mock',
         stepNumber: 1,
@@ -57,7 +57,7 @@ describe(Transformer, () => {
   });
 
   it('transformer reports transform error on progress', async () => {
-    const { progressReporter, transform } = setUpTransformer({
+    const { legacyProgressReporter, transform } = setUpTransformer({
       transforms: [
         defineTransform({
           name: 'jest-mock',
@@ -70,14 +70,14 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect(progressReporter.phases()[0].steps[0]).toMatchObject({
+    expect(legacyProgressReporter.phases()[0].steps[0]).toMatchObject({
       status: 'error',
       error: 'failed · parse failed',
     });
   });
 
   it('transformer continues to next transform after error', async () => {
-    const { progressReporter, transform } = setUpTransformer({
+    const { legacyProgressReporter, transform } = setUpTransformer({
       transforms: [
         defineTransform({
           name: 'jest-mock',
@@ -97,9 +97,9 @@ describe(Transformer, () => {
     await transform();
 
     expect
-      .soft(progressReporter.phases()[0].steps[0])
+      .soft(legacyProgressReporter.phases()[0].steps[0])
       .toMatchObject({ status: 'error', error: 'failed · parse failed' });
-    expect.soft(progressReporter.phases()[0].steps[1]).toMatchObject({
+    expect.soft(legacyProgressReporter.phases()[0].steps[1]).toMatchObject({
       name: 'jest-spy-on',
       stepNumber: 2,
       stepCount: 2,
@@ -318,7 +318,7 @@ describe(Transformer, () => {
       { command: ['npm', 'install', 'vitest'], output: '' },
       { command: ['npx', 'nx', 'add', '@nx/vitest'], output: '' },
     ]);
-    const { progressReporter, transform } = setUpTransformer({
+    const { legacyProgressReporter, transform } = setUpTransformer({
       commandRunner,
       transforms: [
         defineTransform({
@@ -333,7 +333,7 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect(progressReporter.phases()[0].steps).toMatchObject([
+    expect(legacyProgressReporter.phases()[0].steps).toMatchObject([
       {
         name: 'install-deps',
         status: 'done',
@@ -358,7 +358,7 @@ describe(Transformer, () => {
         error: new Error('install failed'),
       },
     ]);
-    const { progressReporter, transform } = setUpTransformer({
+    const { legacyProgressReporter, transform } = setUpTransformer({
       commandRunner,
       transforms: [
         defineTransform({
@@ -372,7 +372,7 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect(progressReporter.phases()[0].steps[1]).toMatchObject({
+    expect(legacyProgressReporter.phases()[0].steps[1]).toMatchObject({
       name: 'Applying changes',
       subSteps: [
         { message: 'applied 0 changes' },
@@ -390,21 +390,21 @@ function setUpTransformer({
   transforms: Transform[];
 }) {
   const fileSystem = new FileSystemFake();
-  const progressReporter = new ProgressReporterFake();
+  const legacyProgressReporter = new LegacyProgressReporterFake();
   const workspace = new Workspace({
     state: new WorkspaceState(),
     tree: new Tree({ fileSystem }),
   });
   const transformer = new Transformer({
     commandRunner,
-    progressReporter,
+    legacyProgressReporter,
     transforms,
   });
 
   return {
     commandRunner,
     fileSystem,
-    progressReporter,
+    legacyProgressReporter,
     transform: () => transformer.transform(workspace),
     workspace,
   };
