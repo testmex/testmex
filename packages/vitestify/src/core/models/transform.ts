@@ -15,11 +15,19 @@ export interface Transform {
 }
 
 export interface TransformResult {
-  verify(options: { activityStep: ActivityStep }): Promise<void | VerifyResult>;
+  verify(options: VerifyOptions): Promise<void | VerifyResult>;
 }
 
 export interface VerifyResult {
-  rollback(options: { activityStep: ActivityStep }): Promise<void>;
+  rollback(options: RollbackOptions): Promise<void>;
+}
+
+export interface VerifyOptions {
+  activityStep: ActivityStep;
+}
+
+export interface RollbackOptions {
+  activityStep: ActivityStep;
 }
 
 export function defineTransform(args: Transform): Transform {

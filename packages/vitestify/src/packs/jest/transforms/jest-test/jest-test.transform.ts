@@ -1,15 +1,18 @@
 import { basename, dirname } from 'node:path/posix';
+import type { ActivityStep } from '../../../../core/models/progress-tracker/activity-step';
 import {
   relativePath,
   type RelativePath,
 } from '../../../../core/models/relative-path';
-import type { TransformOptions } from '../../../../core/models/transform';
+import type {
+  TransformOptions,
+  VerifyOptions,
+} from '../../../../core/models/transform';
 import {
   defineTransform,
   type Transform,
   type VerifyResult,
 } from '../../../../core/models/transform';
-import type { ActivityStep } from '../../../../core/models/progress-tracker/activity-step';
 import { fileTags } from '../../../core/identifiers';
 import { renameJestToSpecFile, renameSpecToJestFile } from '../../jest-core';
 import { jestFocusSkipShorthandTransform } from './jest-focus-skip-shorthand/jest-focus-skip-shorthand.transform';
@@ -52,7 +55,8 @@ export const jestTestTransform = defineTransform({
     }
 
     return {
-      verify: (_options) => _verify({ ...options, originalContents }),
+      verify: (verifyOptions) =>
+        _verify({ ...options, ...verifyOptions, originalContents }),
     };
   },
 });
@@ -78,9 +82,10 @@ async function _captureOriginalContents({
 }
 
 async function _verify(
-  options: TransformOptions & {
-    originalContents: ReadonlyMap<RelativePath, string>;
-  },
+  options: TransformOptions &
+    VerifyOptions & {
+      originalContents: ReadonlyMap<RelativePath, string>;
+    },
 ): Promise<void | VerifyResult> {
   const { originalContents, workspace } = options;
   if (originalContents.size === 0) {
