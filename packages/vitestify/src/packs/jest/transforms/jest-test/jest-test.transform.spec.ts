@@ -7,6 +7,7 @@ import {
 } from '../../../../core/models/workspace.mother';
 import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
 import { Analyzer } from '../../../../pipeline/analyzer';
+import { Transformer } from '../../../../pipeline/transformer';
 import { ProgressTracker } from '../../../../core/models/progress-tracker';
 import { runTransform } from '../../../../testing/run-transform';
 import { fileTags } from '../../../core/identifiers';
@@ -83,10 +84,55 @@ jest.mock('./foo');
       .toContain(`expect(vi.fn()).not.toHaveBeenCalled();`);
   });
 
-  it.todo('records child transform steps with per-child file counts', () => {
-    // Run jest-test transform against a workspace with known test files.
-    // Read tracker snapshot for the jest-test transform step.
-    // Assert childTransforms lists each child transform name with transformedFileCount.
+  it.todo('records child transform steps with per-child file counts', async () => {
+    const progressTracker = new ProgressTracker();
+    const appName = 'my-app';
+    const testPath = relativePath(`apps/${appName}/src/example.jest.ts`);
+
+    const workspace = createTestingWorkspace(
+      WorkspaceMother.withApp(appName).withFile(
+        WorkspaceFileMother.testFile({
+          appName,
+          content: 'expect(jest.fn()).toHaveBeenCalled();',
+          fileName: 'src/example.jest.ts',
+        }).build(),
+      ),
+    );
+
+    await new Analyzer({ heuristics: jestPack.heuristics }).analyze(workspace);
+    workspace.applyHeuristicResults({
+      findings: [{ type: findingTypes.jestSymbol, filePath: testPath }],
+    });
+
+    await new Transformer({
+      commandRunner: new CommandRunnerFake(),
+      transforms: [jestTestTransform],
+      progressTracker,
+    }).transform(workspace);
+
+    const jestTestStep = progressTracker
+      .snapshot()
+      .phases.find((phase) => phase.kind === 'transforming')
+      ?.steps.find(
+        (step) => step.kind === 'transform' && step.name === 'jest-test',
+      );
+
+    expect(jestTestStep).toMatchObject({
+      kind: 'transform',
+      name: 'jest-test',
+      childTransforms: [
+        { name: 'jest-globals-import', transformedFileCount: 0 },
+        { name: 'jest-mock', transformedFileCount: 0 },
+        { name: 'jest-set-mock', transformedFileCount: 0 },
+        { name: 'jest-set-timeout', transformedFileCount: 0 },
+        { name: 'jest-types', transformedFileCount: 0 },
+        { name: 'jest-vi', transformedFileCount: 1 },
+        { name: 'jest-focus-skip-shorthand', transformedFileCount: 0 },
+        { name: 'snap', transformedFileCount: 0 },
+        { name: 'vitest-imports', transformedFileCount: 1 },
+        { name: 'rename-jest-to-spec', transformedFileCount: 0 },
+      ],
+    });
   });
 });
 
