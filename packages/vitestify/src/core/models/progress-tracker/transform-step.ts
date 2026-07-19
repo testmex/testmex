@@ -4,7 +4,7 @@ import type { SnapshotChangeListener } from './snapshot-change-listener';
 export interface TransformStepSnapshot extends SnapshotBase {
   readonly kind: 'transform';
   readonly name: string;
-  readonly transformedFileCount: number;
+  readonly transformedFileCount?: number;
   readonly childTransforms: readonly TransformStepSnapshot[];
   readonly stepNumber: number;
   readonly stepCount: number;
@@ -88,15 +88,11 @@ export class TransformStepNode implements TransformStep {
 
   private _syncChildTransforms(): void {
     const childTransforms = this._childTransforms.map((step) => step.snapshot);
+    const rolledUpFileCount = _rolledUpTransformedFileCount(childTransforms);
 
     this._updateSnapshot({
       childTransforms,
-      transformedFileCount:
-        this._transformedFileCount ??
-        childTransforms.reduce(
-          (total, child) => total + child.transformedFileCount,
-          0,
-        ),
+      transformedFileCount: this._transformedFileCount ?? rolledUpFileCount,
     });
   }
 
@@ -121,10 +117,28 @@ function _createTransformStepSnapshot(args: {
     stepNumber: args.stepNumber,
     stepCount: args.stepCount,
     status: args.status ?? 'started',
-    transformedFileCount: args.transformedFileCount ?? 0,
     childTransforms: args.childTransforms,
+    ...(args.transformedFileCount !== undefined
+      ? { transformedFileCount: args.transformedFileCount }
+      : {}),
     ...(args.statusMessage !== undefined
       ? { statusMessage: args.statusMessage }
       : {}),
   };
+}
+
+function _rolledUpTransformedFileCount(
+  children: readonly TransformStepSnapshot[],
+): number | undefined {
+  let total = 0;
+  let hasAny = false;
+
+  for (const child of children) {
+    if (child.transformedFileCount !== undefined) {
+      total += child.transformedFileCount;
+      hasAny = true;
+    }
+  }
+
+  return hasAny ? total : undefined;
 }

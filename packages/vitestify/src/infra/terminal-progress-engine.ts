@@ -174,7 +174,10 @@ export class TerminalProgressEngine {
               activity.statusMessage,
             ),
           ),
-          headlineSuffix: ` · ${this._formatDetectedFileCount(step.detectedFileCount)}`,
+          headlineSuffix:
+            step.detectedFileCount === undefined
+              ? undefined
+              : ` · ${this._formatDetectedFileCount(step.detectedFileCount)}`,
         });
       case 'transform':
         return this._formatStepWithSubLines({
@@ -182,7 +185,10 @@ export class TerminalProgressEngine {
           subLines: step.childTransforms.map((child) =>
             this._formatChildTransformLine(child),
           ),
-          headlineSuffix: ` · ${this._formatTransformedFileCount(step.transformedFileCount)}`,
+          headlineSuffix:
+            step.transformedFileCount === undefined
+              ? undefined
+              : ` · ${this._formatTransformedFileCount(step.transformedFileCount)}`,
         });
     }
   }
@@ -236,10 +242,12 @@ export class TerminalProgressEngine {
   }
 
   private _formatChildTransformLine(child: TransformStepSnapshot): string {
-    return this._withStatusMessageSuffix(
-      `${child.name} · ${this._formatTransformedFileCount(child.transformedFileCount)}`,
-      child.statusMessage,
-    );
+    const formatted =
+      child.transformedFileCount === undefined
+        ? child.name
+        : `${child.name} · ${this._formatTransformedFileCount(child.transformedFileCount)}`;
+
+    return this._withStatusMessageSuffix(formatted, child.statusMessage);
   }
 
   private _formatTransformedFileCount(count: number): string {

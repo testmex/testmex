@@ -51,7 +51,7 @@ describe(Transformer, () => {
       },
       {
         kind: 'activity',
-        message: 'applied 0 changes',
+        message: 'Applying changes',
         status: 'done',
       },
     ]);
@@ -99,13 +99,11 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect
-      .soft(transformingPhase(progressTracker)?.steps[0])
-      .toMatchObject({
-        kind: 'transform',
-        status: 'failed',
-        statusMessage: 'parse failed',
-      });
+    expect.soft(transformingPhase(progressTracker)?.steps[0]).toMatchObject({
+      kind: 'transform',
+      status: 'failed',
+      statusMessage: 'parse failed',
+    });
     expect.soft(transformingPhase(progressTracker)?.steps[1]).toMatchObject({
       kind: 'transform',
       name: 'jest-spy-on',
@@ -349,7 +347,7 @@ describe(Transformer, () => {
       },
       {
         kind: 'activity',
-        message: 'applied 0 changes',
+        message: 'Applying changes',
         status: 'done',
       },
       {
@@ -397,7 +395,7 @@ describe(Transformer, () => {
       },
       {
         kind: 'activity',
-        message: 'applied 0 changes',
+        message: 'Applying changes',
         status: 'done',
       },
       {
@@ -460,7 +458,7 @@ describe(Transformer, () => {
       },
       {
         kind: 'activity',
-        message: 'applied 0 changes',
+        message: 'Applying changes',
         status: 'done',
       },
     ]);
@@ -493,6 +491,11 @@ describe(Transformer, () => {
           step.kind === 'activity' && !step.message.startsWith('applied '),
       ),
     ).toMatchObject([
+      {
+        kind: 'activity',
+        message: 'Applying changes',
+        status: 'done',
+      },
       {
         kind: 'activity',
         message: 'npm install vitest',

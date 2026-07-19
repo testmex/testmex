@@ -22,7 +22,7 @@ describe(TerminalProgressEngine, () => {
 
     expect(instructions).toEqual([
       { kind: 'intro', message: 'Scanning started' },
-      { kind: 'spinnerStart', message: '[1/1] code · 0 files detected' },
+      { kind: 'spinnerStart', message: '[1/1] code' },
       { kind: 'spinnerMessage', message: '[1/1] code · 5 files detected' },
       { kind: 'spinnerStop', message: '[1/1] code · 5 files detected' },
       { kind: 'outro', message: 'Scanning finished' },
@@ -40,7 +40,23 @@ describe(TerminalProgressEngine, () => {
 
     expect(instructions.at(-1)).toEqual({
       kind: 'spinnerStart',
-      message: '[1/2] code · 0 files detected',
+      message: '[1/2] code',
+    });
+  });
+
+  it('engine formats enricher with zero detected files', () => {
+    const { tracker, computeInstructions } = setUp();
+
+    const enricher = tracker
+      .beginScanning({ enricherCount: 1 })
+      .createEnricherStep({ name: 'code' });
+    enricher.setDetectedFileCount(0);
+
+    const instructions = computeInstructions();
+
+    expect(instructions.at(-1)).toEqual({
+      kind: 'spinnerMessage',
+      message: '[1/1] code · 0 files detected',
     });
   });
 
@@ -75,8 +91,7 @@ describe(TerminalProgressEngine, () => {
 
     expect(instructions.at(-1)).toEqual({
       kind: 'spinnerStop',
-      message:
-        '[1/1] package-manager · 0 files detected · pnpm detected (good choice 😉)',
+      message: '[1/1] package-manager · pnpm detected (good choice 😉)',
     });
   });
 
@@ -160,6 +175,37 @@ describe(TerminalProgressEngine, () => {
     expect(instructions.at(-1)).toEqual({
       kind: 'spinnerMessage',
       message: '[1/2] setup-files · 4 files transformed',
+    });
+  });
+
+  it('engine formats transform with zero transformed files', () => {
+    const { tracker, computeInstructions } = setUp();
+
+    tracker
+      .beginTransforming({ transformCount: 1 })
+      .createTransformStep({ name: 'setup-files' })
+      .setTransformedFileCount(0);
+
+    const instructions = computeInstructions();
+
+    expect(instructions.at(-1)).toEqual({
+      kind: 'spinnerMessage',
+      message: '[1/1] setup-files · 0 files transformed',
+    });
+  });
+
+  it('engine omits transform file count when unset', () => {
+    const { tracker, computeInstructions } = setUp();
+
+    tracker
+      .beginTransforming({ transformCount: 1 })
+      .createTransformStep({ name: 'setup-files' });
+
+    const instructions = computeInstructions();
+
+    expect(instructions.at(-1)).toEqual({
+      kind: 'spinnerStart',
+      message: '[1/1] setup-files',
     });
   });
 

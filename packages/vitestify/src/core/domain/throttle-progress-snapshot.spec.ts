@@ -16,10 +16,9 @@ describe(throttleProgressSnapshot, () => {
     await vi.advanceTimersByTimeAsync(90);
     enricher.setDetectedFileCount(1);
 
-    expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
-      kind: 'enricher',
-      detectedFileCount: 0,
-    });
+    const lastStep = snapshots.at(-1)?.phases[0]?.steps[0];
+    expect(lastStep).toMatchObject({ kind: 'enricher' });
+    expect(lastStep).not.toHaveProperty('detectedFileCount');
   });
 
   it('flushes detected file count after throttle window elapses', async () => {
@@ -62,10 +61,12 @@ describe(throttleProgressSnapshot, () => {
     await vi.advanceTimersByTimeAsync(90);
     transform.setTransformedFileCount(1);
 
-    expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
-      kind: 'transform',
-      transformedFileCount: 0,
-    });
+    expect
+      .soft(snapshots.at(-1)?.phases[0]?.steps[0])
+      .toMatchObject({ kind: 'transform' });
+    expect
+      .soft(snapshots.at(-1)?.phases[0]?.steps[0])
+      .not.toHaveProperty('transformedFileCount');
   });
 
   it('flushes transformed file count on done', async () => {
@@ -94,13 +95,17 @@ describe(throttleProgressSnapshot, () => {
     await vi.advanceTimersByTimeAsync(90);
     child.setTransformedFileCount(1);
 
-    expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
+    const step = snapshots.at(-1)?.phases[0]?.steps[0];
+    expect.soft(step).toMatchObject({
       kind: 'transform',
       name: 'jest-test',
-      childTransforms: [
-        { kind: 'transform', name: 'jest-mock', transformedFileCount: 0 },
-      ],
+      childTransforms: [{ kind: 'transform', name: 'jest-mock' }],
     });
+    expect
+      .soft(
+        step && 'childTransforms' in step ? step.childTransforms[0] : undefined,
+      )
+      .not.toHaveProperty('transformedFileCount');
   });
 
   it('passes through new child transform immediately', () => {
@@ -116,8 +121,8 @@ describe(throttleProgressSnapshot, () => {
       kind: 'transform',
       name: 'jest-test',
       childTransforms: [
-        { kind: 'transform', name: 'jest-mock', transformedFileCount: 0 },
-        { kind: 'transform', name: 'vi-imports', transformedFileCount: 0 },
+        { kind: 'transform', name: 'jest-mock' },
+        { kind: 'transform', name: 'vi-imports' },
       ],
     });
   });

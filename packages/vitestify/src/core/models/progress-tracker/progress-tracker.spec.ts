@@ -13,10 +13,12 @@ describe(ProgressTracker, () => {
     enricher.setDetectedFileCount(5);
 
     expect(snapshots[0]).not.toBe(snapshots[snapshots.length - 1]);
-    expect(priorSnapshot.phases[0].steps[0]).toMatchObject({
+    expect.soft(priorSnapshot.phases[0].steps[0]).toMatchObject({
       kind: 'enricher',
-      detectedFileCount: 0,
     });
+    expect
+      .soft(priorSnapshot.phases[0].steps[0])
+      .not.toHaveProperty('detectedFileCount');
   });
 
   it('records typed phase and step snapshots', () => {

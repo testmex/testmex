@@ -6,7 +6,7 @@ import type { SnapshotChangeListener } from './snapshot-change-listener';
 export interface EnricherStepSnapshot extends SnapshotBase {
   readonly kind: 'enricher';
   readonly name: string;
-  readonly detectedFileCount: number;
+  readonly detectedFileCount?: number;
   readonly activities: readonly ActivityStepSnapshot[];
   readonly stepNumber: number;
   readonly stepCount: number;
@@ -97,8 +97,10 @@ function _createEnricherStepSnapshot(args: {
     stepNumber: args.stepNumber,
     stepCount: args.stepCount,
     status: args.status ?? 'started',
-    detectedFileCount: args.detectedFileCount ?? 0,
     activities: args.activities ?? [],
+    ...(args.detectedFileCount !== undefined
+      ? { detectedFileCount: args.detectedFileCount }
+      : {}),
     ...(args.statusMessage !== undefined
       ? { statusMessage: args.statusMessage }
       : {}),

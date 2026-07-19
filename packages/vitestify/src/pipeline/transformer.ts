@@ -105,10 +105,10 @@ export class Transformer {
     phase: TransformingPhase;
     workspace: Workspace;
   }): Promise<void> {
+    const applyChangesActivity = phase.createActivityStep('Applying changes');
     const { count } = await workspace.tree.commit();
     this._changesTotalCount += count;
-
-    phase.createActivityStep(`applied ${count} changes`).done();
+    applyChangesActivity.done(`applied ${count} changes`);
 
     for (const command of workspace.commands.drain()) {
       const activity = phase.createActivityStep(command.join(' '));
