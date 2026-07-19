@@ -1,5 +1,6 @@
 import type { Workspace } from '../core/domain/workspace';
 import type { Transform, TransformResult } from '../core/models/transform';
+import type { ProgressTracker } from '../core/models/progress-tracker';
 import type { CommandRunner } from '../core/ports/command-runner';
 import { LegacyNullProgressReporter } from '../core/ports/legacy-null-progress-reporter';
 import type {
@@ -17,11 +18,17 @@ export class Transformer {
     commandRunner,
     transforms,
     legacyProgressReporter = new LegacyNullProgressReporter(),
+    progressTracker,
   }: {
     commandRunner: CommandRunner;
     transforms: Transform[];
     legacyProgressReporter?: LegacyProgressReporter;
+    progressTracker?: ProgressTracker;
   }) {
+    if (progressTracker !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
+
     this._commandRunner = commandRunner;
     this._legacyProgressReporter = legacyProgressReporter;
     this._transforms = transforms;

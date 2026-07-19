@@ -1,5 +1,6 @@
 import type { Workspace } from '../core/domain/workspace';
 import type { Heuristic } from '../core/models/heuristic';
+import type { ProgressTracker } from '../core/models/progress-tracker';
 import { LegacyNullProgressReporter } from '../core/ports/legacy-null-progress-reporter';
 import type { LegacyProgressReporter } from '../core/ports/legacy-progress-reporter';
 
@@ -10,10 +11,16 @@ export class Analyzer {
   constructor({
     heuristics,
     legacyProgressReporter = new LegacyNullProgressReporter(),
+    progressTracker,
   }: {
     heuristics: Heuristic[];
     legacyProgressReporter?: LegacyProgressReporter;
+    progressTracker?: ProgressTracker;
   }) {
+    if (progressTracker !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
+
     this._heuristics = heuristics;
     this._legacyProgressReporter = legacyProgressReporter;
   }

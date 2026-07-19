@@ -76,6 +76,12 @@ jest.mock('./foo');
       )
       .toContain(`expect(vi.fn()).not.toHaveBeenCalled();`);
   });
+
+  it.todo('records child transform steps with per-child file counts', () => {
+    // Run jest-test transform against a workspace with known test files.
+    // Read tracker snapshot for the jest-test transform step.
+    // Assert childTransforms lists each child transform name with transformedFileCount.
+  });
 });
 
 async function _setupVerifyWorkspace() {

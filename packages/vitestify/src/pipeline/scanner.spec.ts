@@ -96,7 +96,9 @@ describe(Scanner.name, () => {
     await scanner.scanWorkspace();
 
     expect(
-      legacyProgressReporter.phases()[0].steps.find((step) => step.name === 'test'),
+      legacyProgressReporter
+        .phases()[0]
+        .steps.find((step) => step.name === 'test'),
     ).toMatchObject({
       status: 'done',
       message: 'scanned · 1 file(s) found',
@@ -121,7 +123,10 @@ describe(Scanner.name, () => {
       { name: 'nx', message: 'scanned · 1 project(s) detected' },
       { name: 'jest', message: 'scanned' },
       { name: 'code', message: 'scanned' },
-      { name: 'package-manager', message: 'scanned · pnpm detected (good choice 😉)' },
+      {
+        name: 'package-manager',
+        message: 'scanned · pnpm detected (good choice 😉)',
+      },
       { name: 'test', message: 'scanned' },
       { name: 'vitest-config', message: 'scanned' },
     ]);
@@ -136,7 +141,9 @@ describe(Scanner.name, () => {
     await scanner.scanWorkspace();
 
     expect(
-      legacyProgressReporter.phases()[0].steps.find((step) => step.name === 'nx'),
+      legacyProgressReporter
+        .phases()[0]
+        .steps.find((step) => step.name === 'nx'),
     ).toMatchObject({
       status: 'done',
       message: 'scanned · 1 project(s) detected',
@@ -171,6 +178,18 @@ describe(Scanner.name, () => {
         tags: ['jest-config'],
       },
     ]);
+  });
+
+  it.todo('records enricher steps with detected file count', () => {
+    // Set up Scanner with ProgressTracker and workspace with 5 files.
+    // Run scanWorkspace().
+    // Assert scanning phase has one enricher step per enricher with final detectedFileCount.
+  });
+
+  it.todo('records activity under enricher step', () => {
+    // Set up Scanner with workspace triggering NxEnricher.
+    // Run scanWorkspace().
+    // Assert nx enricher step has an activity with message containing loading nx graph.
   });
 });
 

@@ -380,6 +380,18 @@ describe(Transformer, () => {
       ],
     });
   });
+
+  it.todo('records transform steps with file counts', () => {
+    // Set up Transformer with two transforms that report transformedFileCount.
+    // Run transform().
+    // Assert transforming phase has two transform steps with expected counts.
+  });
+
+  it.todo('records activity steps for apply-changes commands', () => {
+    // Set up Transformer with workspace queuing two commands.
+    // Run transform() through apply-changes.
+    // Assert transforming phase includes activity steps for each command.
+  });
 });
 
 function setUpTransformer({

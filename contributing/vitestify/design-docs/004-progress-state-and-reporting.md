@@ -471,37 +471,37 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 
 ## Testing Strategy
 
-### Records enricher steps with detected file count
+### 🚧 Records enricher steps with detected file count
 
 - Set up `Scanner` with `ProgressTracker` and workspace with 5 files.
 - Run `scanWorkspace()`.
 - Assert scanning phase has one `enricher` step per enricher with final `detectedFileCount`.
 
-### Records nx activity under enricher step
+### 🚧 Records nx activity under enricher step
 
 - Set up `Scanner` with workspace triggering `NxEnricher`.
 - Run `scanWorkspace()`.
 - Assert nx enricher step has an `activity` with message containing `loading nx graph`.
 
-### Records heuristic steps per heuristic
+### 🚧 Records heuristic steps per heuristic
 
 - Set up `Analyzer` with `ProgressTracker` and known heuristic count.
 - Run `analyze()`.
 - Assert analysis phase `steps` are all `kind: 'heuristic'` and `status: 'done'`.
 
-### Records transform steps with file counts
+### 🚧 Records transform steps with file counts
 
 - Set up `Transformer` with two transforms that report `transformedFileCount`.
 - Run `transform()`.
 - Assert transforming phase has two `transform` steps with expected counts.
 
-### Records activity steps for apply-changes commands
+### 🚧 Records activity steps for apply-changes commands
 
 - Set up `Transformer` with workspace queuing two commands.
 - Run `transform()` through apply-changes.
 - Assert transforming phase includes `activity` steps for each command.
 
-### Records child transform steps with per-child file counts
+### 🚧 Records child transform steps with per-child file counts
 
 - Run `jest-test` transform against a workspace with known test files.
 - Read tracker snapshot for the `jest-test` transform step.

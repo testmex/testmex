@@ -1,6 +1,7 @@
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
 import type { Enricher } from '../core/models/enricher';
+import type { ProgressTracker } from '../core/models/progress-tracker';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
 import { LEGACY_NO_OP_STEP } from '../core/ports/legacy-progress-reporter';
@@ -17,7 +18,12 @@ export class Scanner {
     enrichers: Enricher[];
     fileSystem: FileSystem;
     legacyProgressReporter: LegacyProgressReporter;
+    progressTracker?: ProgressTracker;
   }) {
+    if (args.progressTracker !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
+
     this._commandRunner = args.commandRunner;
     this._enrichers = args.enrichers;
     this._fileSystem = args.fileSystem;
