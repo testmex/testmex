@@ -510,12 +510,12 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 </details>
 
 <details>
-<summary>🚧 PR#4 — Remove old port</summary>
+<summary>✅ PR#4 — Remove old port</summary>
 
 ## Tasks
 
-- [ ] Remove `LegacyProgressReporter` port, `LegacyNullProgressReporter`, `LegacyProgressReporterFake`.
-- [ ] Remove `LegacyTerminalProgressReporter`, `LegacyThrottledProgressReporter`, and generic `LegacySubStep` API.
+- [x] Remove `LegacyProgressReporter` port, `LegacyNullProgressReporter`, `LegacyProgressReporterFake`.
+- [x] Remove `LegacyTerminalProgressReporter`, `LegacyThrottledProgressReporter`, and generic `LegacySubStep` API.
 
 </details>
 
