@@ -12,10 +12,6 @@ export class TerminalProgressReporter implements ProgressReporter {
   private _activeSpinner: ReturnType<typeof spinner> | undefined;
 
   notify(snapshot: ProgressSnapshot): void {
-    if (!process.stdout.isTTY) {
-      return;
-    }
-
     for (const instruction of this._engine.computeInstructions(
       this._previous,
       snapshot,
