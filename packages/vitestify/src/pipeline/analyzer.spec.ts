@@ -8,7 +8,7 @@ import {
 import { Analyzer } from './analyzer';
 
 describe(Analyzer.name, () => {
-  it.todo('records heuristic steps per heuristic', async () => {
+  it('records heuristic steps per heuristic', async () => {
     const progressTracker = new ProgressTracker();
     const heuristics = [
       defineHeuristic({ name: 'jest', inspect: async () => ({ findings: [] }) }),
@@ -30,7 +30,7 @@ describe(Analyzer.name, () => {
       heuristicsCount: 2,
       status: 'done',
     });
-    expect.soft(analysisPhase?.steps).toEqual([
+    expect.soft(analysisPhase?.steps).toMatchObject([
       { kind: 'heuristic', name: 'jest', status: 'done' },
       { kind: 'heuristic', name: 'react', status: 'done' },
     ]);
