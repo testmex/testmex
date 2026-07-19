@@ -84,7 +84,7 @@ jest.mock('./foo');
       .toContain(`expect(vi.fn()).not.toHaveBeenCalled();`);
   });
 
-  it.todo('records child transform steps with per-child file counts', async () => {
+  it('records child transform steps with per-child file counts', async () => {
     const progressTracker = new ProgressTracker();
     const appName = 'my-app';
     const testPath = relativePath(`apps/${appName}/src/example.jest.ts`);

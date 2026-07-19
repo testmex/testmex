@@ -454,20 +454,20 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 </details>
 
 <details>
-<summary>🚧 PR#3 — Pipeline migration + nested transform reporting</summary>
+<summary>✅ PR#3 — Pipeline migration + nested transform reporting</summary>
 
 ## Tasks
 
-- [ ] Replace `LegacyProgressReporter` with `ProgressTracker` in `Scanner`, `Analyzer`, `Transformer`.
+- [x] Replace `LegacyProgressReporter` with `ProgressTracker` in `Scanner`, `Analyzer`, `Transformer`.
 - [x] Update `Scanner`: `beginScanning()` + `createEnricherStep` + `setDetectedFileCount`.
 - [x] Update enrichers: file scanners call `setDetectedFileCount`; `NxEnricher` uses `createActivityStep` for graph loading.
 - [x] Update `Analyzer`: `beginAnalysis()` + `createHeuristicStep`.
 - [x] Update `Transformer`: `beginTransforming()` + `createTransformStep` / `createActivityStep` for apply-changes commands.
-- [ ] Add `TransformStep.createChildTransform()` and `TransformStep.setTransformedFileCount()`.
-- [ ] Update `TransformOptions.progressStep` type to `TransformStep`.
-- [ ] Update `jest-test` transform: `createChildTransform` per child transform.
-- [ ] Update `defineFileTransform`: call `setTransformedFileCount` during and after the file loop.
-- [ ] Replace `LegacyProgressReporterFake` assertions with `ProgressTracker` + `snapshot()`.
+- [x] Add `TransformStep.createChildTransform()` and `TransformStep.setTransformedFileCount()`.
+- [x] Update `TransformOptions.progressStep` type to `TransformStep`.
+- [x] Update `jest-test` transform: `createChildTransform` per child transform.
+- [x] Update `defineFileTransform`: call `setTransformedFileCount` during and after the file loop.
+- [x] Replace `LegacyProgressReporterFake` assertions with `ProgressTracker` + `snapshot()`.
 
 ## Testing Strategy
 
@@ -501,7 +501,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 - Run `transform()` through apply-changes.
 - Assert transforming phase includes `activity` steps for each command.
 
-### 🚧 Records child transform steps with per-child file counts
+### ✅ Records child transform steps with per-child file counts
 
 - Run `jest-test` transform against a workspace with known test files.
 - Read tracker snapshot for the `jest-test` transform step.
