@@ -517,13 +517,6 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 - [ ] Remove `LegacyProgressReporter` port, `LegacyNullProgressReporter`, `LegacyProgressReporterFake`.
 - [ ] Remove `LegacyTerminalProgressReporter`, `LegacyThrottledProgressReporter`, and generic `LegacySubStep` API.
 
-## Testing Strategy
-
-### Existing pipeline and reporter tests still pass
-
-- Run full vitestify test suite after port removal.
-- Assert no remaining imports of removed symbols.
-
 </details>
 
 # Alternatives Considered
