@@ -250,10 +250,23 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('records activity under enricher step', () => {
-    // Set up Scanner with workspace triggering NxEnricher.
-    // Run scanWorkspace().
-    // Assert nx enricher step has an activity with message containing loading nx graph.
+  it.todo('records nx activity under enricher step', async () => {
+    const progressTracker = new ProgressTracker();
+    const { configureWorkspace, scanner } = setUp({ progressTracker });
+    configureWorkspace(nxWorkspaceMother.withApp('my-app'));
+
+    await scanner.scanWorkspace();
+
+    const nxEnricherStep = progressTracker
+      .snapshot()
+      .phases.find((phase) => phase.kind === 'scanning')
+      ?.steps.find((step) => step.kind === 'enricher' && step.name === 'nx');
+    expect.soft(nxEnricherStep?.activities).toContainEqual(
+      expect.objectContaining({
+        kind: 'activity',
+        message: expect.stringContaining('loading nx graph'),
+      }),
+    );
   });
 });
 
