@@ -462,7 +462,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 - [x] Update `Scanner`: `beginScanning()` + `createEnricherStep` + `setDetectedFileCount`.
 - [x] Update enrichers: file scanners call `setDetectedFileCount`; `NxEnricher` uses `createActivityStep` for graph loading.
 - [x] Update `Analyzer`: `beginAnalysis()` + `createHeuristicStep`.
-- [ ] Update `Transformer`: `beginTransforming()` + `createTransformStep` / `createActivityStep` for apply-changes commands.
+- [x] Update `Transformer`: `beginTransforming()` + `createTransformStep` / `createActivityStep` for apply-changes commands.
 - [ ] Add `TransformStep.createChildTransform()` and `TransformStep.setTransformedFileCount()`.
 - [ ] Update `TransformOptions.progressStep` type to `TransformStep`.
 - [ ] Update `jest-test` transform: `createChildTransform` per child transform.
@@ -495,7 +495,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 - Run `transform()`.
 - Assert transforming phase has two `transform` steps with expected counts.
 
-### 🚧 Records activity steps for apply-changes commands
+### ✅ Records activity steps for apply-changes commands
 
 - Set up `Transformer` with workspace queuing two commands.
 - Run `transform()` through apply-changes.

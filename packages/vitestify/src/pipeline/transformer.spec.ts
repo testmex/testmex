@@ -466,7 +466,7 @@ describe(Transformer, () => {
     ]);
   });
 
-  it.todo('records activity steps for apply-changes commands', async () => {
+  it('records activity steps for apply-changes commands', async () => {
     const commandRunner = new CommandRunnerFake();
     commandRunner.configure([
       { command: ['npm', 'install', 'vitest'], output: '' },
