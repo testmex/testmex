@@ -1,13 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
+import { useFakeTimers } from '../../testing/fake-timers';
 import {
   ProgressTracker,
   type ProgressSnapshot,
 } from '../models/progress-tracker';
-import { useFakeTimers } from '../../testing/fake-timers';
 import { throttleProgressSnapshot } from './throttle-progress-snapshot';
 
 describe(throttleProgressSnapshot, () => {
-  it.todo('throttles detected file count updates', async () => {
+  it('throttles detected file count updates', async () => {
     const { tracker, snapshots } = setUp();
 
     const enricher = tracker
@@ -23,7 +23,24 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('flushes detected file count on done', async () => {
+  it('flushes detected file count after throttle window elapses', async () => {
+    const { tracker, snapshots } = setUp();
+
+    const enricher = tracker
+      .beginScanning({ enricherCount: 1 })
+      .createEnricherStep({ name: 'code' });
+    enricher.setDetectedFileCount(1);
+    await vi.advanceTimersByTimeAsync(90);
+    enricher.setDetectedFileCount(2);
+    await vi.advanceTimersByTimeAsync(20);
+
+    expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
+      kind: 'enricher',
+      detectedFileCount: 2,
+    });
+  });
+
+  it('flushes detected file count on done', async () => {
     const { tracker, snapshots } = setUp();
 
     const enricher = tracker
@@ -40,7 +57,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('throttles transformed file count updates', async () => {
+  it('throttles transformed file count updates', async () => {
     const { tracker, snapshots } = setUp();
 
     const transform = tracker
@@ -56,7 +73,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('flushes transformed file count on done', async () => {
+  it('flushes transformed file count on done', async () => {
     const { tracker, snapshots } = setUp();
 
     const transform = tracker
@@ -73,7 +90,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('throttles child transform file count updates', async () => {
+  it('throttles child transform file count updates', async () => {
     const { tracker, snapshots } = setUp();
 
     const child = tracker
@@ -93,7 +110,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('passes through new enricher step immediately', () => {
+  it('passes through new enricher step immediately', () => {
     const { tracker, snapshots } = setUp();
     const scanning = tracker.beginScanning({ enricherCount: 1 });
     const baseline = snapshots.length;
@@ -107,7 +124,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('passes through new heuristic step immediately', () => {
+  it('passes through new heuristic step immediately', () => {
     const { tracker, snapshots } = setUp();
     const analysis = tracker.beginAnalysis({ heuristicsCount: 1 });
     const baseline = snapshots.length;
@@ -121,7 +138,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('passes through new transform step immediately', () => {
+  it('passes through new transform step immediately', () => {
     const { tracker, snapshots } = setUp();
     const transforming = tracker.beginTransforming({ transformCount: 1 });
     const baseline = snapshots.length;
@@ -135,7 +152,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('passes through new activity step immediately', () => {
+  it('passes through new activity step immediately', () => {
     const { tracker, snapshots } = setUp();
     const transforming = tracker.beginTransforming({ transformCount: 1 });
     const baseline = snapshots.length;
@@ -148,7 +165,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('passes through new enricher activity immediately', () => {
+  it('passes through new enricher activity immediately', () => {
     const { tracker, snapshots } = setUp();
     const enricher = tracker
       .beginScanning({ enricherCount: 1 })
@@ -164,7 +181,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('passes through enricher activity done immediately', () => {
+  it('passes through enricher activity done immediately', () => {
     const { tracker, snapshots } = setUp();
     const activity = tracker
       .beginScanning({ enricherCount: 1 })
@@ -181,7 +198,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('passes through enricher step done immediately', () => {
+  it('passes through enricher step done immediately', () => {
     const { tracker, snapshots } = setUp();
     const enricher = tracker
       .beginScanning({ enricherCount: 1 })
@@ -198,7 +215,7 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it.todo('passes through enricher step fail immediately', () => {
+  it('passes through enricher step fail immediately', () => {
     const { tracker, snapshots } = setUp();
     const enricher = tracker
       .beginScanning({ enricherCount: 1 })

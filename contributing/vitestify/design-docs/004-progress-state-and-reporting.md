@@ -32,7 +32,7 @@
 - [ ] A `TerminalProgressReporter` receives snapshot updates via `notify(snapshot)`; a `TerminalProgressEngine` (used only by the reporter) diffs consecutive snapshots into instructions, and the reporter executes them via `@clack/prompts` — same general UX as today.
 - [ ] Terminal shows phase intro/outro, numbered steps, spinners, and sub-step lines for live feedback.
 - [ ] Terminal may summarize nested transform detail (top-level spinner + sub-steps) rather than listing every file on screen.
-- [ ] Throttling applies at the reporting layer via `throttleProgressSnapshot(duration)` on `snapshot$` — only file-count changes (`detectedFileCount`, `transformedFileCount`) are throttled; status, activity messages, and other snapshot fields pass through immediately.
+- [x] Throttling applies at the reporting layer via `throttleProgressSnapshot(duration)` on `snapshot$` — only file-count changes (`detectedFileCount`, `transformedFileCount`) are throttled; status, activity messages, and other snapshot fields pass through immediately.
 
 ## Nested `jest-test` transform group (primary motivating scenario)
 
@@ -418,7 +418,7 @@ flowchart LR
 - [x] Add `ProgressReporter` interface with `notify(snapshot)`.
 - [x] Add `TerminalProgressEngine` — pure `diff(previous, next)` returning `TerminalProgressInstruction[]`; owns snapshot reconciliation, display formatting, and spinner/outro lifecycle decisions.
 - [ ] Refactor `LegacyTerminalProgressReporter` → `TerminalProgressReporter` — `notify(snapshot)` diffs via the engine, executes instructions via a `switch` on `kind` to drive clack.
-- [ ] Add `throttleProgressSnapshot(duration)` — RxJS operator; throttle file-count snapshot deltas only.
+- [x] Add `throttleProgressSnapshot(duration)` — RxJS operator; throttle file-count snapshot deltas only.
 - [ ] Update `Vitestify` constructor: accept `progressTracker`; wire `snapshot$.pipe(throttleProgressSnapshot).subscribe(progressReporter.notify)` in CLI entry point.
 
 ## Testing Strategy
