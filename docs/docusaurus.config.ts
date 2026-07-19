@@ -12,7 +12,7 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://testmex.github.io',
+  url: 'https://testmex.dev',
   baseUrl: '/',
 
   organizationName: 'testmex',
