@@ -461,7 +461,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 - [ ] Replace `LegacyProgressReporter` with `ProgressTracker` in `Scanner`, `Analyzer`, `Transformer`.
 - [x] Update `Scanner`: `beginScanning()` + `createEnricherStep` + `setDetectedFileCount`.
 - [x] Update enrichers: file scanners call `setDetectedFileCount`; `NxEnricher` uses `createActivityStep` for graph loading.
-- [ ] Update `Analyzer`: `beginAnalysis()` + `createHeuristicStep`.
+- [x] Update `Analyzer`: `beginAnalysis()` + `createHeuristicStep`.
 - [ ] Update `Transformer`: `beginTransforming()` + `createTransformStep` / `createActivityStep` for apply-changes commands.
 - [ ] Add `TransformStep.createChildTransform()` and `TransformStep.setTransformedFileCount()`.
 - [ ] Update `TransformOptions.progressStep` type to `TransformStep`.
@@ -483,7 +483,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 - Run `scanWorkspace()`.
 - Assert nx enricher step has an `activity` with message containing `loading nx graph`.
 
-### 🚧 Records heuristic steps per heuristic
+### ✅ Records heuristic steps per heuristic
 
 - Set up `Analyzer` with `ProgressTracker` and known heuristic count.
 - Run `analyze()`.

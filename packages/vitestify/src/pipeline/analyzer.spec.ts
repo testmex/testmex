@@ -7,7 +7,7 @@ import { FileSystemFake } from '../core/ports/file-system.fake';
 import { Analyzer } from './analyzer';
 
 describe(Analyzer, () => {
-  it.todo('records heuristic steps per heuristic', async () => {
+  it('records heuristic steps per heuristic', async () => {
     const heuristics = [
       defineHeuristic({
         name: 'heuristic-a',

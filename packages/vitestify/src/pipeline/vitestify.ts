@@ -49,7 +49,7 @@ export class Vitestify {
     this._progressTracker = progressTracker;
     this._analyzer = new Analyzer({
       heuristics: this._packs.flatMap((pack) => pack.heuristics),
-      legacyProgressReporter,
+      progressTracker: this._progressTracker,
     });
     this._scanner = new Scanner({
       commandRunner,
