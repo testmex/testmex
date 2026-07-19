@@ -13,13 +13,12 @@ describe(throttleProgressSnapshot, () => {
     const enricher = tracker
       .beginScanning({ enricherCount: 1 })
       .createEnricherStep({ name: 'code' });
-    enricher.setDetectedFileCount(1);
     await vi.advanceTimersByTimeAsync(90);
-    enricher.setDetectedFileCount(2);
+    enricher.setDetectedFileCount(1);
 
     expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
       kind: 'enricher',
-      detectedFileCount: 1,
+      detectedFileCount: 0,
     });
   });
 
@@ -30,13 +29,11 @@ describe(throttleProgressSnapshot, () => {
       .beginScanning({ enricherCount: 1 })
       .createEnricherStep({ name: 'code' });
     enricher.setDetectedFileCount(1);
-    await vi.advanceTimersByTimeAsync(90);
-    enricher.setDetectedFileCount(2);
-    await vi.advanceTimersByTimeAsync(20);
+    await vi.advanceTimersByTimeAsync(110);
 
     expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
       kind: 'enricher',
-      detectedFileCount: 2,
+      detectedFileCount: 1,
     });
   });
 
@@ -46,14 +43,13 @@ describe(throttleProgressSnapshot, () => {
     const enricher = tracker
       .beginScanning({ enricherCount: 1 })
       .createEnricherStep({ name: 'code' });
+    await vi.advanceTimersByTimeAsync(90);
     enricher.setDetectedFileCount(1);
-    await vi.advanceTimersByTimeAsync(50);
-    enricher.setDetectedFileCount(2);
     enricher.done('scanned');
 
     expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
       kind: 'enricher',
-      detectedFileCount: 2,
+      detectedFileCount: 1,
     });
   });
 
@@ -63,13 +59,12 @@ describe(throttleProgressSnapshot, () => {
     const transform = tracker
       .beginTransforming({ transformCount: 1 })
       .createTransformStep({ name: 'jest-test' });
-    transform.setTransformedFileCount(1);
     await vi.advanceTimersByTimeAsync(90);
-    transform.setTransformedFileCount(2);
+    transform.setTransformedFileCount(1);
 
     expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
       kind: 'transform',
-      transformedFileCount: 1,
+      transformedFileCount: 0,
     });
   });
 
@@ -79,14 +74,13 @@ describe(throttleProgressSnapshot, () => {
     const transform = tracker
       .beginTransforming({ transformCount: 1 })
       .createTransformStep({ name: 'jest-test' });
-    transform.setTransformedFileCount(1);
     await vi.advanceTimersByTimeAsync(50);
-    transform.setTransformedFileCount(2);
+    transform.setTransformedFileCount(1);
     transform.done('complete');
 
     expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
       kind: 'transform',
-      transformedFileCount: 2,
+      transformedFileCount: 1,
     });
   });
 
@@ -97,15 +91,14 @@ describe(throttleProgressSnapshot, () => {
       .beginTransforming({ transformCount: 1 })
       .createTransformStep({ name: 'jest-test' })
       .createChildTransform({ name: 'jest-mock' });
-    child.setTransformedFileCount(1);
     await vi.advanceTimersByTimeAsync(90);
-    child.setTransformedFileCount(2);
+    child.setTransformedFileCount(1);
 
     expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
       kind: 'transform',
       name: 'jest-test',
       childTransforms: [
-        { kind: 'transform', name: 'jest-mock', transformedFileCount: 1 },
+        { kind: 'transform', name: 'jest-mock', transformedFileCount: 0 },
       ],
     });
   });

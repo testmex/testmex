@@ -1,6 +1,7 @@
 import {
   concat,
   EMPTY,
+  map,
   mergeMap,
   type MonoTypeOperatorFunction,
   type Observable,
@@ -16,53 +17,48 @@ export function throttleProgressSnapshot(
   return (source$) => {
     let previous: ProgressSnapshot | null = null;
     let pending: ProgressSnapshot | null = null;
-    let isThrottling = false;
-    let throttleGeneration = 0;
 
     return source$.pipe(
       mergeMap((snapshot): Observable<ProgressSnapshot> => {
+        /* Initial emission. */
         if (previous === null) {
-          previous = snapshot;
-          return of(snapshot);
+          return _emitSnapshot(snapshot);
         }
 
+        /* Throttle file count updates. */
         if (_isFileCountOnlyChange(previous, snapshot)) {
-          if (!isThrottling) {
-            previous = snapshot;
-            isThrottling = true;
-            const generation = ++throttleGeneration;
-            return concat(
-              of(snapshot),
-              timer(duration).pipe(
+          const isAlreadyScheduled = pending !== null;
+          pending = snapshot;
+
+          /* Only schedule a flush if not already scheduled.
+           * We updated the `pending` snapshot anyway and that's
+           * what the previously scheduled flush will emit. */
+          return isAlreadyScheduled
+            ? EMPTY
+            : timer(duration).pipe(
                 take(1),
                 mergeMap(() => {
-                  if (generation !== throttleGeneration) {
-                    return EMPTY;
-                  }
-                  isThrottling = false;
                   if (pending === null) {
                     return EMPTY;
                   }
-                  previous = pending;
-                  const trailing = pending;
+                  const result = pending;
                   pending = null;
-                  return of(trailing);
+                  return _emitSnapshot(result);
                 }),
-              ),
-            );
-          }
-
-          pending = snapshot;
-          return EMPTY;
+              );
         }
 
-        throttleGeneration++;
-        pending = null;
-        isThrottling = false;
-        previous = snapshot;
-        return of(snapshot);
-      }, Infinity),
+        return _emitSnapshot(snapshot);
+      }),
     );
+
+    function _emitSnapshot(
+      snapshot: ProgressSnapshot,
+    ): Observable<ProgressSnapshot> {
+      pending = null;
+      previous = snapshot;
+      return of(snapshot);
+    }
   };
 }
 
@@ -99,8 +95,10 @@ function _activeFileCount(snapshot: ProgressSnapshot): number | undefined {
   }
 
   if (phase.kind === 'transforming' && step.kind === 'transform') {
-    return step.childTransforms.at(-1)?.transformedFileCount ??
-      step.transformedFileCount;
+    return (
+      step.childTransforms.at(-1)?.transformedFileCount ??
+      step.transformedFileCount
+    );
   }
 
   return undefined;
@@ -128,9 +126,7 @@ function _stripActiveFileCount(snapshot: ProgressSnapshot): ProgressSnapshot {
           return {
             ...phase,
             steps: phase.steps.map((step, stepIdx) =>
-              stepIdx === stepIndex
-                ? { ...step, detectedFileCount: 0 }
-                : step,
+              stepIdx === stepIndex ? { ...step, detectedFileCount: 0 } : step,
             ),
           };
         case 'transforming':
