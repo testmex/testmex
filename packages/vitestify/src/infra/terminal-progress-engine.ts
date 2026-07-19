@@ -159,7 +159,18 @@ export class TerminalProgressEngine {
   private _formatStepDisplay(step: StepSnapshot): string {
     switch (step.kind) {
       case 'activity':
-        return this._withStatusMessageSuffix(step.message, step.statusMessage);
+        return this._formatHeadlineWithSubLines({
+          headline: this._withStatusMessageSuffix(
+            step.message,
+            step.statusMessage,
+          ),
+          subLines: step.childSteps.map((childStep) =>
+            this._withStatusMessageSuffix(
+              childStep.message,
+              childStep.statusMessage,
+            ),
+          ),
+        });
       case 'heuristic':
         return this._withStatusMessageSuffix(
           `${this._stepIndexPrefix(step)}${step.name}`,
@@ -168,10 +179,10 @@ export class TerminalProgressEngine {
       case 'enricher':
         return this._formatStepWithSubLines({
           step,
-          subLines: step.activities.map((activity) =>
+          subLines: step.childSteps.map((childStep) =>
             this._withStatusMessageSuffix(
-              activity.message,
-              activity.statusMessage,
+              childStep.message,
+              childStep.statusMessage,
             ),
           ),
           headlineSuffix:
@@ -209,16 +220,24 @@ export class TerminalProgressEngine {
       formatted += args.headlineSuffix;
     }
 
-    formatted = this._withStatusMessageSuffix(
-      formatted,
-      args.step.statusMessage,
-    );
+    return this._formatHeadlineWithSubLines({
+      headline: this._withStatusMessageSuffix(
+        formatted,
+        args.step.statusMessage,
+      ),
+      subLines: args.subLines,
+    });
+  }
 
+  private _formatHeadlineWithSubLines(args: {
+    headline: string;
+    subLines: readonly string[];
+  }): string {
     if (args.subLines.length === 0) {
-      return formatted;
+      return args.headline;
     }
 
-    return `${formatted}\n${args.subLines.map((message) => `| ${message}`).join('\n')}`;
+    return `${args.headline}\n${args.subLines.map((message) => `| ${message}`).join('\n')}`;
   }
 
   private _withStatusMessageSuffix(

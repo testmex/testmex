@@ -182,36 +182,36 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
-  it('passes through new enricher activity immediately', () => {
+  it('passes through new enricher child step immediately', () => {
     const { tracker, snapshots } = setUp();
     const enricher = tracker
       .beginScanning({ enricherCount: 1 })
       .createEnricherStep({ name: 'nx' });
     const baseline = snapshots.length;
 
-    enricher.createActivityStep('loading nx graph');
+    enricher.createChildStep('loading nx graph');
 
     expect(snapshots.length).toBe(baseline + 1);
     expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
       kind: 'enricher',
-      activities: [{ kind: 'activity', message: 'loading nx graph' }],
+      childSteps: [{ kind: 'child', message: 'loading nx graph' }],
     });
   });
 
-  it('passes through enricher activity done immediately', () => {
+  it('passes through enricher child step done immediately', () => {
     const { tracker, snapshots } = setUp();
-    const activity = tracker
+    const childStep = tracker
       .beginScanning({ enricherCount: 1 })
       .createEnricherStep({ name: 'nx' })
-      .createActivityStep('loading nx graph');
+      .createChildStep('loading nx graph');
     const baseline = snapshots.length;
 
-    activity.done();
+    childStep.done();
 
     expect(snapshots.length).toBe(baseline + 1);
     expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
       kind: 'enricher',
-      activities: [{ kind: 'activity', status: 'done' }],
+      childSteps: [{ kind: 'child', status: 'done' }],
     });
   });
 

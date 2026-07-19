@@ -32,11 +32,11 @@ async function _withNxGraphLoadingActivity<T>(
   enricherStep: EnricherStep,
   run: () => Promise<T>,
 ): Promise<T> {
-  const activity = enricherStep.createActivityStep('loading nx graph');
+  const childStep = enricherStep.createChildStep('loading nx graph');
   try {
     return await run();
   } finally {
-    activity.done();
+    childStep.done();
   }
 }
 

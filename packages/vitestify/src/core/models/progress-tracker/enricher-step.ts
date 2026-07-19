@@ -1,5 +1,5 @@
-import { ActivityStepNode } from './activity-step';
-import type { ActivityStep, ActivityStepSnapshot } from './activity-step';
+import { ChildStepNode } from './child-step';
+import type { ChildStep, ChildStepSnapshot } from './child-step';
 import type { ProgressStatus, SnapshotBase } from './snapshot-base';
 import type { SnapshotChangeListener } from './snapshot-change-listener';
 
@@ -7,20 +7,20 @@ export interface EnricherStepSnapshot extends SnapshotBase {
   readonly kind: 'enricher';
   readonly name: string;
   readonly detectedFileCount?: number;
-  readonly activities: readonly ActivityStepSnapshot[];
+  readonly childSteps: readonly ChildStepSnapshot[];
   readonly stepNumber: number;
   readonly stepCount: number;
 }
 
 export interface EnricherStep {
   setDetectedFileCount(count: number): void;
-  createActivityStep(message: string): ActivityStep;
+  createChildStep(message: string): ChildStep;
   done(message?: string): void;
   fail(message?: string): void;
 }
 
 export class EnricherStepNode implements EnricherStep {
-  private readonly _activities: ActivityStepNode[] = [];
+  private readonly _childSteps: ChildStepNode[] = [];
   private _snapshot: EnricherStepSnapshot;
   private readonly _onSnapshotChange: SnapshotChangeListener;
 
@@ -46,14 +46,14 @@ export class EnricherStepNode implements EnricherStep {
     this._updateSnapshot({ detectedFileCount: count });
   }
 
-  createActivityStep(message: string): ActivityStep {
-    const activity = new ActivityStepNode({
+  createChildStep(message: string): ChildStep {
+    const childStep = new ChildStepNode({
       message,
-      onSnapshotChange: () => this._syncActivities(),
+      onSnapshotChange: () => this._syncChildSteps(),
     });
-    this._activities.push(activity);
-    this._syncActivities();
-    return activity;
+    this._childSteps.push(childStep);
+    this._syncChildSteps();
+    return childStep;
   }
 
   done(message?: string): void {
@@ -70,9 +70,9 @@ export class EnricherStepNode implements EnricherStep {
     });
   }
 
-  private _syncActivities(): void {
+  private _syncChildSteps(): void {
     this._updateSnapshot({
-      activities: this._activities.map((step) => step.snapshot),
+      childSteps: this._childSteps.map((step) => step.snapshot),
     });
   }
 
@@ -87,7 +87,7 @@ function _createEnricherStepSnapshot(args: {
   stepNumber: number;
   stepCount: number;
   detectedFileCount?: number;
-  activities?: readonly ActivityStepSnapshot[];
+  childSteps?: readonly ChildStepSnapshot[];
   status?: ProgressStatus;
   statusMessage?: string;
 }): EnricherStepSnapshot {
@@ -97,7 +97,7 @@ function _createEnricherStepSnapshot(args: {
     stepNumber: args.stepNumber,
     stepCount: args.stepCount,
     status: args.status ?? 'started',
-    activities: args.activities ?? [],
+    childSteps: args.childSteps ?? [],
     ...(args.detectedFileCount !== undefined
       ? { detectedFileCount: args.detectedFileCount }
       : {}),

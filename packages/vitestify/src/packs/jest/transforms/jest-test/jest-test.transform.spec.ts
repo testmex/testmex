@@ -37,11 +37,27 @@ jest.mock('./foo');
       commandRunner,
       progressStep: _createJestTestTransformStep(),
     });
+    const progressTracker = new ProgressTracker();
+    const activityStep = progressTracker
+      .beginTransforming({ transformCount: 1 })
+      .createActivityStep('Verifying');
     const verifyResult = await result?.verify({
-      activityStep: _createActivityStep('Verifying'),
+      activityStep,
     });
 
-    expect(verifyResult?.rollback).toBeDefined();
+    expect.soft(verifyResult?.rollback).toBeDefined();
+    expect.soft(progressTracker.snapshot().phases[0]?.steps[0]).toMatchObject({
+      kind: 'activity',
+      message: 'Verifying',
+      childSteps: [
+        {
+          kind: 'child',
+          message:
+            'npx vitest run --reporter=json --config vitest.config.mts · cwd apps/my-app',
+          status: 'done',
+        },
+      ],
+    });
   });
 
   it('rollback reverts only failed files', async () => {

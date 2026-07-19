@@ -184,9 +184,9 @@ describe(Scanner.name, () => {
       .snapshot()
       .phases.find((phase) => phase.kind === 'scanning')
       ?.steps.find((step) => step.kind === 'enricher' && step.name === 'nx');
-    expect.soft(nxEnricherStep?.activities).toContainEqual(
+    expect.soft(nxEnricherStep?.childSteps).toContainEqual(
       expect.objectContaining({
-        kind: 'activity',
+        kind: 'child',
         message: expect.stringContaining('loading nx graph'),
       }),
     );

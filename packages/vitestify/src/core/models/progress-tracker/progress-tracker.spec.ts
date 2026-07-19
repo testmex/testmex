@@ -111,13 +111,13 @@ describe(ProgressTracker, () => {
     });
   });
 
-  it('records enricher activity steps', () => {
+  it('records enricher child steps', () => {
     const tracker = new ProgressTracker();
 
     tracker
       .beginScanning({ enricherCount: 1 })
       .createEnricherStep({ name: 'nx' })
-      .createActivityStep('loading nx graph');
+      .createChildStep('loading nx graph');
 
     const enricherStep = tracker
       .snapshot()
@@ -125,18 +125,18 @@ describe(ProgressTracker, () => {
       ?.steps.find((step) => step.kind === 'enricher' && step.name === 'nx');
     expect.soft(enricherStep).toMatchObject({
       kind: 'enricher',
-      activities: [
-        { kind: 'activity', message: 'loading nx graph', status: 'started' },
+      childSteps: [
+        { kind: 'child', message: 'loading nx graph', status: 'started' },
       ],
     });
   });
 
-  it('records done enricher activity steps', () => {
+  it('records done enricher child steps', () => {
     const tracker = new ProgressTracker();
 
     const scanning = tracker.beginScanning({ enricherCount: 1 });
     const nx = scanning.createEnricherStep({ name: 'nx' });
-    nx.createActivityStep('loading nx graph').done();
+    nx.createChildStep('loading nx graph').done();
 
     const enricherStep = tracker
       .snapshot()
@@ -144,8 +144,8 @@ describe(ProgressTracker, () => {
       ?.steps.find((step) => step.kind === 'enricher' && step.name === 'nx');
     expect.soft(enricherStep).toMatchObject({
       kind: 'enricher',
-      activities: [
-        { kind: 'activity', message: 'loading nx graph', status: 'done' },
+      childSteps: [
+        { kind: 'child', message: 'loading nx graph', status: 'done' },
       ],
     });
   });

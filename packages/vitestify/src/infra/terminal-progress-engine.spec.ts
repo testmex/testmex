@@ -60,13 +60,13 @@ describe(TerminalProgressEngine, () => {
     });
   });
 
-  it('engine formats nx graph activity sub-lines in display', () => {
+  it('engine formats nx graph child step sub-lines in display', () => {
     const { tracker, computeInstructions } = setUp();
 
     const enricher = tracker
       .beginScanning({ enricherCount: 1 })
       .createEnricherStep({ name: 'nx' });
-    enricher.createActivityStep('loading nx graph');
+    enricher.createChildStep('loading nx graph');
     enricher.setDetectedFileCount(3);
 
     const instructions = computeInstructions();
@@ -125,6 +125,28 @@ describe(TerminalProgressEngine, () => {
     expect(instructions.at(-1)).toEqual({
       kind: 'spinnerStop',
       message: 'pnpm add -D vitest · succeeded',
+    });
+  });
+
+  it('engine formats activity child step sub-lines in display', () => {
+    const { tracker, computeInstructions } = setUp();
+
+    const activity = tracker
+      .beginTransforming({ transformCount: 0 })
+      .createActivityStep('Verifying');
+    activity
+      .createChildStep(
+        'npx vitest run --reporter=json --config vitest.config.mts · cwd apps/my-app',
+      )
+      .done();
+
+    const instructions = computeInstructions();
+
+    expect(instructions.at(-1)).toEqual({
+      kind: 'spinnerMessage',
+      message: `\
+Verifying
+| npx vitest run --reporter=json --config vitest.config.mts · cwd apps/my-app`,
     });
   });
 
