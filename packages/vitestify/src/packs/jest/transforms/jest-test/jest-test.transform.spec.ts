@@ -53,7 +53,7 @@ jest.mock('./foo');
         {
           kind: 'child',
           message:
-            'npx vitest run --reporter=json --config vitest.config.mts · cwd apps/my-app',
+            'npx vitest run --reporter=json --config vitest.config.mts (cwd: apps/my-app)',
           status: 'done',
         },
       ],

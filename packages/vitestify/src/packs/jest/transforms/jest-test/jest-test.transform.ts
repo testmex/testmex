@@ -130,11 +130,7 @@ async function _verify(
 
 async function _runVitest(
   configPath: RelativePath,
-  {
-    activityStep,
-    commandRunner,
-  }: Pick<TransformOptions, 'commandRunner'> &
-    Pick<VerifyOptions, 'activityStep'>,
+  { activityStep, commandRunner }: TransformOptions & VerifyOptions,
 ): Promise<VitestJsonReport> {
   const command = [
     'npx',
@@ -146,7 +142,7 @@ async function _runVitest(
   ];
   const cwd = relativePath(dirname(configPath));
   const childStep = activityStep.createChildStep(
-    `${command.join(' ')} · cwd ${cwd}`,
+    `${command.join(' ')} (cwd: ${cwd})`,
   );
 
   try {
