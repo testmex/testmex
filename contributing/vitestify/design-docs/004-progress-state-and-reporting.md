@@ -477,7 +477,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 - Run `scanWorkspace()`.
 - Assert scanning phase has one `enricher` step per enricher with final `detectedFileCount`.
 
-### 🚧 Records nx activity under enricher step
+### ✅ Records nx activity under enricher step
 
 - Set up `Scanner` with workspace triggering `NxEnricher`.
 - Run `scanWorkspace()`.
