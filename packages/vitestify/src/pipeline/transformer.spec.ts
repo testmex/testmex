@@ -466,10 +466,46 @@ describe(Transformer, () => {
     ]);
   });
 
-  it.todo('records activity steps for apply-changes commands', () => {
-    // Set up Transformer with workspace queuing two commands.
-    // Run transform() through apply-changes.
-    // Assert transforming phase includes activity steps for each command.
+  it.todo('records activity steps for apply-changes commands', async () => {
+    const commandRunner = new CommandRunnerFake();
+    commandRunner.configure([
+      { command: ['npm', 'install', 'vitest'], output: '' },
+      { command: ['npx', 'nx', 'add', '@nx/vitest'], output: '' },
+    ]);
+    const { progressTracker, transform } = setUpTransformer({
+      commandRunner,
+      transforms: [
+        defineTransform({
+          name: 'install-deps',
+          apply: async ({ workspace }) => {
+            workspace.commands.add(['npm', 'install', 'vitest']);
+            workspace.commands.add(['npx', 'nx', 'add', '@nx/vitest']);
+          },
+        }),
+      ],
+    });
+
+    await transform();
+
+    expect(
+      transformingPhase(progressTracker)?.steps.filter(
+        (step) =>
+          step.kind === 'activity' && !step.message.startsWith('applied '),
+      ),
+    ).toMatchObject([
+      {
+        kind: 'activity',
+        message: 'npm install vitest',
+        status: 'done',
+        statusMessage: 'succeeded',
+      },
+      {
+        kind: 'activity',
+        message: 'npx nx add @nx/vitest',
+        status: 'done',
+        statusMessage: 'succeeded',
+      },
+    ]);
   });
 });
 
