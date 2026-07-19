@@ -4,6 +4,8 @@ import { Workspace } from '../core/domain/workspace';
 import { relativePath } from '../core/models/relative-path';
 import type { Transform, TransformResult } from '../core/models/transform';
 import { defineTransform } from '../core/models/transform';
+import { ProgressTracker } from '../core/models/progress-tracker';
+import type { TransformStep } from '../core/models/progress-tracker/transform-step';
 import { WorkspaceState } from '../core/models/workspace-state';
 import type { CommandRunner } from '../core/ports/command-runner';
 import { CommandRunnerFake } from '../core/ports/command-runner.fake';
@@ -381,10 +383,56 @@ describe(Transformer, () => {
     });
   });
 
-  it.todo('records transform steps with file counts', () => {
-    // Set up Transformer with two transforms that report transformedFileCount.
-    // Run transform().
-    // Assert transforming phase has two transform steps with expected counts.
+  it.todo('records transform steps with file counts', async () => {
+    const progressTracker = new ProgressTracker();
+    const transforms = [
+      defineTransform({
+        name: 'transform-a',
+        apply: async ({ progressStep }) => {
+          progressStep.setTransformedFileCount(2);
+        },
+      }),
+      defineTransform({
+        name: 'transform-b',
+        apply: async ({ progressStep }) => {
+          progressStep.setTransformedFileCount(5);
+        },
+      }),
+    ];
+    const workspace = new Workspace({
+      state: new WorkspaceState(),
+      tree: new Tree({ fileSystem: new FileSystemFake() }),
+    });
+    const transformer = new Transformer({
+      commandRunner: new CommandRunnerFake(),
+      transforms,
+      progressTracker,
+    });
+
+    await transformer.transform(workspace);
+
+    const transformingPhase = progressTracker
+      .snapshot()
+      .phases.find((phase) => phase.kind === 'transforming');
+    expect.soft(transformingPhase).toMatchObject({
+      kind: 'transforming',
+      transformCount: 2,
+      status: 'done',
+    });
+    expect.soft(transformingPhase?.steps).toMatchObject([
+      {
+        kind: 'transform',
+        name: 'transform-a',
+        transformedFileCount: 2,
+        status: 'done',
+      },
+      {
+        kind: 'transform',
+        name: 'transform-b',
+        transformedFileCount: 5,
+        status: 'done',
+      },
+    ]);
   });
 
   it.todo('records activity steps for apply-changes commands', () => {
