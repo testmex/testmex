@@ -140,46 +140,41 @@ export class TerminalProgressEngine {
       switch (next.status) {
         case 'started':
           return [
-            { kind: 'spinnerStart', message: this._stepSpinnerMessage(next) },
+            { kind: 'spinnerStart', message: this._formatStepDisplay(next) },
           ];
         case 'done':
           return [
-            { kind: 'spinnerStop', message: this._stepSpinnerMessage(next) },
+            { kind: 'spinnerStop', message: this._formatStepDisplay(next) },
           ];
         case 'failed':
           return [
-            { kind: 'spinnerError', message: this._stepSpinnerMessage(next) },
+            { kind: 'spinnerError', message: this._formatStepDisplay(next) },
           ];
       }
     }
 
-    return [
-      { kind: 'spinnerMessage', message: this._stepSpinnerMessage(next) },
-    ];
+    return [{ kind: 'spinnerMessage', message: this._formatStepDisplay(next) }];
   }
 
-  private _stepSpinnerMessage(step: StepSnapshot): string {
-    if (step.kind === 'heuristic') {
-      return step.name;
-    }
-
-    return this._formatStepDisplay(step);
-  }
-
-  private _formatStepDisplay(
-    step: EnricherStepSnapshot | TransformStepSnapshot | ActivityStepSnapshot,
-  ): string {
+  private _formatStepDisplay(step: StepSnapshot): string {
     switch (step.kind) {
       case 'activity':
-        return step.message;
+        return this._withStatusMessageSuffix(step.message, step.statusMessage);
+      case 'heuristic':
+        return this._withStatusMessageSuffix(
+          `${this._stepIndexPrefix(step)}${step.name}`,
+          step.statusMessage,
+        );
       case 'enricher':
         return this._formatStepWithSubLines({
           step,
-          subLines: step.activities.map((activity) => activity.message),
-          headlineSuffix:
-            step.detectedFileCount > 0
-              ? ` · ${this._formatDetectedFileCount(step.detectedFileCount)}`
-              : undefined,
+          subLines: step.activities.map((activity) =>
+            this._withStatusMessageSuffix(
+              activity.message,
+              activity.statusMessage,
+            ),
+          ),
+          headlineSuffix: ` · ${this._formatDetectedFileCount(step.detectedFileCount)}`,
         });
       case 'transform':
         return this._formatStepWithSubLines({
@@ -187,10 +182,7 @@ export class TerminalProgressEngine {
           subLines: step.childTransforms.map((child) =>
             this._formatChildTransformLine(child),
           ),
-          headlineSuffix:
-            step.childTransforms.length > 1 && step.transformedFileCount > 0
-              ? ` · ${this._formatTransformedFileCount(step.transformedFileCount)}`
-              : undefined,
+          headlineSuffix: ` · ${this._formatTransformedFileCount(step.transformedFileCount)}`,
         });
     }
   }
@@ -200,24 +192,36 @@ export class TerminalProgressEngine {
       readonly name: string;
       readonly stepNumber: number;
       readonly stepCount: number;
+      readonly statusMessage?: string;
     };
     subLines: readonly string[];
     headlineSuffix?: string;
   }): string {
-    let formatted =
-      args.subLines.length > 0
-        ? args.step.name
-        : `${this._stepIndexPrefix(args.step)}${args.step.name}`;
+    let formatted = `${this._stepIndexPrefix(args.step)}${args.step.name}`;
 
     if (args.headlineSuffix !== undefined) {
       formatted += args.headlineSuffix;
     }
+
+    formatted = this._withStatusMessageSuffix(
+      formatted,
+      args.step.statusMessage,
+    );
 
     if (args.subLines.length === 0) {
       return formatted;
     }
 
     return `${formatted}\n${args.subLines.map((message) => `| ${message}`).join('\n')}`;
+  }
+
+  private _withStatusMessageSuffix(
+    formatted: string,
+    statusMessage: string | undefined,
+  ): string {
+    return statusMessage === undefined
+      ? formatted
+      : `${formatted} · ${statusMessage}`;
   }
 
   private _stepIndexPrefix(step: {
@@ -232,13 +236,10 @@ export class TerminalProgressEngine {
   }
 
   private _formatChildTransformLine(child: TransformStepSnapshot): string {
-    let formatted = child.name;
-
-    if (child.transformedFileCount > 0) {
-      formatted += ` · ${this._formatTransformedFileCount(child.transformedFileCount)}`;
-    }
-
-    return formatted;
+    return this._withStatusMessageSuffix(
+      `${child.name} · ${this._formatTransformedFileCount(child.transformedFileCount)}`,
+      child.statusMessage,
+    );
   }
 
   private _formatTransformedFileCount(count: number): string {

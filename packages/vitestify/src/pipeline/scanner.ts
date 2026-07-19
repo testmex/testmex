@@ -39,6 +39,11 @@ export class Scanner {
       });
 
       workspace.applyEnrichment(result);
+
+      if (result.projects != null) {
+        enricherStep.done(`${result.projects.length} projects detected`);
+      }
+
       enricherStep.done();
     }
 

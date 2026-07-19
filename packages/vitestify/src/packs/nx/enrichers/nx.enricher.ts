@@ -1,5 +1,8 @@
 import { hasNx } from '../../../core/domain/tree-helpers/has-nx';
-import { defineEnricher, type EnricherOptions } from '../../../core/models/enricher';
+import {
+  defineEnricher,
+  type EnricherOptions,
+} from '../../../core/models/enricher';
 import type { EnricherStep } from '../../../core/models/progress-tracker/enricher-step';
 import { relativePath } from '../../../core/models/relative-path';
 
@@ -12,7 +15,7 @@ export const nxEnricher = defineEnricher({
       return {};
     }
 
-    const {graph} = await _withNxGraphLoadingActivity(enricherStep, () =>
+    const { graph } = await _withNxGraphLoadingActivity(enricherStep, () =>
       _runNxGraphCommand(options),
     );
 
@@ -20,8 +23,6 @@ export const nxEnricher = defineEnricher({
       name: node.name,
       path: relativePath(node.data.root),
     }));
-
-    enricherStep.setDetectedFileCount(projects.length);
 
     return { projects };
   },
@@ -39,8 +40,15 @@ async function _withNxGraphLoadingActivity<T>(
   }
 }
 
-async function _runNxGraphCommand(options: EnricherOptions): Promise<NxGraphResult> {
-  const raw = await options.commandRunner.run(['npx', 'nx', 'graph', '--print']);
+async function _runNxGraphCommand(
+  options: EnricherOptions,
+): Promise<NxGraphResult> {
+  const raw = await options.commandRunner.run([
+    'npx',
+    'nx',
+    'graph',
+    '--print',
+  ]);
   return JSON.parse(raw);
 }
 

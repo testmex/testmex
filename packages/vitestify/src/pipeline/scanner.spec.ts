@@ -138,43 +138,36 @@ describe(Scanner.name, () => {
       {
         kind: 'enricher',
         name: 'angular-cli',
-        detectedFileCount: 0,
         status: 'done',
       },
       {
         kind: 'enricher',
         name: 'nx',
-        detectedFileCount: 1,
         status: 'done',
       },
       {
         kind: 'enricher',
         name: 'jest',
-        detectedFileCount: 0,
         status: 'done',
       },
       {
         kind: 'enricher',
         name: 'code',
-        detectedFileCount: 0,
         status: 'done',
       },
       {
         kind: 'enricher',
         name: 'package-manager',
-        detectedFileCount: 0,
         status: 'done',
       },
       {
         kind: 'enricher',
         name: 'test',
-        detectedFileCount: 5,
         status: 'done',
       },
       {
         kind: 'enricher',
         name: 'vitest-config',
-        detectedFileCount: 0,
         status: 'done',
       },
     ]);
