@@ -53,7 +53,7 @@ export const angularBuilderJestTransform = defineTransform({
 
     if (angularJson !== originalAngularJson) {
       await tree.write(ANGULAR_JSON_PATH, JSON.stringify(angularJson, null, 2));
-      progressStep.updateMessage('1 file(s) transformed');
+      progressStep.setTransformedFileCount(1);
     }
   },
 });

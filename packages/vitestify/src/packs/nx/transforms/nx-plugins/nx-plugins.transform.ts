@@ -35,7 +35,7 @@ export const nxPluginsTransform = defineTransform({
 
     commands.add(['npx', 'nx', 'add', '@nx/vitest']);
 
-    progressStep.updateMessage('1 file(s) transformed');
+    progressStep.setTransformedFileCount(1);
   },
 });
 

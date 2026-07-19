@@ -1,11 +1,12 @@
 import type { Workspace } from '../core/domain/workspace';
 import type { Transform, TransformResult } from '../core/models/transform';
+import type { ProgressTracker } from '../core/models/progress-tracker';
+import type { TransformingPhase } from '../core/models/progress-tracker/transforming-phase';
 import type { CommandRunner } from '../core/ports/command-runner';
-import { NullProgressReporter } from '../core/ports/null-progress-reporter';
-import type { Phase, ProgressReporter } from '../core/ports/progress-reporter';
+
 export class Transformer {
   private readonly _commandRunner: CommandRunner;
-  private readonly _progressReporter: ProgressReporter;
+  private readonly _progressTracker: ProgressTracker;
   private readonly _transforms: Transform[];
 
   private _changesTotalCount = 0;
@@ -13,26 +14,25 @@ export class Transformer {
   constructor({
     commandRunner,
     transforms,
-    progressReporter = new NullProgressReporter(),
+    progressTracker,
   }: {
     commandRunner: CommandRunner;
     transforms: Transform[];
-    progressReporter?: ProgressReporter;
+    progressTracker: ProgressTracker;
   }) {
     this._commandRunner = commandRunner;
-    this._progressReporter = progressReporter;
+    this._progressTracker = progressTracker;
     this._transforms = transforms;
   }
 
   async transform(workspace: Workspace): Promise<void> {
-    const stepCount = this._transforms.length;
-    const phase = this._progressReporter.createPhase('Transforming');
+    const phase = this._progressTracker.beginTransforming({
+      transformCount: this._transforms.length,
+    });
 
-    for (const [index, transform] of this._transforms.entries()) {
+    for (const transform of this._transforms) {
       const result = await this._applyTransform({
         phase,
-        stepCount,
-        stepNumber: index + 1,
         transform,
         workspace,
       });
@@ -41,16 +41,17 @@ export class Transformer {
       if (result && workspace.tree.isDirty()) {
         await this._applyChanges({ workspace, phase });
 
-        const verifyStep = phase.createStep({ name: 'Verifying' });
-        const verifyResult = await result.verify({ progressStep: verifyStep });
+        const verifyActivity = phase.createActivityStep('Verifying');
+        const verifyResult = await result.verify({
+          activityStep: verifyActivity,
+        });
 
         if (verifyResult) {
-          verifyStep.error('failed');
-          const rollbackStep = phase.createStep({ name: 'Rolling back' });
-          await verifyResult.rollback({ progressStep: rollbackStep });
-          rollbackStep.done('rolled back');
+          verifyActivity.fail('failed');
+          const rollbackActivity = phase.createActivityStep('Rolling back');
+          await verifyResult.rollback({ activityStep: rollbackActivity });
         } else {
-          verifyStep.done('verified');
+          verifyActivity.done('verified');
         }
       }
     }
@@ -61,10 +62,10 @@ export class Transformer {
     const savings = this._changesTotalCount * 0.5;
     if (savings > 10) {
       phase
-        .createStep({ name: '💰 LLM budget saved' })
+        .createActivityStep('💰 LLM budget saved')
         .done(`~$${savings.toFixed(2)}`);
       phase
-        .createStep({ name: '⏱️ Review time saved' })
+        .createActivityStep('⏱️ Review time saved')
         .done(`~${Number(reviewTimeSaved.toFixed(1))} hour(s)`);
     }
 
@@ -73,56 +74,26 @@ export class Transformer {
 
   private async _applyTransform({
     phase,
-    stepCount,
-    stepNumber,
     transform,
     workspace,
   }: {
-    phase: Phase;
-    stepCount: number;
-    stepNumber: number;
+    phase: TransformingPhase;
     transform: Transform;
     workspace: Workspace;
   }): Promise<void | TransformResult> {
-    const progressStep = phase.createStep({
-      name: transform.name,
-      stepNumber,
-      stepCount,
-    });
-    let lastMessageDetail: string | undefined;
-
-    progressStep.updateMessage('transforming');
+    const transformStep = phase.createTransformStep({ name: transform.name });
 
     try {
       const result = await transform.apply({
         workspace,
         commandRunner: this._commandRunner,
-        progressStep: {
-          ...progressStep,
-          updateMessage: (detail) => {
-            lastMessageDetail = detail;
-            progressStep.updateMessage(
-              this._concatMessages(['transforming', detail]),
-            );
-          },
-        },
+        progressStep: transformStep,
       });
-
-      progressStep.done(
-        this._concatMessages(
-          lastMessageDetail === undefined
-            ? ['transformed']
-            : ['transformed', lastMessageDetail],
-        ),
-      );
-
+      transformStep.done();
       return result;
     } catch (error) {
-      progressStep.error(
-        this._concatMessages([
-          'failed',
-          error instanceof Error ? error.message : String(error),
-        ]),
+      transformStep.fail(
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -131,42 +102,23 @@ export class Transformer {
     phase,
     workspace,
   }: {
-    phase: Phase;
+    phase: TransformingPhase;
     workspace: Workspace;
   }): Promise<void> {
-    const progressStep = phase.createStep({ name: 'Applying changes' });
-    const commitSubStep = progressStep.createSubStep('applying changes');
+    const applyChangesActivity = phase.createActivityStep('Applying changes');
     const { count } = await workspace.tree.commit();
     this._changesTotalCount += count;
-    commitSubStep?.updateMessage(`applied ${count} changes`);
+    applyChangesActivity.done(`applied ${count} changes`);
 
     for (const command of workspace.commands.drain()) {
-      const subStepLabel = command.join(' ');
-      const subStep = progressStep.createSubStep(
-        this._concatMessages([subStepLabel, 'running']),
-      );
+      const activity = phase.createActivityStep(command.join(' '));
 
       try {
         await this._commandRunner.run(command);
-        subStep?.updateMessage(
-          this._concatMessages([subStepLabel, 'succeeded']),
-        );
+        activity.done('succeeded');
       } catch (error) {
-        subStep?.updateMessage(
-          this._concatMessages([
-            subStepLabel,
-            'failed',
-            error instanceof Error ? error.message : String(error),
-          ]),
-        );
-        continue;
+        activity.fail(error instanceof Error ? error.message : String(error));
       }
     }
-
-    progressStep.done('done');
-  }
-
-  private _concatMessages(messages: string[]) {
-    return messages.join(' · ');
   }
 }

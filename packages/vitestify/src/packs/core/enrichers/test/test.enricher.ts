@@ -16,11 +16,11 @@ interface TestDiscoveredFile {
 
 export const testEnricher = defineEnricher({
   name: 'test',
-  async enrich({ progressStep, workspace }) {
+  async enrich({ enricherStep, workspace }) {
     const files: Array<{ type: FileTag; path: RelativePath }> = [];
     for await (const file of _discoverTestFiles(workspace)) {
       files.push(file);
-      progressStep.updateMessage(`${files.length} file(s) found`);
+      enricherStep.setDetectedFileCount(files.length);
     }
 
     const snapshotPaths = files

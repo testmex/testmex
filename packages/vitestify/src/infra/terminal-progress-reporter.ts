@@ -1,130 +1,50 @@
 import { intro, outro, spinner } from '@clack/prompts';
+import type { ProgressReporter } from '../core/ports/progress-reporter';
+import type { ProgressSnapshot } from '../core/models/progress-tracker';
 import {
-  NO_OP_PHASE,
-  type Phase,
-  type ProgressReporter,
-  type Step,
-  type StepArgs,
-  type SubStep,
-} from '../core/ports/progress-reporter';
+  TerminalProgressEngine,
+  type TerminalProgressInstruction,
+} from './terminal-progress-engine';
 
 export class TerminalProgressReporter implements ProgressReporter {
-  createPhase(title: string): Phase {
-    if (!process.stdout.isTTY) {
-      return NO_OP_PHASE;
+  private readonly _engine = new TerminalProgressEngine();
+  private _previous: ProgressSnapshot | null = null;
+  private _activeSpinner: ReturnType<typeof spinner> | undefined;
+
+  notify(snapshot: ProgressSnapshot): void {
+    for (const instruction of this._engine.computeInstructions(
+      this._previous,
+      snapshot,
+    )) {
+      this._executeInstruction(instruction);
     }
 
-    intro(`${title} started`);
-
-    return {
-      createStep: (args) => this._createStep(args),
-      done: () => {
-        outro(`${title} finished`);
-      },
-    };
+    this._previous = snapshot;
   }
 
-  private _createStep(args: StepArgs): Step {
-    const clackSpinner = spinner();
-    let started = false;
-    let stepMessage: string | undefined = undefined;
-    const subStepMessages: string[] = [];
-
-    return {
-      createSubStep: (message: string): SubStep => {
-        const index = subStepMessages.length;
-        subStepMessages.push(message);
-        _render();
-
-        return {
-          updateMessage: (next: string) => {
-            subStepMessages[index] = next;
-            _render();
-          },
-        };
-      },
-      updateMessage: (message: string) => {
-        stepMessage = message;
-        _render();
-      },
-      done: (message: string) => {
-        if (!started) {
-          _render();
-        }
-
-        clackSpinner.stop(
-          _renderStepMessage({
-            ...args,
-            message,
-          }),
-        );
-      },
-      error: (message: string) => {
-        if (!started) {
-          return;
-        }
-
-        clackSpinner.error(
-          _renderStepMessage({
-            ...args,
-            message,
-          }),
-        );
-      },
-    };
-
-    function _render() {
-      const display = _renderStepMessage({
-        ...args,
-        message: stepMessage,
-        subStepMessages,
-      });
-
-      if (!started) {
-        clackSpinner.start(display);
-        started = true;
-        return;
-      }
-
-      clackSpinner.message(display);
+  private _executeInstruction(instruction: TerminalProgressInstruction): void {
+    switch (instruction.kind) {
+      case 'intro':
+        intro(instruction.message);
+        break;
+      case 'outro':
+        outro(instruction.message);
+        break;
+      case 'spinnerStart':
+        this._activeSpinner = spinner();
+        this._activeSpinner.start(instruction.message);
+        break;
+      case 'spinnerMessage':
+        this._activeSpinner?.message(instruction.message);
+        break;
+      case 'spinnerStop':
+        this._activeSpinner?.stop(instruction.message);
+        this._activeSpinner = undefined;
+        break;
+      case 'spinnerError':
+        this._activeSpinner?.error(instruction.message);
+        this._activeSpinner = undefined;
+        break;
     }
   }
-}
-
-/**
- * Formats the text shown for a progress step in the terminal.
- *
- * Builds a single-line step label (`name · message`, or `[n/m] name · message`
- * when numbering is provided) and appends sub-step lines prefixed with `| `.
- */
-export function _renderStepMessage({
-  stepNumber,
-  stepCount,
-  name,
-  message,
-  subStepMessages = [],
-}: {
-  name: string;
-  message?: string;
-  subStepMessages?: readonly string[];
-  stepNumber?: number;
-  stepCount?: number;
-}): string {
-  let formatted = '';
-
-  if (stepNumber !== undefined && stepCount !== undefined) {
-    formatted = `[${stepNumber}/${stepCount}] `;
-  }
-
-  formatted += name;
-
-  if (message !== undefined) {
-    formatted += ` · ${message}`;
-  }
-
-  if (subStepMessages.length === 0) {
-    return formatted;
-  }
-
-  return `${formatted}\n${subStepMessages.map((m) => `| ${m}`).join('\n')}`;
 }

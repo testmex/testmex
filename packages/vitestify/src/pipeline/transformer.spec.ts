@@ -4,27 +4,27 @@ import { Workspace } from '../core/domain/workspace';
 import { relativePath } from '../core/models/relative-path';
 import type { Transform, TransformResult } from '../core/models/transform';
 import { defineTransform } from '../core/models/transform';
+import { ProgressTracker } from '../core/models/progress-tracker';
 import { WorkspaceState } from '../core/models/workspace-state';
 import type { CommandRunner } from '../core/ports/command-runner';
 import { CommandRunnerFake } from '../core/ports/command-runner.fake';
 import { FileSystemFake } from '../core/ports/file-system.fake';
-import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
 import { Transformer } from './transformer';
 
 describe(Transformer, () => {
   it('transformer reports transform name during apply', async () => {
-    const { progressReporter, transform } = setUpTransformer({
+    const { progressTracker, transform } = setUpTransformer({
       transforms: [
         defineTransform({
           name: 'jest-mock',
           apply: async ({ progressStep }) => {
-            progressStep.updateMessage('2 file(s) transformed');
+            progressStep.setTransformedFileCount(2);
           },
         }),
         defineTransform({
           name: 'jest-spy-on',
           apply: async ({ progressStep }) => {
-            progressStep.updateMessage('0 file(s) transformed');
+            progressStep.setTransformedFileCount(0);
           },
         }),
       ],
@@ -32,32 +32,33 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect(progressReporter.phases()[0].steps).toMatchObject([
+    expect(transformingPhase(progressTracker)?.steps).toMatchObject([
       {
+        kind: 'transform',
         name: 'jest-mock',
         stepNumber: 1,
         stepCount: 2,
+        transformedFileCount: 2,
         status: 'done',
-        message: 'transformed · 2 file(s) transformed',
       },
       {
+        kind: 'transform',
         name: 'jest-spy-on',
         stepNumber: 2,
         stepCount: 2,
+        transformedFileCount: 0,
         status: 'done',
-        message: 'transformed · 0 file(s) transformed',
       },
       {
-        name: 'Applying changes',
+        kind: 'activity',
+        message: 'Applying changes',
         status: 'done',
-        message: 'done',
-        subSteps: [{ message: 'applied 0 changes' }],
       },
     ]);
   });
 
   it('transformer reports transform error on progress', async () => {
-    const { progressReporter, transform } = setUpTransformer({
+    const { progressTracker, transform } = setUpTransformer({
       transforms: [
         defineTransform({
           name: 'jest-mock',
@@ -70,14 +71,16 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect(progressReporter.phases()[0].steps[0]).toMatchObject({
-      status: 'error',
-      error: 'failed · parse failed',
+    expect(transformingPhase(progressTracker)?.steps[0]).toMatchObject({
+      kind: 'transform',
+      name: 'jest-mock',
+      status: 'failed',
+      statusMessage: 'parse failed',
     });
   });
 
   it('transformer continues to next transform after error', async () => {
-    const { progressReporter, transform } = setUpTransformer({
+    const { progressTracker, transform } = setUpTransformer({
       transforms: [
         defineTransform({
           name: 'jest-mock',
@@ -88,7 +91,7 @@ describe(Transformer, () => {
         defineTransform({
           name: 'jest-spy-on',
           apply: async ({ progressStep }) => {
-            progressStep.updateMessage('1 file(s) transformed');
+            progressStep.setTransformedFileCount(1);
           },
         }),
       ],
@@ -96,15 +99,18 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect
-      .soft(progressReporter.phases()[0].steps[0])
-      .toMatchObject({ status: 'error', error: 'failed · parse failed' });
-    expect.soft(progressReporter.phases()[0].steps[1]).toMatchObject({
+    expect.soft(transformingPhase(progressTracker)?.steps[0]).toMatchObject({
+      kind: 'transform',
+      status: 'failed',
+      statusMessage: 'parse failed',
+    });
+    expect.soft(transformingPhase(progressTracker)?.steps[1]).toMatchObject({
+      kind: 'transform',
       name: 'jest-spy-on',
       stepNumber: 2,
       stepCount: 2,
+      transformedFileCount: 1,
       status: 'done',
-      message: 'transformed · 1 file(s) transformed',
     });
   });
 
@@ -318,7 +324,7 @@ describe(Transformer, () => {
       { command: ['npm', 'install', 'vitest'], output: '' },
       { command: ['npx', 'nx', 'add', '@nx/vitest'], output: '' },
     ]);
-    const { progressReporter, transform } = setUpTransformer({
+    const { progressTracker, transform } = setUpTransformer({
       commandRunner,
       transforms: [
         defineTransform({
@@ -333,19 +339,28 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect(progressReporter.phases()[0].steps).toMatchObject([
+    expect(transformingPhase(progressTracker)?.steps).toMatchObject([
       {
+        kind: 'transform',
         name: 'install-deps',
         status: 'done',
       },
       {
-        name: 'Applying changes',
+        kind: 'activity',
+        message: 'Applying changes',
         status: 'done',
-        subSteps: [
-          { message: 'applied 0 changes' },
-          { message: 'npm install vitest · succeeded' },
-          { message: 'npx nx add @nx/vitest · succeeded' },
-        ],
+      },
+      {
+        kind: 'activity',
+        message: 'npm install vitest',
+        status: 'done',
+        statusMessage: 'succeeded',
+      },
+      {
+        kind: 'activity',
+        message: 'npx nx add @nx/vitest',
+        status: 'done',
+        statusMessage: 'succeeded',
       },
     ]);
   });
@@ -358,7 +373,7 @@ describe(Transformer, () => {
         error: new Error('install failed'),
       },
     ]);
-    const { progressReporter, transform } = setUpTransformer({
+    const { progressTracker, transform } = setUpTransformer({
       commandRunner,
       transforms: [
         defineTransform({
@@ -372,40 +387,162 @@ describe(Transformer, () => {
 
     await transform();
 
-    expect(progressReporter.phases()[0].steps[1]).toMatchObject({
-      name: 'Applying changes',
-      subSteps: [
-        { message: 'applied 0 changes' },
-        { message: 'npm install vitest · failed · install failed' },
+    expect(transformingPhase(progressTracker)?.steps).toMatchObject([
+      {
+        kind: 'transform',
+        name: 'install-deps',
+        status: 'done',
+      },
+      {
+        kind: 'activity',
+        message: 'Applying changes',
+        status: 'done',
+      },
+      {
+        kind: 'activity',
+        message: 'npm install vitest',
+        status: 'failed',
+        statusMessage: 'install failed',
+      },
+    ]);
+  });
+
+  it('records transform steps with file counts', async () => {
+    const progressTracker = new ProgressTracker();
+    const transforms = [
+      defineTransform({
+        name: 'transform-a',
+        apply: async ({ progressStep }) => {
+          progressStep.setTransformedFileCount(2);
+        },
+      }),
+      defineTransform({
+        name: 'transform-b',
+        apply: async ({ progressStep }) => {
+          progressStep.setTransformedFileCount(5);
+        },
+      }),
+    ];
+    const workspace = new Workspace({
+      state: new WorkspaceState(),
+      tree: new Tree({ fileSystem: new FileSystemFake() }),
+    });
+    const transformer = new Transformer({
+      commandRunner: new CommandRunnerFake(),
+      transforms,
+      progressTracker,
+    });
+
+    await transformer.transform(workspace);
+
+    const transformingPhase = progressTracker
+      .snapshot()
+      .phases.find((phase) => phase.kind === 'transforming');
+    expect.soft(transformingPhase).toMatchObject({
+      kind: 'transforming',
+      transformCount: 2,
+      status: 'done',
+    });
+    expect.soft(transformingPhase?.steps).toMatchObject([
+      {
+        kind: 'transform',
+        name: 'transform-a',
+        transformedFileCount: 2,
+        status: 'done',
+      },
+      {
+        kind: 'transform',
+        name: 'transform-b',
+        transformedFileCount: 5,
+        status: 'done',
+      },
+      {
+        kind: 'activity',
+        message: 'Applying changes',
+        status: 'done',
+      },
+    ]);
+  });
+
+  it('records activity steps for apply-changes commands', async () => {
+    const commandRunner = new CommandRunnerFake();
+    commandRunner.configure([
+      { command: ['npm', 'install', 'vitest'], output: '' },
+      { command: ['npx', 'nx', 'add', '@nx/vitest'], output: '' },
+    ]);
+    const { progressTracker, transform } = setUpTransformer({
+      commandRunner,
+      transforms: [
+        defineTransform({
+          name: 'install-deps',
+          apply: async ({ workspace }) => {
+            workspace.commands.add(['npm', 'install', 'vitest']);
+            workspace.commands.add(['npx', 'nx', 'add', '@nx/vitest']);
+          },
+        }),
       ],
     });
+
+    await transform();
+
+    expect(
+      transformingPhase(progressTracker)?.steps.filter(
+        (step) =>
+          step.kind === 'activity' && !step.message.startsWith('applied '),
+      ),
+    ).toMatchObject([
+      {
+        kind: 'activity',
+        message: 'Applying changes',
+        status: 'done',
+      },
+      {
+        kind: 'activity',
+        message: 'npm install vitest',
+        status: 'done',
+        statusMessage: 'succeeded',
+      },
+      {
+        kind: 'activity',
+        message: 'npx nx add @nx/vitest',
+        status: 'done',
+        statusMessage: 'succeeded',
+      },
+    ]);
   });
 });
 
 function setUpTransformer({
   commandRunner = new CommandRunnerFake(),
+  progressTracker = new ProgressTracker(),
   transforms,
 }: {
   commandRunner?: CommandRunner;
+  progressTracker?: ProgressTracker;
   transforms: Transform[];
 }) {
   const fileSystem = new FileSystemFake();
-  const progressReporter = new ProgressReporterFake();
   const workspace = new Workspace({
     state: new WorkspaceState(),
     tree: new Tree({ fileSystem }),
   });
   const transformer = new Transformer({
     commandRunner,
-    progressReporter,
     transforms,
+    progressTracker,
   });
 
   return {
     commandRunner,
     fileSystem,
-    progressReporter,
+    progressTracker,
     transform: () => transformer.transform(workspace),
     workspace,
   };
+}
+
+function transformingPhase(progressTracker: ProgressTracker) {
+  return progressTracker
+    .snapshot()
+    .phases.find((phase) => phase.kind === 'transforming');
 }

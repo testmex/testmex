@@ -1,8 +1,11 @@
 import type { ReadonlyWorkspace } from '../domain/workspace';
-import type { PipelineContext } from './pipeline-context';
+import type { CommandRunner } from '../ports/command-runner';
+import type { EnricherStep } from './progress-tracker/enricher-step';
 import type { WorkspaceEnrichment } from './workspace-state';
 
-export interface EnricherOptions extends PipelineContext {
+export interface EnricherOptions {
+  commandRunner: CommandRunner;
+  enricherStep: EnricherStep;
   workspace: ReadonlyWorkspace;
 }
 

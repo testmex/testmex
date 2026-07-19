@@ -1,39 +1,33 @@
 import type { Workspace } from '../core/domain/workspace';
 import type { Heuristic } from '../core/models/heuristic';
-import { NullProgressReporter } from '../core/ports/null-progress-reporter';
-import type { ProgressReporter } from '../core/ports/progress-reporter';
+import type { ProgressTracker } from '../core/models/progress-tracker';
 
 export class Analyzer {
   private readonly _heuristics: Heuristic[];
-  private readonly _progressReporter: ProgressReporter;
+  private readonly _progressTracker: ProgressTracker;
 
   constructor({
     heuristics,
-    progressReporter = new NullProgressReporter(),
+    progressTracker,
   }: {
     heuristics: Heuristic[];
-    progressReporter?: ProgressReporter;
+    progressTracker: ProgressTracker;
   }) {
     this._heuristics = heuristics;
-    this._progressReporter = progressReporter;
+    this._progressTracker = progressTracker;
   }
 
   async analyze(workspace: Workspace): Promise<void> {
-    const stepCount = this._heuristics.length;
-    const phase = this._progressReporter.createPhase('Workspace analysis');
+    const phase = this._progressTracker.beginAnalysis({
+      heuristicsCount: this._heuristics.length,
+    });
 
-    for (const [index, heuristic] of this._heuristics.entries()) {
-      const progressStep = phase.createStep({
-        name: heuristic.name,
-        stepNumber: index + 1,
-        stepCount,
-      });
-
-      progressStep.updateMessage('analyzing');
+    for (const heuristic of this._heuristics) {
+      const heuristicStep = phase.createHeuristicStep({ name: heuristic.name });
       workspace.applyHeuristicResults(
         await heuristic.inspect(workspace.asReadonly()),
       );
-      progressStep.done('analyzed');
+      heuristicStep.done();
     }
 
     phase.done();

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { ProgressTracker } from '../models/progress-tracker';
 import {
   createTestingWorkspace,
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../models/workspace.mother';
 import { CommandRunnerFake } from '../ports/command-runner.fake';
-import { ProgressReporterFake } from '../ports/progress-reporter.fake';
 import { defineFileTransform } from './define-file-transform';
 import { fileTag } from './workspace';
 
@@ -22,10 +22,10 @@ describe(defineFileTransform, () => {
       ),
     );
 
-    const progressReporter = new ProgressReporterFake();
-    const progressStep = progressReporter
-      .createPhase('transform')
-      .createStep({ name: 'identity' });
+    const progressTracker = new ProgressTracker();
+    const progressStep = progressTracker
+      .beginTransforming({ transformCount: 1 })
+      .createTransformStep({ name: 'identity' });
 
     await defineFileTransform({
       name: 'identity',
@@ -38,7 +38,12 @@ describe(defineFileTransform, () => {
     });
 
     expect
-      .soft(progressReporter.phases()[0].steps[0].message)
-      .toBe('0 file(s) transformed');
+      .soft(
+        progressTracker
+          .snapshot()
+          .phases.find((phase) => phase.kind === 'transforming')
+          ?.steps.find((step) => step.kind === 'transform'),
+      )
+      .toMatchObject({ transformedFileCount: 0 });
   });
 });

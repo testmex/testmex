@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import type { Workspace } from '../../../../core/domain/workspace';
 import {
   createTestingWorkspace,
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
+import { ProgressTracker } from '../../../../core/models/progress-tracker';
 import { Analyzer } from '../../../../pipeline/analyzer';
 import { fileTags } from '../../identifiers';
 import { angularHeuristic } from './angular.heuristic';
@@ -21,8 +23,7 @@ describe('angularHeuristic', () => {
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
-    await analyzer.analyze(workspace);
+    await _analyze(workspace);
 
     expect(workspace.files).toMatchObject([
       {
@@ -43,8 +44,7 @@ describe('angularHeuristic', () => {
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
-    await analyzer.analyze(workspace);
+    await _analyze(workspace);
 
     expect(workspace.files).toMatchObject([
       {
@@ -66,8 +66,7 @@ describe('angularHeuristic', () => {
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
-    await analyzer.analyze(workspace);
+    await _analyze(workspace);
 
     expect(workspace.files).toMatchObject([
       {
@@ -89,8 +88,7 @@ describe('angularHeuristic', () => {
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [angularHeuristic] });
-    await analyzer.analyze(workspace);
+    await _analyze(workspace);
 
     expect(workspace.files).toMatchObject([
       {
@@ -100,3 +98,11 @@ describe('angularHeuristic', () => {
     ]);
   });
 });
+
+async function _analyze(workspace: Workspace): Promise<void> {
+  const analyzer = new Analyzer({
+    heuristics: [angularHeuristic],
+    progressTracker: new ProgressTracker(),
+  });
+  await analyzer.analyze(workspace);
+}

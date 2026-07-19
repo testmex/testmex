@@ -8,7 +8,7 @@ import {
 import { WorkspaceState } from '../../../../core/models/workspace-state';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
 import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
-import { NO_OP_STEP } from '../../../../core/ports/progress-reporter';
+import { ProgressTracker } from '../../../../core/models/progress-tracker';
 import { packageManagerEnricher } from './package-manager.enricher';
 
 describe(packageManagerEnricher.name, () => {
@@ -107,9 +107,12 @@ async function enrich(files: Record<RelativePath, string>) {
   const fileSystem = new FileSystemFake();
   fileSystem.configure(files);
 
+  const enricherStep = new ProgressTracker()
+    .beginScanning({ enricherCount: 1 })
+    .createEnricherStep({ name: packageManagerEnricher.name });
   return packageManagerEnricher.enrich({
     commandRunner: new CommandRunnerFake(),
-    progressStep: NO_OP_STEP,
+    enricherStep,
     workspace: new Workspace({
       state: new WorkspaceState(),
       tree: new Tree({ fileSystem }),

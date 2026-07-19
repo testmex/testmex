@@ -26,6 +26,6 @@ export const renameSpecToJestTransform = defineTransform({
       }
     }
 
-    progressStep.updateMessage(`${transformedCount} file(s) transformed`);
+    progressStep.setTransformedFileCount(transformedCount);
   },
 });

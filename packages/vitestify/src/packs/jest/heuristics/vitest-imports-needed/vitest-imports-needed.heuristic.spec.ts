@@ -6,6 +6,7 @@ import {
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
+import { ProgressTracker } from '../../../../core/models/progress-tracker';
 import { Analyzer } from '../../../../pipeline/analyzer';
 import { fileTags } from '../../../core/identifiers';
 import { vitestImportsNeededHeuristic } from './vitest-imports-needed.heuristic';
@@ -67,6 +68,7 @@ async function _analyzeFile(content: string): Promise<FindingType[]> {
 
   const analyzer = new Analyzer({
     heuristics: [vitestImportsNeededHeuristic],
+    progressTracker: new ProgressTracker(),
   });
   await analyzer.analyze(workspace);
 

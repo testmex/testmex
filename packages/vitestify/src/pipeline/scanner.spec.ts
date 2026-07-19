@@ -9,9 +9,7 @@ import corePack from '../packs/core';
 import jestPack from '../packs/jest';
 import nxPack from '../packs/nx';
 import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
-import type { ProgressReporter } from '../core/ports/progress-reporter';
-import { NullProgressReporter } from '../core/ports/null-progress-reporter';
-import { ProgressReporterFake } from '../core/ports/progress-reporter.fake';
+import { ProgressTracker } from '../core/models/progress-tracker';
 import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {
@@ -83,66 +81,6 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it('scanner reports enricher name and file count from enricher callbacks', async () => {
-    const progressReporter = new ProgressReporterFake();
-    const { configureWorkspace, scanner } = setUp({ progressReporter });
-
-    configureWorkspace(
-      nxWorkspaceMother
-        .withApp('my-app')
-        .withAppFile('my-app', 'src/app.spec.ts', 'it("works", () => {})'),
-    );
-
-    await scanner.scanWorkspace();
-
-    expect(
-      progressReporter.phases()[0].steps.find((step) => step.name === 'test'),
-    ).toMatchObject({
-      status: 'done',
-      message: 'scanned · 1 file(s) found',
-    });
-  });
-
-  it('scanner calls done once per enricher', async () => {
-    const progressReporter = new ProgressReporterFake();
-    const { configureWorkspace, scanner } = setUp({ progressReporter });
-
-    configureWorkspace(nxWorkspaceMother.withApp('my-app'));
-
-    await scanner.scanWorkspace();
-
-    expect(
-      progressReporter
-        .phases()[0]
-        .steps.filter((step) => step.message.startsWith('scanned'))
-        .map((step) => ({ name: step.name, message: step.message })),
-    ).toEqual([
-      { name: 'angular-cli', message: 'scanned' },
-      { name: 'nx', message: 'scanned · 1 project(s) detected' },
-      { name: 'jest', message: 'scanned' },
-      { name: 'code', message: 'scanned' },
-      { name: 'package-manager', message: 'scanned · pnpm detected (good choice 😉)' },
-      { name: 'test', message: 'scanned' },
-      { name: 'vitest-config', message: 'scanned' },
-    ]);
-  });
-
-  it('non-scanning enricher reports contextual status', async () => {
-    const progressReporter = new ProgressReporterFake();
-    const { configureWorkspace, scanner } = setUp({ progressReporter });
-
-    configureWorkspace(nxWorkspaceMother.withApp('my-app'));
-
-    await scanner.scanWorkspace();
-
-    expect(
-      progressReporter.phases()[0].steps.find((step) => step.name === 'nx'),
-    ).toMatchObject({
-      status: 'done',
-      message: 'scanned · 1 project(s) detected',
-    });
-  });
-
   it('detects folder with jest.config.ts as project when no nx project exists at that path', async () => {
     const { configureWorkspace, scanner } = setUp();
 
@@ -172,11 +110,94 @@ describe(Scanner.name, () => {
       },
     ]);
   });
+
+  it('records enricher steps with detected file count', async () => {
+    const progressTracker = new ProgressTracker();
+    let workspaceMother = nxWorkspaceMother.withApp('my-app');
+    for (let index = 0; index < 5; index++) {
+      workspaceMother = workspaceMother.withAppFile(
+        'my-app',
+        `src/file-${index}.spec.ts`,
+        `it("works ${index}", () => {})`,
+      );
+    }
+    const { configureWorkspace, scanner } = setUp({ progressTracker });
+    configureWorkspace(workspaceMother);
+
+    await scanner.scanWorkspace();
+
+    const scanningPhase = progressTracker
+      .snapshot()
+      .phases.find((phase) => phase.kind === 'scanning');
+    expect.soft(scanningPhase).toMatchObject({
+      kind: 'scanning',
+      enricherCount: 7,
+      status: 'done',
+    });
+    expect.soft(scanningPhase?.steps).toMatchObject([
+      {
+        kind: 'enricher',
+        name: 'angular-cli',
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'nx',
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'jest',
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'code',
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'package-manager',
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'test',
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'vitest-config',
+        status: 'done',
+      },
+    ]);
+  });
+
+  it('records nx activity under enricher step', async () => {
+    const progressTracker = new ProgressTracker();
+    const { configureWorkspace, scanner } = setUp({ progressTracker });
+    configureWorkspace(nxWorkspaceMother.withApp('my-app'));
+
+    await scanner.scanWorkspace();
+
+    const nxEnricherStep = progressTracker
+      .snapshot()
+      .phases.find((phase) => phase.kind === 'scanning')
+      ?.steps.find((step) => step.kind === 'enricher' && step.name === 'nx');
+    expect.soft(nxEnricherStep?.childSteps).toContainEqual(
+      expect.objectContaining({
+        kind: 'child',
+        message: expect.stringContaining('loading nx graph'),
+      }),
+    );
+  });
 });
 
 function setUp({
-  progressReporter = new NullProgressReporter(),
-}: { progressReporter?: ProgressReporter } = {}) {
+  progressTracker = new ProgressTracker(),
+}: {
+  progressTracker?: ProgressTracker;
+} = {}) {
   const commandRunner = new CommandRunnerFake();
   const fileSystem = new FileSystemFake();
 
@@ -195,7 +216,7 @@ function setUp({
         (pack) => pack.enrichers,
       ),
       fileSystem,
-      progressReporter,
+      progressTracker,
     }),
   };
 }
