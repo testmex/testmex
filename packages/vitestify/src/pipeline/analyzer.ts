@@ -7,7 +7,6 @@ import type { LegacyProgressReporter } from '../core/ports/legacy-progress-repor
 export class Analyzer {
   private readonly _heuristics: Heuristic[];
   private readonly _legacyProgressReporter: LegacyProgressReporter;
-  private readonly _progressTracker?: ProgressTracker;
 
   constructor({
     heuristics,
@@ -18,41 +17,15 @@ export class Analyzer {
     legacyProgressReporter?: LegacyProgressReporter;
     progressTracker?: ProgressTracker;
   }) {
+    if (progressTracker !== undefined) {
+      throw new Error('🚧 work in progress');
+    }
+
     this._heuristics = heuristics;
     this._legacyProgressReporter = legacyProgressReporter;
-    this._progressTracker = progressTracker;
   }
 
   async analyze(workspace: Workspace): Promise<void> {
-    if (this._progressTracker !== undefined) {
-      return this._analyzeWithProgressTracker(workspace, this._progressTracker);
-    }
-
-    return this._analyzeWithLegacyProgressReporter(workspace);
-  }
-
-  private async _analyzeWithProgressTracker(
-    workspace: Workspace,
-    progressTracker: ProgressTracker,
-  ): Promise<void> {
-    const phase = progressTracker.beginAnalysis({
-      heuristicsCount: this._heuristics.length,
-    });
-
-    for (const heuristic of this._heuristics) {
-      const heuristicStep = phase.createHeuristicStep({ name: heuristic.name });
-      workspace.applyHeuristicResults(
-        await heuristic.inspect(workspace.asReadonly()),
-      );
-      heuristicStep.done();
-    }
-
-    phase.done();
-  }
-
-  private async _analyzeWithLegacyProgressReporter(
-    workspace: Workspace,
-  ): Promise<void> {
     const stepCount = this._heuristics.length;
     const phase = this._legacyProgressReporter.createPhase('Workspace analysis');
 
