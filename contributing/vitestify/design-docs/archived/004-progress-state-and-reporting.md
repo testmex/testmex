@@ -16,36 +16,33 @@
 
 ## Progress state (authoritative)
 
-- [ ] A `ProgressTracker` holds the full run state: phases → typed steps, with status (`started` | `done` | `failed`).
-- [ ] Pipeline stages (`Scanner`, `Analyzer`, `Transformer`) mutate progress state — they do not write to the terminal directly.
-- [ ] Progress state includes an **analyze** phase with one `heuristic` step per heuristic.
-- [ ] Progress state includes a **transform** phase with top-level `transform` steps (e.g. `jest-test`, `vitest-config`).
-- [ ] Every phase snapshot exposes its expected step count (`enricherCount`, `heuristicsCount`, or `transformCount`) and a `steps` array. Step position is derived from the step's index in that array — not stored on each step.
-- [ ] Transform groups (e.g. `jest-test`) record **child** `transform` **steps** nested under the parent transform step.
-- [ ] Child transforms can update the number of transformed files.
-- [ ] Progress state exposes roll-up counts (e.g. files transformed per child transform, per parent transform).
-- [ ] Observers can read the current snapshot at any time (`snapshot()` / `snapshot$.value`) and subscribe to changes during the run (`snapshot$`).
-- [ ] When stdout is not a TTY, progress state is still collected; only terminal output is suppressed.
+- [x] A `ProgressTracker` holds the full run state: phases → typed steps, with status (`started` | `done` | `failed`).
+- [x] Pipeline stages (`Scanner`, `Analyzer`, `Transformer`) mutate progress state — they do not write to the terminal directly.
+- [x] Progress state includes an **analyze** phase with one `heuristic` step per heuristic.
+- [x] Progress state includes a **transform** phase with top-level `transform` steps (e.g. `jest-test`, `vitest-config`).
+- [x] Transform groups (e.g. `jest-test`) record **child** `transform` **steps** nested under the parent transform step.
+- [x] Child transforms can update the number of transformed files.
+- [x] Progress state exposes roll-up counts (e.g. files transformed per child transform, per parent transform).
+- [x] Observers can read the current snapshot at any time (`snapshot()` / `snapshot$.value`) and subscribe to changes during the run (`snapshot$`).
 
 ## Terminal reporting (one sink)
 
-- [ ] A `TerminalProgressReporter` receives snapshot updates via `notify(snapshot)`; a `TerminalProgressEngine` (used only by the reporter) diffs consecutive snapshots into instructions, and the reporter executes them via `@clack/prompts` — same general UX as today.
-- [ ] Terminal shows phase intro/outro, numbered steps, spinners, and sub-step lines for live feedback.
-- [ ] Terminal may summarize nested transform detail (top-level spinner + sub-steps) rather than listing every file on screen.
+- [x] A `TerminalProgressReporter` receives snapshot updates via `notify(snapshot)`; a `TerminalProgressEngine` (used only by the reporter) diffs consecutive snapshots into instructions, and the reporter executes them via `@clack/prompts` — same general UX as today.
+- [x] Terminal shows phase intro/outro, numbered steps, spinners, and sub-step lines for live feedback.
+- [x] Terminal may summarize nested transform detail (top-level spinner + sub-steps) rather than listing every file on screen.
 - [x] Throttling applies at the reporting layer via `throttleProgressSnapshot(duration)` on `snapshot$` — only file-count changes (`detectedFileCount`, `transformedFileCount`) are throttled; status, activity messages, and other snapshot fields pass through immediately.
 
 ## Nested `jest-test` transform group (primary motivating scenario)
 
-- [ ] While `jest-test` runs, progress state records each child transform as a nested `transform` step under `jest-test`.
-- [ ] Each child transform updates `transformedFileCount` on its `TransformStepSnapshot`.
-- [ ] After the run, state answers: how many files were transformed by each child transform.
+- [x] While `jest-test` runs, progress state records each child transform as a nested `transform` step under `jest-test`.
+- [x] Each child transform updates `transformedFileCount` on its `TransformStepSnapshot`.
+- [x] After the run, state answers: how many files were transformed by each child transform.
 
 ## Unchanged user-visible CLI flow
 
-- [ ] `vitestify` on a TTY still shows scan → analyze → transform → finalize progression with spinners.
-- [ ] Scan enrichers report `filesDetected` count; non-scan work (e.g. nx graph loading) uses nested `activity` steps — not free-form strings on the enricher.
-- [ ] Transform verify/rollback and apply-changes substeps still appear in terminal output.
-- [ ] Non-TTY runs stay silent on the terminal (same as today).
+- [x] `vitestify` on a TTY still shows scan → analyze → transform → finalize progression with spinners.
+- [x] Scan enrichers report `filesDetected` count; non-scan work (e.g. nx graph loading) uses nested `activity` steps — not free-form strings on the enricher.
+- [x] Transform verify/rollback and apply-changes substeps still appear in terminal output.
 
 # Design
 
