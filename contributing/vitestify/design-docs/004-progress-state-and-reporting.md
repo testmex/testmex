@@ -459,7 +459,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 ## Tasks
 
 - [ ] Replace `LegacyProgressReporter` with `ProgressTracker` in `Scanner`, `Analyzer`, `Transformer`.
-- [ ] Update `Scanner`: `beginScanning()` + `createEnricherStep` + `setDetectedFileCount`.
+- [x] Update `Scanner`: `beginScanning()` + `createEnricherStep` + `setDetectedFileCount`.
 - [ ] Update enrichers: file scanners call `setDetectedFileCount`; `NxEnricher` uses `createActivityStep` for graph loading.
 - [ ] Update `Analyzer`: `beginAnalysis()` + `createHeuristicStep`.
 - [ ] Update `Transformer`: `beginTransforming()` + `createTransformStep` / `createActivityStep` for apply-changes commands.
@@ -471,7 +471,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 
 ## Testing Strategy
 
-### 🚧 Records enricher steps with detected file count
+### ✅ Records enricher steps with detected file count
 
 - Set up `Scanner` with `ProgressTracker` and workspace with 5 files.
 - Run `scanWorkspace()`.

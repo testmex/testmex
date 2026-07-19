@@ -181,7 +181,7 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('records enricher steps with detected file count', async () => {
+  it('records enricher steps with detected file count', async () => {
     const progressTracker = new ProgressTracker();
     let workspaceMother = nxWorkspaceMother.withApp('my-app');
     for (let index = 0; index < 5; index++) {
