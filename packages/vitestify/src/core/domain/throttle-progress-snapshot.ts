@@ -1,7 +1,5 @@
 import {
-  concat,
   EMPTY,
-  map,
   mergeMap,
   type MonoTypeOperatorFunction,
   type Observable,
@@ -64,98 +62,56 @@ export function throttleProgressSnapshot(
 
 function _isFileCountOnlyChange(
   previous: ProgressSnapshot,
-  next: ProgressSnapshot,
+  current: ProgressSnapshot,
 ): boolean {
-  const previousCount = _activeFileCount(previous);
-  const nextCount = _activeFileCount(next);
+  const prevPhase = previous.phases.at(-1);
+  const currentPhase = current.phases.at(-1);
 
-  if (previousCount === nextCount) {
+  if (!prevPhase || !currentPhase || currentPhase.kind !== prevPhase.kind) {
+    return false;
+  }
+  const prevStep = prevPhase.steps.at(-1);
+  const currentStep = currentPhase.steps.at(-1);
+  if (!prevStep || !currentStep || currentStep.kind !== prevStep.kind) {
     return false;
   }
 
-  return (
-    JSON.stringify(_stripActiveFileCount(previous)) ===
-    JSON.stringify(_stripActiveFileCount(next))
-  );
-}
-
-function _activeFileCount(snapshot: ProgressSnapshot): number | undefined {
-  const phase = snapshot.phases.at(-1);
-  if (!phase) {
-    return undefined;
-  }
-
-  const step = phase.steps.at(-1);
-  if (!step) {
-    return undefined;
-  }
-
-  if (phase.kind === 'scanning' && step.kind === 'enricher') {
-    return step.detectedFileCount;
-  }
-
-  if (phase.kind === 'transforming' && step.kind === 'transform') {
+  if (prevStep.kind === 'enricher' && currentStep.kind === 'enricher') {
+    const { detectedFileCount: previousCount, ...previousStepRest } = prevStep;
+    const { detectedFileCount: currentCount, ...currentStepRest } = currentStep;
     return (
-      step.childTransforms.at(-1)?.transformedFileCount ??
-      step.transformedFileCount
+      previousCount !== currentCount &&
+      JSON.stringify(previousStepRest) === JSON.stringify(currentStepRest)
     );
   }
 
-  return undefined;
-}
+  if (prevStep.kind === 'transform' && currentStep.kind === 'transform') {
+    const {
+      transformedFileCount: previousCount,
+      childTransforms: prevChildTransforms,
+      ...previousStepRest
+    } = prevStep;
+    const {
+      transformedFileCount: currentCount,
+      childTransforms: currentChildTransforms,
+      ...currentStepRest
+    } = currentStep;
 
-function _stripActiveFileCount(snapshot: ProgressSnapshot): ProgressSnapshot {
-  const phaseIndex = snapshot.phases.length - 1;
-  if (phaseIndex < 0) {
-    return snapshot;
+    if (prevChildTransforms.length !== currentChildTransforms.length) {
+      return false;
+    }
+
+    const { transformedFileCount: previousChildCount, ...previousChildRest } =
+      prevChildTransforms.at(-1) ?? {};
+    const { transformedFileCount: currentChildCount, ...currentChildRest } =
+      currentChildTransforms.at(-1) ?? {};
+    return (
+      (previousCount !== currentCount &&
+        JSON.stringify(previousStepRest) === JSON.stringify(currentStepRest)) ||
+      (previousChildCount !== currentChildCount &&
+        JSON.stringify(previousChildRest) === JSON.stringify(currentChildRest))
+    );
   }
 
-  return {
-    phases: snapshot.phases.map((phase, index) => {
-      if (index !== phaseIndex) {
-        return phase;
-      }
-
-      const stepIndex = phase.steps.length - 1;
-      if (stepIndex < 0) {
-        return phase;
-      }
-
-      switch (phase.kind) {
-        case 'scanning':
-          return {
-            ...phase,
-            steps: phase.steps.map((step, stepIdx) =>
-              stepIdx === stepIndex ? { ...step, detectedFileCount: 0 } : step,
-            ),
-          };
-        case 'transforming':
-          return {
-            ...phase,
-            steps: phase.steps.map((step, stepIdx) => {
-              if (stepIdx !== stepIndex || step.kind !== 'transform') {
-                return step;
-              }
-
-              const childIndex = step.childTransforms.length - 1;
-              if (childIndex < 0) {
-                return { ...step, transformedFileCount: 0 };
-              }
-
-              return {
-                ...step,
-                transformedFileCount: 0,
-                childTransforms: step.childTransforms.map((child, childIdx) =>
-                  childIdx === childIndex
-                    ? { ...child, transformedFileCount: 0 }
-                    : child,
-                ),
-              };
-            }),
-          };
-        case 'analysis':
-          return phase;
-      }
-    }),
-  };
+  return false;
 }
