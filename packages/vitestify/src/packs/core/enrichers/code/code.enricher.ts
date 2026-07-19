@@ -6,7 +6,7 @@ const TYPESCRIPT_FILE_GLOB_PATTERN = '**/*.{ts,tsx}';
 
 export const codeEnricher = defineEnricher({
   name: 'code',
-  async enrich({ workspace, progressStep }) {
+  async enrich({ workspace, enricherStep }) {
     const files = [];
     for await (const path of workspace.tree.scanDirectory({
       pattern: TYPESCRIPT_FILE_GLOB_PATTERN,
@@ -16,7 +16,7 @@ export const codeEnricher = defineEnricher({
       }
 
       files.push(path);
-      progressStep.updateMessage(`${files.length} file(s) found`);
+      enricherStep.setDetectedFileCount(files.length);
     }
 
     return {

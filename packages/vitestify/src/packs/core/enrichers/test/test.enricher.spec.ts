@@ -7,7 +7,7 @@ import {
 } from '../../../../core/models/workspace.mother';
 import { FileSystemFake } from '../../../../core/ports/file-system.fake';
 import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
-import { LEGACY_NO_OP_STEP } from '../../../../core/ports/legacy-progress-reporter';
+import { ProgressTracker } from '../../../../core/models/progress-tracker';
 import { testEnricher } from './test.enricher';
 
 describe(testEnricher.name, () => {
@@ -96,9 +96,12 @@ async function enrich(mother: WorkspaceMother) {
   fileSystem.configure(mother.buildFiles());
 
   const tree = new Tree({ fileSystem });
+  const enricherStep = new ProgressTracker()
+    .beginScanning({ enricherCount: 1 })
+    .createEnricherStep({ name: testEnricher.name });
   return testEnricher.enrich({
     commandRunner: new CommandRunnerFake(),
-    progressStep: LEGACY_NO_OP_STEP,
+    enricherStep,
     workspace: new Workspace({
       state: mother.buildWorkspaceState(),
       tree,

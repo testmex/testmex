@@ -55,7 +55,7 @@ export class Vitestify {
       commandRunner,
       enrichers: this._packs.flatMap((pack) => pack.enrichers),
       fileSystem,
-      legacyProgressReporter,
+      progressTracker: this._progressTracker,
     });
     this._transformer = new Transformer({
       commandRunner,
