@@ -103,6 +103,25 @@ describe(throttleProgressSnapshot, () => {
     });
   });
 
+  it('passes through new child transform immediately', () => {
+    const { tracker, snapshots } = setUp();
+    const transform = tracker
+      .beginTransforming({ transformCount: 1 })
+      .createTransformStep({ name: 'jest-test' });
+
+    transform.createChildTransform({ name: 'jest-mock' }).done();
+    transform.createChildTransform({ name: 'vi-imports' });
+
+    expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({
+      kind: 'transform',
+      name: 'jest-test',
+      childTransforms: [
+        { kind: 'transform', name: 'jest-mock', transformedFileCount: 0 },
+        { kind: 'transform', name: 'vi-imports', transformedFileCount: 0 },
+      ],
+    });
+  });
+
   it('passes through new enricher step immediately', () => {
     const { tracker, snapshots } = setUp();
     const scanning = tracker.beginScanning({ enricherCount: 1 });

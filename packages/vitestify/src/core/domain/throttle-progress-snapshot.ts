@@ -7,7 +7,11 @@ import {
   take,
   timer,
 } from 'rxjs';
-import type { ProgressSnapshot } from '../models/progress-tracker';
+import type {
+  ActivityStep,
+  ProgressSnapshot,
+  TransformStep,
+} from '../models/progress-tracker';
 
 export function throttleProgressSnapshot(
   duration: number,
@@ -72,46 +76,46 @@ function _isFileCountOnlyChange(
   }
   const prevStep = prevPhase.steps.at(-1);
   const currentStep = currentPhase.steps.at(-1);
-  if (!prevStep || !currentStep || currentStep.kind !== prevStep.kind) {
+  if (
+    !prevStep ||
+    !currentStep ||
+    currentStep?.kind !== prevStep?.kind ||
+    prevStep === currentStep
+  ) {
     return false;
   }
 
-  if (prevStep.kind === 'enricher' && currentStep.kind === 'enricher') {
-    const { detectedFileCount: previousCount, ...previousStepRest } = prevStep;
-    const { detectedFileCount: currentCount, ...currentStepRest } = currentStep;
+  if (prevStep.kind === 'enricher') {
     return (
-      previousCount !== currentCount &&
-      JSON.stringify(previousStepRest) === JSON.stringify(currentStepRest)
+      JSON.stringify(_stripStepFileCount(prevStep)) ===
+      JSON.stringify(_stripStepFileCount(currentStep))
     );
   }
 
   if (prevStep.kind === 'transform' && currentStep.kind === 'transform') {
-    const {
-      transformedFileCount: previousCount,
-      childTransforms: prevChildTransforms,
-      ...previousStepRest
-    } = prevStep;
-    const {
-      transformedFileCount: currentCount,
-      childTransforms: currentChildTransforms,
-      ...currentStepRest
-    } = currentStep;
+    const prevChildTransforms = prevStep.childTransforms;
+    const currentChildTransforms = currentStep.childTransforms;
 
     if (prevChildTransforms.length !== currentChildTransforms.length) {
       return false;
     }
 
-    const { transformedFileCount: previousChildCount, ...previousChildRest } =
-      prevChildTransforms.at(-1) ?? {};
-    const { transformedFileCount: currentChildCount, ...currentChildRest } =
-      currentChildTransforms.at(-1) ?? {};
     return (
-      (previousCount !== currentCount &&
-        JSON.stringify(previousStepRest) === JSON.stringify(currentStepRest)) ||
-      (previousChildCount !== currentChildCount &&
-        JSON.stringify(previousChildRest) === JSON.stringify(currentChildRest))
+      JSON.stringify(_stripStepFileCount(prevStep)) ===
+      JSON.stringify(_stripStepFileCount(currentStep))
     );
   }
 
   return false;
+}
+
+function _stripStepFileCount<T = TransformStep | ActivityStep>(
+  step: T,
+): Partial<T> {
+  return {
+    ...step,
+    childTransforms: undefined,
+    detectedFileCount: undefined,
+    transformedFileCount: undefined,
+  };
 }
