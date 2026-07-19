@@ -13,16 +13,13 @@ export class TerminalProgressReporter implements ProgressReporter {
 
   notify(snapshot: ProgressSnapshot): void {
     if (!process.stdout.isTTY) {
-      this._previous = snapshot;
       return;
     }
 
-    const instructions = this._engine.computeInstructions(
+    for (const instruction of this._engine.computeInstructions(
       this._previous,
       snapshot,
-    );
-
-    for (const instruction of instructions) {
+    )) {
       this._executeInstruction(instruction);
     }
 
