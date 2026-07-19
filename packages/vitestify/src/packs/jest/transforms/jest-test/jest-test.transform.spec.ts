@@ -7,7 +7,7 @@ import {
 } from '../../../../core/models/workspace.mother';
 import { CommandRunnerFake } from '../../../../core/ports/command-runner.fake';
 import { Analyzer } from '../../../../pipeline/analyzer';
-import { LEGACY_NO_OP_STEP } from '../../../../core/ports/legacy-progress-reporter';
+import { ProgressTracker } from '../../../../core/models/progress-tracker';
 import { runTransform } from '../../../../testing/run-transform';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
@@ -33,9 +33,11 @@ jest.mock('./foo');
     const result = await jestTestTransform.apply({
       workspace,
       commandRunner,
-      progressStep: LEGACY_NO_OP_STEP,
+      progressStep: _createJestTestTransformStep(),
     });
-    const verifyResult = await result?.verify({ progressStep: LEGACY_NO_OP_STEP });
+    const verifyResult = await result?.verify({
+      activityStep: _createActivityStep('Verifying'),
+    });
 
     expect(verifyResult?.rollback).toBeDefined();
   });
@@ -46,11 +48,15 @@ jest.mock('./foo');
     const result = await jestTestTransform.apply({
       workspace,
       commandRunner,
-      progressStep: LEGACY_NO_OP_STEP,
+      progressStep: _createJestTestTransformStep(),
     });
 
-    const verifyResult = await result?.verify({ progressStep: LEGACY_NO_OP_STEP });
-    await verifyResult?.rollback({ progressStep: LEGACY_NO_OP_STEP });
+    const verifyResult = await result?.verify({
+      activityStep: _createActivityStep('Verifying'),
+    });
+    await verifyResult?.rollback({
+      activityStep: _createActivityStep('Rolling back'),
+    });
 
     expect
       .soft(
@@ -180,4 +186,16 @@ async function _transformSetupTestFile(content: string) {
   return workspace.tree.maybeReadFile(
     relativePath(`apps/${appName}/${filePath}`),
   );
+}
+
+function _createJestTestTransformStep() {
+  return new ProgressTracker()
+    .beginTransforming({ transformCount: 1 })
+    .createTransformStep({ name: 'jest-test' });
+}
+
+function _createActivityStep(message: string) {
+  return new ProgressTracker()
+    .beginTransforming({ transformCount: 1 })
+    .createActivityStep(message);
 }

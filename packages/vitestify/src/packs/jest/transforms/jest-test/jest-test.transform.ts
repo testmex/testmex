@@ -9,6 +9,7 @@ import {
   type Transform,
   type VerifyResult,
 } from '../../../../core/models/transform';
+import type { ActivityStep } from '../../../../core/models/progress-tracker/activity-step';
 import { fileTags } from '../../../core/identifiers';
 import { renameJestToSpecFile, renameSpecToJestFile } from '../../jest-core';
 import { jestFocusSkipShorthandTransform } from './jest-focus-skip-shorthand/jest-focus-skip-shorthand.transform';
@@ -41,26 +42,17 @@ export const jestTestTransform = defineTransform({
     const { progressStep } = options;
     const originalContents = await _captureOriginalContents(options);
 
-    const total = JEST_TEST_TRANSFORMS.length;
-    for (const [index, transform] of JEST_TEST_TRANSFORMS.entries()) {
-      const step = index + 1;
-
+    for (const transform of JEST_TEST_TRANSFORMS) {
       await transform.apply({
         ...options,
-        progressStep: {
-          ...progressStep,
-          updateMessage: (detail) => {
-            progressStep.createSubStep(
-              `[${step}/${total}] ${transform.name} · ${detail}`,
-            );
-          },
-        },
+        progressStep: progressStep.createChildTransform({
+          name: transform.name,
+        }),
       });
     }
 
     return {
-      verify: ({ progressStep }) =>
-        _verify({ ...options, progressStep, originalContents }),
+      verify: (_options) => _verify({ ...options, originalContents }),
     };
   },
 });
@@ -122,10 +114,10 @@ async function _verify(
   }
 
   return {
-    rollback: ({ progressStep }) =>
+    rollback: ({ activityStep }) =>
       _rollback({
         ...options,
-        progressStep,
+        activityStep,
         failedTestPaths: Array.from(failedTestPaths),
       }),
   };
@@ -133,7 +125,7 @@ async function _verify(
 
 async function _runVitest(
   configPath: RelativePath,
-  { commandRunner, progressStep }: TransformOptions,
+  { commandRunner }: Pick<TransformOptions, 'commandRunner'>,
 ): Promise<VitestJsonReport> {
   const command = [
     'npx',
@@ -145,8 +137,6 @@ async function _runVitest(
   ];
   const cwd = relativePath(dirname(configPath));
 
-  progressStep.createSubStep(`${command.join(' ')} (cwd: ${cwd})`);
-
   const output = await commandRunner.run(command, {
     cwd,
     ignoreExitCode: true,
@@ -156,16 +146,15 @@ async function _runVitest(
 }
 
 async function _rollback({
+  activityStep,
   failedTestPaths,
   originalContents,
-  progressStep,
   workspace,
-}: TransformOptions & {
+}: Pick<TransformOptions, 'workspace'> & {
+  activityStep: ActivityStep;
   failedTestPaths: readonly RelativePath[];
   originalContents: ReadonlyMap<RelativePath, string>;
 }): Promise<void> {
-  const subStep = progressStep.createSubStep('rolling back');
-
   for (const failedTestPath of failedTestPaths) {
     const jestPath = renameSpecToJestFile(failedTestPath);
     const originalContent = originalContents.get(failedTestPath);
@@ -180,7 +169,7 @@ async function _rollback({
 
   await workspace.tree.commit();
 
-  subStep.updateMessage(`rolled back ${failedTestPaths.length} file(s)`);
+  activityStep.done(`rolled back ${failedTestPaths.length} file(s)`);
 }
 
 export interface VitestJsonReport {

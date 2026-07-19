@@ -13,7 +13,7 @@ export interface TransformingPhaseSnapshot extends SnapshotBase {
 
 export interface TransformingPhase {
   createTransformStep(args: { name: string }): TransformStep;
-  createActivityStep(): ActivityStep;
+  createActivityStep(message: string): ActivityStep;
   done(message?: string): void;
 }
 
@@ -51,9 +51,9 @@ export class TransformingPhaseNode implements TransformingPhase {
     return step;
   }
 
-  createActivityStep(): ActivityStep {
+  createActivityStep(message: string): ActivityStep {
     const step = new ActivityStepNode({
-      message: '',
+      message,
       onSnapshotChange: () => this._syncSteps(),
     });
     this._steps.push(step);

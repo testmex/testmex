@@ -34,7 +34,7 @@ export const setupFilesTransform = defineTransform({
       transformedCount++;
     }
 
-    progressStep.updateMessage(`${transformedCount} file(s) transformed`);
+    progressStep.setTransformedFileCount(transformedCount);
   },
 });
 

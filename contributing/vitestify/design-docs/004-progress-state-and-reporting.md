@@ -489,7 +489,7 @@ Primary coverage targets **`TerminalProgressEngine`** — pure snapshot-in / ins
 - Run `analyze()`.
 - Assert analysis phase `steps` are all `kind: 'heuristic'` and `status: 'done'`.
 
-### 🚧 Records transform steps with file counts
+### ✅ Records transform steps with file counts
 
 - Set up `Transformer` with two transforms that report `transformedFileCount`.
 - Run `transform()`.

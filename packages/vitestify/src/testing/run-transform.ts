@@ -1,5 +1,6 @@
 import type { Workspace } from '../core/domain/workspace';
 import type { Heuristic } from '../core/models/heuristic';
+import { ProgressTracker } from '../core/models/progress-tracker';
 import type { Transform } from '../core/models/transform';
 import {
   CommandRunnerFake,
@@ -21,7 +22,11 @@ export async function runTransform({
 }: RunTransformOptions): Promise<{ commands: readonly ExecutedCommand[] }> {
   const commandRunner = new CommandRunnerFake();
   const analyzer = new Analyzer({ heuristics });
-  const transformer = new Transformer({ commandRunner, transforms });
+  const transformer = new Transformer({
+    commandRunner,
+    transforms,
+    progressTracker: new ProgressTracker(),
+  });
   await analyzer.analyze(workspace);
   await transformer.transform(workspace);
   return {

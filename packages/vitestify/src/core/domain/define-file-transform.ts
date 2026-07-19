@@ -30,7 +30,7 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
     apply: async ({ workspace, progressStep }) => {
       const { tree } = workspace;
       let transformedCount = 0;
-      progressStep.updateMessage(`0 file(s) transformed`);
+      progressStep.setTransformedFileCount(0);
 
       for (const file of workspace.files) {
         if (!_shouldTransform(file, args)) {
@@ -53,7 +53,7 @@ export function defineFileTransform(args: DefineFileTransformArgs): Transform {
         await yieldToEventLoop();
       }
 
-      progressStep.updateMessage(`${transformedCount} file(s) transformed`);
+      progressStep.setTransformedFileCount(transformedCount);
     },
   });
 }

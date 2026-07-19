@@ -80,7 +80,7 @@ export const vitestConfigTransform = defineTransform({
       commands.add([workspace.packageManager, 'add', '-D', ...devDependencies]);
     }
 
-    progressStep.updateMessage(`${transformedCount} file(s) transformed`);
+    progressStep.setTransformedFileCount(transformedCount);
   },
 });
 

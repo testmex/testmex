@@ -28,7 +28,7 @@ export const nxProjectJsonTransform = defineTransform({
       transformedCount++;
     }
 
-    progressStep.updateMessage(`${transformedCount} file(s) transformed`);
+    progressStep.setTransformedFileCount(transformedCount);
   },
 });
 

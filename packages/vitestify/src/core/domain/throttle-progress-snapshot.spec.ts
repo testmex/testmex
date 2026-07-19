@@ -169,7 +169,7 @@ describe(throttleProgressSnapshot, () => {
     const transforming = tracker.beginTransforming({ transformCount: 1 });
     const baseline = snapshots.length;
 
-    transforming.createActivityStep();
+    transforming.createActivityStep('working');
 
     expect(snapshots.length).toBe(baseline + 1);
     expect(snapshots.at(-1)?.phases[0]?.steps[0]).toMatchObject({

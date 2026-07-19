@@ -1,9 +1,12 @@
 import type { WritableWorkspace } from '../domain/workspace';
-import type { LegacyStep } from '../ports/legacy-progress-reporter';
-import type { PipelineContext } from './pipeline-context';
+import type { CommandRunner } from '../ports/command-runner';
+import type { ActivityStep } from './progress-tracker/activity-step';
+import type { TransformStep } from './progress-tracker/transform-step';
 
-export interface TransformOptions extends PipelineContext {
+export interface TransformOptions {
+  commandRunner: CommandRunner;
   workspace: WritableWorkspace;
+  progressStep: TransformStep;
 }
 
 export interface Transform {
@@ -12,11 +15,11 @@ export interface Transform {
 }
 
 export interface TransformResult {
-  verify(options: { progressStep: LegacyStep }): Promise<void | VerifyResult>;
+  verify(options: { activityStep: ActivityStep }): Promise<void | VerifyResult>;
 }
 
 export interface VerifyResult {
-  rollback(options: { progressStep: LegacyStep }): Promise<void>;
+  rollback(options: { activityStep: ActivityStep }): Promise<void>;
 }
 
 export function defineTransform(args: Transform): Transform {

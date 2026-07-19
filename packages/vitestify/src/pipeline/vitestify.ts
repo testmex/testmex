@@ -1,13 +1,10 @@
 import { CommandRunnerPooled } from '../core/domain/command-runner-pooled';
-import { LegacyThrottledProgressReporter } from '../core/domain/legacy-throttled-progress-reporter';
 import { throttleProgressSnapshot } from '../core/domain/throttle-progress-snapshot';
 import { ProgressTracker } from '../core/models/progress-tracker';
 import type { Pack } from '../core/models/pack';
 import type { CommandRunner } from '../core/ports/command-runner';
 import type { FileSystem } from '../core/ports/file-system';
-import type { LegacyProgressReporter } from '../core/ports/legacy-progress-reporter';
 import { FileSystemImpl } from '../infra/file-system.impl';
-import { LegacyTerminalProgressReporter } from '../infra/legacy-terminal-progress-reporter';
 import { TerminalProgressReporter } from '../infra/terminal-progress-reporter';
 import angularCliPack from '../packs/angular-cli';
 import corePack from '../packs/core';
@@ -36,14 +33,10 @@ export class Vitestify {
   constructor({
     commandRunner = new CommandRunnerPooled({ maxConcurrent: 10 }),
     fileSystem = new FileSystemImpl({ workspaceRoot: process.cwd() }),
-    legacyProgressReporter = new LegacyThrottledProgressReporter(
-      new LegacyTerminalProgressReporter(),
-    ),
     progressTracker = new ProgressTracker(),
   }: {
     commandRunner?: CommandRunner;
     fileSystem?: FileSystem;
-    legacyProgressReporter?: LegacyProgressReporter;
     progressTracker?: ProgressTracker;
   } = {}) {
     this._progressTracker = progressTracker;
@@ -60,7 +53,7 @@ export class Vitestify {
     this._transformer = new Transformer({
       commandRunner,
       transforms: this._packs.flatMap((pack) => pack.transforms),
-      legacyProgressReporter,
+      progressTracker: this._progressTracker,
     });
   }
 
