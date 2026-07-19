@@ -250,7 +250,7 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('records nx activity under enricher step', async () => {
+  it('records nx activity under enricher step', async () => {
     const progressTracker = new ProgressTracker();
     const { configureWorkspace, scanner } = setUp({ progressTracker });
     configureWorkspace(nxWorkspaceMother.withApp('my-app'));

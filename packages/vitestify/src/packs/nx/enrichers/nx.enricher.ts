@@ -1,5 +1,6 @@
 import { hasNx } from '../../../core/domain/tree-helpers/has-nx';
 import { defineEnricher, type EnricherOptions } from '../../../core/models/enricher';
+import type { EnricherProgressStep } from '../../../core/models/pipeline-context';
 import { relativePath } from '../../../core/models/relative-path';
 
 export const nxEnricher = defineEnricher({
@@ -11,8 +12,9 @@ export const nxEnricher = defineEnricher({
       return {};
     }
 
-    progressStep.updateMessage('loading nx graph');
-    const graph = await _runNxGraphCommand(options);
+    const graph = await _withNxGraphLoadingActivity(progressStep, () =>
+      _runNxGraphCommand(options),
+    );
 
     const projects = Object.values(graph.graph.nodes).map((node) => ({
       name: node.name,
@@ -24,6 +26,29 @@ export const nxEnricher = defineEnricher({
     return { projects };
   },
 });
+
+async function _withNxGraphLoadingActivity<T>(
+  progressStep: EnricherOptions['progressStep'],
+  run: () => Promise<T>,
+): Promise<T> {
+  if (_isEnricherProgressStep(progressStep)) {
+    const activity = progressStep.createActivityStep('loading nx graph');
+    try {
+      return await run();
+    } finally {
+      activity.done();
+    }
+  }
+
+  progressStep.updateMessage('loading nx graph');
+  return run();
+}
+
+function _isEnricherProgressStep(
+  progressStep: EnricherOptions['progressStep'],
+): progressStep is EnricherProgressStep {
+  return 'createActivityStep' in progressStep;
+}
 
 async function _runNxGraphCommand(
   options: EnricherOptions,

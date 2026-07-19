@@ -1,6 +1,7 @@
 import { Tree } from '../core/domain/tree';
 import { Workspace } from '../core/domain/workspace';
 import type { Enricher } from '../core/models/enricher';
+import type { EnricherProgressStep } from '../core/models/pipeline-context';
 import type { EnricherStep } from '../core/models/progress-tracker/enricher-step';
 import type { ProgressTracker } from '../core/models/progress-tracker';
 import type { CommandRunner } from '../core/ports/command-runner';
@@ -106,9 +107,12 @@ export class Scanner {
   }
 }
 
-function _createEnricherProgressStepAdapter(enricherStep: EnricherStep): LegacyStep {
+function _createEnricherProgressStepAdapter(
+  enricherStep: EnricherStep,
+): EnricherProgressStep {
   return {
     ...LEGACY_NO_OP_STEP,
+    createActivityStep: (message) => enricherStep.createActivityStep(message),
     updateMessage: (message) => {
       const detectedFileCount = _parseDetectedFileCount(message);
       if (detectedFileCount !== undefined) {
