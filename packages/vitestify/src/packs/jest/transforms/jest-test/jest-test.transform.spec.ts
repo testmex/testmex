@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Workspace } from '../../../../core/domain/workspace';
 import { relativePath } from '../../../../core/models/relative-path';
 import {
   createTestingWorkspace,
@@ -99,7 +100,7 @@ jest.mock('./foo');
       ),
     );
 
-    await new Analyzer({ heuristics: jestPack.heuristics }).analyze(workspace);
+    await _analyze(workspace, progressTracker);
     workspace.applyHeuristicResults({
       findings: [{ type: findingTypes.jestSymbol, filePath: testPath }],
     });
@@ -170,7 +171,9 @@ async function _setupVerifyWorkspace() {
       ),
   );
 
-  await new Analyzer({ heuristics: jestPack.heuristics }).analyze(workspace);
+  const progressTracker = new ProgressTracker();
+
+  await _analyze(workspace, progressTracker);
 
   workspace.applyHeuristicResults({
     findings: [
@@ -244,4 +247,15 @@ function _createActivityStep(message: string) {
   return new ProgressTracker()
     .beginTransforming({ transformCount: 1 })
     .createActivityStep(message);
+}
+
+async function _analyze(
+  workspace: Workspace,
+  progressTracker: ProgressTracker,
+): Promise<void> {
+  const analyzer = new Analyzer({
+    heuristics: jestPack.heuristics,
+    progressTracker,
+  });
+  await analyzer.analyze(workspace);
 }

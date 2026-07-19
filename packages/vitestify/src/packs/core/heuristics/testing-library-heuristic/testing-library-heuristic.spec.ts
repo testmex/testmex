@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import type { Workspace } from '../../../../core/domain/workspace';
 import {
   createTestingWorkspace,
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
+import { ProgressTracker } from '../../../../core/models/progress-tracker';
 import { Analyzer } from '../../../../pipeline/analyzer';
 import { fileTags, findingTypes } from '../../identifiers';
 import { testingLibraryHeuristic } from './testing-library-heuristic';
@@ -21,8 +23,7 @@ describe('testingLibraryHeuristic', () => {
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
-    await analyzer.analyze(workspace);
+    await _analyze(workspace);
 
     expect(workspace.files).toMatchObject([
       {
@@ -47,8 +48,7 @@ import { render } from '@testing-library/react';
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
-    await analyzer.analyze(workspace);
+    await _analyze(workspace);
 
     expect(workspace.files).toMatchObject([
       {
@@ -72,8 +72,7 @@ import { render } from '@testing-library/react';
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
-    await analyzer.analyze(workspace);
+    await _analyze(workspace);
 
     expect(workspace.files).toMatchObject([
       {
@@ -95,8 +94,7 @@ import { render } from '@testing-library/react';
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [testingLibraryHeuristic] });
-    await analyzer.analyze(workspace);
+    await _analyze(workspace);
 
     expect(workspace.files).toMatchObject([
       {
@@ -106,3 +104,11 @@ import { render } from '@testing-library/react';
     ]);
   });
 });
+
+async function _analyze(workspace: Workspace): Promise<void> {
+  const analyzer = new Analyzer({
+    heuristics: [testingLibraryHeuristic],
+    progressTracker: new ProgressTracker(),
+  });
+  await analyzer.analyze(workspace);
+}

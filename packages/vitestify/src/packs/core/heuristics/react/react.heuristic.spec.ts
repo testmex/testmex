@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import type { Workspace } from '../../../../core/domain/workspace';
 import {
   createTestingWorkspace,
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
+import { ProgressTracker } from '../../../../core/models/progress-tracker';
 import { Analyzer } from '../../../../pipeline/analyzer';
 import { fileTags, findingTypes } from '../../identifiers';
 import { reactHeuristic } from './react.heuristic';
@@ -21,8 +23,7 @@ describe('reactHeuristic', () => {
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [reactHeuristic] });
-    await analyzer.analyze(workspace);
+    await _analyze(workspace);
 
     expect(workspace.files).toMatchObject([
       {
@@ -44,8 +45,7 @@ describe('reactHeuristic', () => {
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [reactHeuristic] });
-    await analyzer.analyze(workspace);
+    await _analyze(workspace);
 
     expect(workspace.files).toMatchObject([
       {
@@ -55,3 +55,11 @@ describe('reactHeuristic', () => {
     ]);
   });
 });
+
+async function _analyze(workspace: Workspace): Promise<void> {
+  const analyzer = new Analyzer({
+    heuristics: [reactHeuristic],
+    progressTracker: new ProgressTracker(),
+  });
+  await analyzer.analyze(workspace);
+}

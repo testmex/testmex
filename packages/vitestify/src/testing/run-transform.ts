@@ -21,11 +21,12 @@ export async function runTransform({
   transforms,
 }: RunTransformOptions): Promise<{ commands: readonly ExecutedCommand[] }> {
   const commandRunner = new CommandRunnerFake();
-  const analyzer = new Analyzer({ heuristics });
+  const progressTracker = new ProgressTracker();
+  const analyzer = new Analyzer({ heuristics, progressTracker });
   const transformer = new Transformer({
     commandRunner,
     transforms,
-    progressTracker: new ProgressTracker(),
+    progressTracker,
   });
   await analyzer.analyze(workspace);
   await transformer.transform(workspace);

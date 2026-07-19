@@ -4,6 +4,7 @@ import {
   WorkspaceFileMother,
   WorkspaceMother,
 } from '../../../../core/models/workspace.mother';
+import { ProgressTracker } from '../../../../core/models/progress-tracker';
 import { Analyzer } from '../../../../pipeline/analyzer';
 import { fileTags } from '../../../core/identifiers';
 import { findingTypes } from '../../identifiers';
@@ -22,7 +23,10 @@ describe('jestSymbolHeuristic', () => {
       ),
     );
 
-    const analyzer = new Analyzer({ heuristics: [jestSymbolHeuristic] });
+    const analyzer = new Analyzer({
+      heuristics: [jestSymbolHeuristic],
+      progressTracker: new ProgressTracker(),
+    });
     await analyzer.analyze(workspace);
 
     expect(workspace.files).toMatchObject([
