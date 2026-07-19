@@ -12,6 +12,7 @@ import { nxWorkspaceMother } from '../packs/nx/nx-workspace-infra.mother';
 import type { LegacyProgressReporter } from '../core/ports/legacy-progress-reporter';
 import { LegacyNullProgressReporter } from '../core/ports/legacy-null-progress-reporter';
 import { LegacyProgressReporterFake } from '../core/ports/legacy-progress-reporter.fake';
+import { ProgressTracker } from '../core/models/progress-tracker';
 import { Scanner } from './scanner';
 
 describe(Scanner.name, () => {
@@ -180,10 +181,73 @@ describe(Scanner.name, () => {
     ]);
   });
 
-  it.todo('records enricher steps with detected file count', () => {
-    // Set up Scanner with ProgressTracker and workspace with 5 files.
-    // Run scanWorkspace().
-    // Assert scanning phase has one enricher step per enricher with final detectedFileCount.
+  it.todo('records enricher steps with detected file count', async () => {
+    const progressTracker = new ProgressTracker();
+    let workspaceMother = nxWorkspaceMother.withApp('my-app');
+    for (let index = 0; index < 5; index++) {
+      workspaceMother = workspaceMother.withAppFile(
+        'my-app',
+        `src/file-${index}.spec.ts`,
+        `it("works ${index}", () => {})`,
+      );
+    }
+    const { configureWorkspace, scanner } = setUp({ progressTracker });
+    configureWorkspace(workspaceMother);
+
+    await scanner.scanWorkspace();
+
+    const scanningPhase = progressTracker
+      .snapshot()
+      .phases.find((phase) => phase.kind === 'scanning');
+    expect.soft(scanningPhase).toMatchObject({
+      kind: 'scanning',
+      enricherCount: 7,
+      status: 'done',
+    });
+    expect.soft(scanningPhase?.steps).toMatchObject([
+      {
+        kind: 'enricher',
+        name: 'angular-cli',
+        detectedFileCount: 0,
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'nx',
+        detectedFileCount: 0,
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'jest',
+        detectedFileCount: 0,
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'code',
+        detectedFileCount: 0,
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'package-manager',
+        detectedFileCount: 0,
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'test',
+        detectedFileCount: 5,
+        status: 'done',
+      },
+      {
+        kind: 'enricher',
+        name: 'vitest-config',
+        detectedFileCount: 0,
+        status: 'done',
+      },
+    ]);
   });
 
   it.todo('records activity under enricher step', () => {
@@ -195,7 +259,11 @@ describe(Scanner.name, () => {
 
 function setUp({
   legacyProgressReporter = new LegacyNullProgressReporter(),
-}: { legacyProgressReporter?: LegacyProgressReporter } = {}) {
+  progressTracker,
+}: {
+  legacyProgressReporter?: LegacyProgressReporter;
+  progressTracker?: ProgressTracker;
+} = {}) {
   const commandRunner = new CommandRunnerFake();
   const fileSystem = new FileSystemFake();
 
@@ -215,6 +283,7 @@ function setUp({
       ),
       fileSystem,
       legacyProgressReporter,
+      progressTracker,
     }),
   };
 }
