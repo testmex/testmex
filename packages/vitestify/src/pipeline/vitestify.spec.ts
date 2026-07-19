@@ -54,6 +54,11 @@ function setUp() {
       fileSystem.configure(mother.buildFiles());
     },
     fileSystem,
-    vitestify: new Vitestify({ commandRunner, fileSystem }),
+    vitestify: new Vitestify({
+      commandRunner,
+      fileSystem,
+      /* Avoid polluting the terminal. */
+      progressReporter: null,
+    }),
   };
 }
