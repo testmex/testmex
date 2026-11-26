@@ -69,6 +69,7 @@
       "preset": "angular"
     },
     "version": {
+      "conventionalCommits": true,
       "preVersionCommand": "pnpm nx run-many -t build"
     },
     "changelog": {
