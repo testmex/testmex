@@ -75,6 +75,9 @@
     "changelog": {
       "projectChangelogs": true
     },
+    "git": {
+      "commitMessage": "build: 📦 release {projectName} {version}"
+    },
     "releaseTag": {
       "pattern": "{projectName}@{version}"
     }
